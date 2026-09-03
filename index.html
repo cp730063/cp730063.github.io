@@ -172,6 +172,48 @@
   table.h2h tbody th{text-align:right;font-family:var(--body);font-weight:600;font-size:12px;position:sticky;left:0;background:var(--surface);z-index:1}
   table.h2h td.self{background:var(--inset)}
   table.h2h td .rec-n{font-family:var(--mono);font-variant-numeric:tabular-nums;display:block}
+  table.h2h td.rvcell{cursor:pointer}
+  table.h2h td.rvcell:hover{outline:2px solid var(--accent);outline-offset:-2px}
+
+  /* rivalry detail */
+  .rivalry-pick{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 22px}
+  .rivalry-pick select{font:inherit;font-size:14px;padding:8px 11px;border:1px solid var(--border-strong);border-radius:8px;
+    background:var(--surface);color:var(--ink);cursor:pointer;max-width:230px}
+  .rv-vs{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--ink-faint);font-weight:600}
+  .rv-empty{color:var(--ink-muted);font-size:14px;padding:8px 0}
+  .rv-head{margin-bottom:8px}
+  .rv-head h3{font-family:var(--disp);font-weight:700;font-size:19px}
+  .rv-head .rv-sum{color:var(--ink-muted);font-size:13.5px;margin-top:2px}
+  .rv-head .rv-sum b{color:var(--ink)}
+  .rv-bars{display:flex;flex-direction:column;gap:12px;margin:16px 0 8px}
+  .rv-bar .rv-bl{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-muted);margin-bottom:4px}
+  .rv-bar .rv-bl b{color:var(--ink);font-family:var(--mono)}
+  .rv-bar .rv-track{height:9px;border-radius:6px;background:var(--inset);overflow:hidden;display:flex}
+  .rv-bar .rv-fa{background:var(--accent)}
+  .rv-bar .rv-fb{background:var(--gold)}
+  .rv-cmp{width:100%;border-collapse:collapse;font-size:14px;margin:18px 0 6px}
+  .rv-cmp th,.rv-cmp td{padding:9px 12px;border-bottom:1px solid var(--border);text-align:center}
+  .rv-cmp th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--ink-muted)}
+  .rv-cmp td:first-child,.rv-cmp th:first-child{text-align:left;color:var(--ink-faint);font-family:var(--disp);
+    text-transform:uppercase;letter-spacing:.05em;font-size:11px}
+  .rv-cmp .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .rv-cmp .lead{color:var(--accent);font-weight:600}
+  .rv-mt{margin-top:8px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+  .rv-mt .rv-row{display:grid;grid-template-columns:118px 1fr auto;gap:10px;align-items:center;padding:9px 14px;font-size:13px;border-top:1px solid var(--border)}
+  .rv-mt .rv-row:first-child{border-top:0}
+  .rv-mt .rv-when{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint)}
+  .rv-mt .rv-when .po{color:var(--gold);font-weight:600}
+  .rv-mt .rv-score{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .rv-mt .rv-score .win{font-weight:700}
+  .rv-mt .rv-score .wa{color:var(--accent)}
+  .rv-mt .rv-score .wb{color:var(--gold)}
+  .rv-mt .rv-mrg{font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);text-align:right}
+  .rv-trades{margin-top:18px;font-size:13px}
+  .rv-trades .rv-tr{padding:8px 0;border-top:1px solid var(--border)}
+  .rv-trades .rv-tr:first-child{border-top:0}
+  .rv-trades .rv-tw{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  span.rvlink{cursor:pointer;border-bottom:1px dotted var(--border-strong)}
+  span.rvlink:hover{color:var(--accent);border-bottom-color:var(--accent)}
 
   .trade{border:1px solid var(--border);border-radius:11px;background:var(--surface);box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
   .trade-hd{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 16px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:12.5px;color:var(--ink-muted)}
@@ -435,18 +477,30 @@
   <div class="panel" id="p-h2h" hidden>
     <div class="h-kicker">Every pairing</div>
     <h2 class="sec">Head&#8209;to&#8209;head</h2>
-    <p class="sec-note">All-time regular season. Read across: the row manager&rsquo;s record versus the column manager.</p>
+    <p class="sec-note">All-time regular season. Click any cell to open that rivalry below.</p>
     <div class="grid-wrap"><table class="h2h" id="h2hTbl"></table></div>
-    <section style="margin-top:38px">
+
+    <section style="margin-top:40px">
+      <div class="h-kicker">The rivalry</div>
+      <h2 class="sec">Head&#8209;to&#8209;head detail</h2>
+      <div class="rivalry-pick">
+        <select id="rvA" aria-label="First manager"></select>
+        <span class="rv-vs">vs</span>
+        <select id="rvB" aria-label="Second manager"></select>
+      </div>
+      <div id="rivalryView"></div>
+    </section>
+
+    <section style="margin-top:40px">
       <div class="h-kicker">Blood feuds</div>
       <h2 class="sec">Biggest Rivalries</h2>
-      <p class="sec-note">The most-played matchups in league history.</p>
+      <p class="sec-note">The most-played matchups in league history. Click a row to open it.</p>
       <div class="tbl-wrap"><table id="feudTbl"></table></div>
     </section>
     <section>
       <div class="h-kicker">One-sided affairs</div>
       <h2 class="sec">Most Lopsided Series</h2>
-      <p class="sec-note">Most one-sided head-to-head series (min. 12 games).</p>
+      <p class="sec-note">Most one-sided series (min. 12 games). Click a row to open it.</p>
       <div class="tbl-wrap"><table id="lopsideTbl"></table></div>
     </section>
   </div>
@@ -516,7 +570,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903135640","manifest":{"leagues":[{"type":"dynasty","hasTrades":true,"label":"The Eternal Dischnasty","firstSeason":2015,"primary":1,"seasons":11,"lastSeason":2025,"slug":"dischnasty","hasDrafts":true,"hasPlayers":true},{"type":"redraft","hasTrades":false,"primary":0,"firstSeason":2003,"label":"C Diddy's Annual FFL","hasPlayers":true,"hasDrafts":true,"slug":"cdiddy","lastSeason":2025,"seasons":22}]}}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"type":"dynasty","firstSeason":2015,"lastSeason":2025,"hasDrafts":true,"label":"The Eternal Dischnasty","hasPlayers":true,"hasTrades":true,"slug":"dischnasty","seasons":11,"primary":1},{"type":"redraft","firstSeason":2003,"lastSeason":2025,"hasDrafts":true,"label":"C Diddy's Annual FFL","hasPlayers":true,"hasTrades":false,"slug":"cdiddy","seasons":22,"primary":0}]},"version":"20260903141025"}</script>
 <script>
 "use strict";
 (function(){
@@ -1045,9 +1099,9 @@
   function sec_h2h(){
     var gy = played.filter(function(s){ return (s.games||[]).length; }).map(function(s){ return s.year; });
     var minSeas = Math.max(3, Math.round(played.length * 0.35));
-    var nt = document.querySelector('#p-h2h .sec-note');
+    var nt = document.querySelector('#p-h2h > .sec-note');
     if (nt) nt.textContent = 'All-time regular season' + (gy.length ? ', ' + gy[0] + '–' + gy[gy.length-1] : '') +
-      ' · managers with ' + minSeas + '+ seasons. Read across: the row manager’s record vs the column manager.';
+      ' · managers with ' + minSeas + '+ seasons. Click any cell to open that rivalry below.';
     var ppl = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length >= minSeas; })
       .sort(function(a,b){ return (b.titles||[]).length-(a.titles||[]).length || b.seasons.length-a.seasons.length; });
     var rec = {};
@@ -1066,7 +1120,7 @@
         var g=e.w+e.l+e.t, wr=e.w/g;
         var col = wr>.5?'var(--win)':wr<.5?'var(--loss)':'var(--ink-muted)';
         var bg = wr>=.65?'var(--accent-soft)':'transparent';
-        return '<td style="background:'+bg+'"><span class="rec-n" style="color:'+col+'">'+e.w+'–'+e.l+(e.t?'–'+e.t:'')+'</span></td>';
+        return '<td class="rvcell" data-a="'+esc(rp.id)+'" data-b="'+esc(cp.id)+'" style="background:'+bg+'"><span class="rec-n" style="color:'+col+'">'+e.w+'–'+e.l+(e.t?'–'+e.t:'')+'</span></td>';
       }).join('')+'</tr>';
     }).join('');
     document.getElementById('h2hTbl').innerHTML = head+'<tbody>'+body+'</tbody>';
@@ -1084,7 +1138,7 @@
       });
     });
     var pairs = Object.keys(pair).map(function(k){ return pair[k]; });
-    function matchupCell(e){ return esc(pName(e.lo))+' <span style="color:var(--ink-faint)">vs</span> '+esc(pName(e.hi)); }
+    function matchupCell(e){ return '<span class="rvlink" data-a="'+esc(e.lo)+'" data-b="'+esc(e.hi)+'">'+esc(pName(e.lo))+' <span style="color:var(--ink-faint)">vs</span> '+esc(pName(e.hi))+'</span>'; }
     function seriesCell(e){
       var lead = e.loW>=e.hiW ? e.lo : e.hi;
       var lw = Math.max(e.loW,e.hiW), ll = Math.min(e.loW,e.hiW);
@@ -1107,6 +1161,148 @@
       { key:'series', label:'Series', align:'right', val:function(r){ return Math.max(r.e.loW,r.e.hiW); }, cell:function(r){ return seriesCell(r.e); } },
       { key:'n', label:'Meetings', num:true, val:function(r){ return r.e.n; }, cell:function(r){ return r.e.n; } }
     ], lop, { sortKey:'edge', sortDir:-1, rownum:true, limit:12, limitStep:12 });
+
+    /* ---- rivalry detail view ---- */
+    var rvPeople = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length; })
+      .slice().sort(function(a,b){ return a.name.localeCompare(b.name); });
+    var rvA = document.getElementById('rvA'), rvB = document.getElementById('rvB');
+    var opts = rvPeople.map(function(p){ return '<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>'; }).join('');
+    rvA.innerHTML = opts; rvB.innerHTML = opts;
+    var rvIds = rvPeople.map(function(p){ return p.id; });
+
+    function rvMeetings(a, b){
+      var out = [];
+      played.forEach(function(s){
+        (s.games||[]).forEach(function(g){
+          if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+          var ab = (g.a===a && g.b===b), ba = (g.a===b && g.b===a);
+          if (!ab && !ba) return;
+          out.push({ year:s.year, week:g.week, type:g.type, final:!!g.final,
+                     ap: ab ? g.ap : g.bp, bp: ab ? g.bp : g.ap });
+        });
+      });
+      out.sort(function(x,y){ return y.year - x.year || y.week - x.week; });
+      return out;
+    }
+    function rvCareer(pid){
+      var w=0,l=0,t=0,pf=0,pa=0,gpf=0;
+      played.forEach(function(s){
+        var e = (s.entries||[]).filter(function(x){ return x.personId===pid; })[0];
+        if (!e) return;
+        w+=e.w||0; l+=e.l||0; t+=e.t||0;
+        if (e.pf!=null){ pf+=e.pf; gpf+=(e.w||0)+(e.l||0)+(e.t||0); }
+        if (e.pa!=null) pa+=e.pa;
+      });
+      var g=w+l+t;
+      return { w:w,l:l,t:t, pct: g? w/g : 0, pf:pf, pa:pa, ppg: gpf? pf/gpf : null };
+    }
+    function rvTrades(a,b){
+      return (DATA.trades||[]).filter(function(tr){
+        var ids = (tr.sides||[]).map(function(s){ return s.personId; });
+        return (tr.sides||[]).length===2 && ids.indexOf(a)>=0 && ids.indexOf(b)>=0;
+      });
+    }
+
+    function renderRivalry(a, b){
+      var host = document.getElementById('rivalryView');
+      if (!a || !b || a===b){ host.innerHTML = '<p class="rv-empty">Pick two different managers.</p>'; return; }
+      var m = rvMeetings(a, b);
+      var aw=0,bw=0,tt=0, aP=0,bP=0, poMeet=0;
+      m.forEach(function(x){
+        aP+=x.ap; bP+=x.bp;
+        if (x.ap>x.bp) aw++; else if (x.bp>x.ap) bw++; else tt++;
+        if (x.type==='playoff') poMeet++;
+      });
+      var na = pName(a), nb = pName(b);
+      var lead = !m.length ? 'Never met'
+               : aw>bw ? esc(na)+' leads '+aw+'–'+bw+(tt?'–'+tt:'')
+               : bw>aw ? esc(nb)+' leads '+bw+'–'+aw+(tt?'–'+tt:'')
+               : 'All square '+aw+'–'+bw+(tt?'–'+tt:'');
+
+      function bar(la, va, lb, vb, fmt){
+        fmt = fmt || function(x){ return x; };
+        var tot = va+vb || 1, wa = 100*va/tot;
+        return '<div class="rv-bar"><div class="rv-bl"><span>'+esc(la)+' <b>'+fmt(va)+'</b></span><span><b>'+fmt(vb)+'</b> '+esc(lb)+'</span></div>' +
+          '<div class="rv-track"><span class="rv-fa" style="width:'+wa+'%"></span><span class="rv-fb" style="width:'+(100-wa)+'%"></span></div></div>';
+      }
+
+      var ca = rvCareer(a), cb = rvCareer(b);
+      function cmpRow(label, va, vb, fmt, higherBetter){
+        var mark = function(x, y){ return (x!=null && y!=null && x!==y && ((higherBetter && x>y) || (!higherBetter && x<y))) ? ' lead' : ''; };
+        return '<tr><td>'+label+'</td>' +
+          '<td class="num'+mark(va,vb)+'">'+fmt(va)+'</td>' +
+          '<td class="num'+mark(vb,va)+'">'+fmt(vb)+'</td></tr>';
+      }
+      var pctF = function(v){ return (100*v).toFixed(1)+'%'; };
+      var ptsF = function(v){ return v ? f0(v) : '—'; };
+      var ppgF = function(v){ return v==null ? '—' : f2(v); };
+      var cmp = '<table class="rv-cmp"><thead><tr><th></th><th>'+esc(na)+'</th><th>'+esc(nb)+'</th></tr></thead><tbody>' +
+        cmpRow('Career win %', ca.pct, cb.pct, pctF, true) +
+        '<tr><td>Career record</td><td class="num">'+ca.w+'–'+ca.l+(ca.t?'–'+ca.t:'')+'</td><td class="num">'+cb.w+'–'+cb.l+(cb.t?'–'+cb.t:'')+'</td></tr>' +
+        cmpRow('Points / game', ca.ppg, cb.ppg, ppgF, true) +
+        cmpRow('Points for', ca.pf, cb.pf, ptsF, true) +
+        cmpRow('Points against', ca.pa, cb.pa, ptsF, false) +
+        '</tbody></table>';
+
+      var mtHtml = m.length ? '<div class="rv-mt">' + m.map(function(x){
+        var aWin = x.ap>x.bp, bWin = x.bp>x.ap;
+        var tag = x.type==='playoff' ? ' <span class="po">· '+(x.final?'FINAL':'PO')+'</span>'
+                : x.type==='consolation' ? ' <span style="color:var(--ink-faint)">· cons</span>' : '';
+        return '<div class="rv-row">' +
+          '<span class="rv-when">'+x.year+' · Wk '+x.week+tag+'</span>' +
+          '<span class="rv-score"><span class="'+(aWin?'win wa':'')+'">'+f2(x.ap)+'</span> – ' +
+            '<span class="'+(bWin?'win wb':'')+'">'+f2(x.bp)+'</span> ' +
+            '<span style="color:var(--ink-faint)">'+esc(aWin?na:bWin?nb:'tie')+'</span></span>' +
+          '<span class="rv-mrg">'+(x.ap===x.bp?'tie':'+'+f2(Math.abs(x.ap-x.bp)))+'</span>' +
+        '</div>';
+      }).join('') + '</div>' : '';
+
+      var trs = rvTrades(a, b);
+      var trHtml = trs.length ? '<div class="rv-trades"><div class="h-kicker">Trades between them</div>' +
+        trs.map(function(tr){
+          var d = tr.created ? new Date(tr.created) : null;
+          var when = d ? d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : (tr.season||'');
+          var lines = (tr.sides||[]).map(function(sd){
+            var got = (sd.got||[]).map(function(gg){ return gg.kind==='player' ? esc(gg.name||gg.id) : esc(gg.text||''); })
+              .filter(Boolean).join(', ') || 'nothing';
+            return '<b>'+esc(pName(sd.personId))+'</b> got '+got;
+          }).join(' &nbsp;·&nbsp; ');
+          return '<div class="rv-tr"><span class="rv-tw">'+esc(when)+'</span> — '+lines+'</div>';
+        }).join('') + '</div>' : '';
+
+      host.innerHTML =
+        '<div class="rv-head"><h3>'+esc(na)+' <span style="color:var(--ink-faint)">vs</span> '+esc(nb)+'</h3>' +
+          '<div class="rv-sum"><b>'+lead+'</b>' +
+          (m.length ? ' · '+m.length+' meeting'+(m.length!==1?'s':'')+(poMeet?' ('+poMeet+' in the playoffs)':'') : '') +
+          '</div></div>' +
+        (m.length ? '<div class="rv-bars">' + bar(na, aw, nb, bw) + bar(na, Math.round(aP), nb, Math.round(bP), f0) + '</div>' : '') +
+        cmp + mtHtml + trHtml;
+    }
+
+    function openRivalry(a, b){
+      if (!a || !b) return;
+      rvA.value = a; rvB.value = b;
+      try { localStorage.setItem('fm-rivalry', a + '|' + b); } catch(e){}
+      renderRivalry(a, b);
+      document.getElementById('rivalryView').scrollIntoView({ behavior:'smooth', block:'start' });
+    }
+    rvA.addEventListener('change', function(){ openRivalry(rvA.value, rvB.value); });
+    rvB.addEventListener('change', function(){ openRivalry(rvA.value, rvB.value); });
+    ['h2hTbl','feudTbl','lopsideTbl'].forEach(function(id){
+      document.getElementById(id).addEventListener('click', function(e){
+        var c = e.target.closest('[data-a][data-b]'); if (!c) return;
+        openRivalry(c.getAttribute('data-a'), c.getAttribute('data-b'));
+      });
+    });
+
+    var initA, initB;
+    try { var sv = (localStorage.getItem('fm-rivalry') || '').split('|'); if (sv.length===2){ initA=sv[0]; initB=sv[1]; } } catch(e){}
+    if (!(initA && initB && rvIds.indexOf(initA)>=0 && rvIds.indexOf(initB)>=0 && initA!==initB)){
+      var top = pairs.slice().sort(function(x,y){ return y.n - x.n; })[0];
+      if (top){ initA = top.lo; initB = top.hi; } else { initA = rvIds[0]; initB = rvIds[1]; }
+    }
+    if (initA && initB){ rvA.value = initA; rvB.value = initB; renderRivalry(initA, initB); }
+    else renderRivalry(null, null);
   }
 
   function sec_legacy(){
