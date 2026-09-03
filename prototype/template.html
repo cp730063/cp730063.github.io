@@ -368,6 +368,8 @@
   .tc-clear{margin-top:12px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:600;
     color:var(--ink-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;cursor:pointer}
   .tc-clear:hover{color:var(--ink);border-color:var(--border-strong)}
+  .tc-crunch{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--ink-muted);cursor:pointer;user-select:none}
+  .tc-crunch input{cursor:pointer;flex:none}
 
   /* trade intelligence report */
   .tc-intel{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -3029,31 +3031,72 @@
         host.innerHTML = h || '<div class="tc-grp">No valued assets</div>';
       }
       function sum(side){ var s = 0; Object.keys(sel[side]).forEach(function(k){ s += sel[side][k]; }); return s; }
+      function playerCount(side){ return Object.keys(sel[side]).filter(function(k){ return k.charAt(0) === 'p'; }).length; }
+      var crunchOn = true;
+      try { crunchOn = localStorage.getItem('fm-tc-crunch') !== '0'; } catch(e){}
+
       function draw(){
         var a = sum('a'), b = sum('b');
         var na = pName(selA.value), nb = pName(selB.value);
         var cA = Object.keys(sel.a).length, cB = Object.keys(sel.b).length;
+        var pA = playerCount('a'), pB = playerCount('b');
+
+        /* roster crunch: the side receiving MORE players has to clear that many
+           roster spots — count its cheapest un-traded players as part of the cost.
+           Picks don't count; they don't take a lineup spot. */
+        var crunch = null;
+        if (crunchOn && cA && cB && pA !== pB){
+          var cs = pA < pB ? 'a' : 'b';                    /* fewer players out = more players in */
+          var gap = Math.abs(pA - pB);
+          var cpid = (cs === 'a' ? selA : selB).value;
+          var spare = (teams[cpid].players || [])
+            .filter(function(p){ return sel[cs]['p:' + p.key] == null; })
+            .sort(function(x, y){ return (x.value || 0) - (y.value || 0); })
+            .slice(0, gap);
+          var addVal = spare.reduce(function(s, p){ return s + (p.value || 0); }, 0);
+          if (addVal > 0){
+            if (cs === 'a') a += addVal; else b += addVal;
+            crunch = { side: cs, pid: cpid, gap: gap, players: spare, val: addVal };
+          }
+        }
+
         var diff = Math.abs(a - b), pct = 100 * diff / (Math.max(a, b) || 1);
-        var fav = a > b ? na : b > a ? nb : null, word, cls = '';
+        var fav = a < b ? na : b < a ? nb : null, word, cls = '';   /* the side that sends less comes out ahead */
         if (!cA && !cB) word = 'Add players or picks to each side.';
         else if (pct < 3){ word = '<b>Even trade.</b> Within ' + pct.toFixed(1) + '%.'; cls = 'even'; }
         else if (pct < 8) word = 'Slight edge to <b>' + esc(fav) + '</b> — ' + f0(diff) + ' (' + pct.toFixed(1) + '%).';
         else if (pct < 20) word = '<b>' + esc(fav) + '</b> comes out ahead — ' + f0(diff) + ' (' + pct.toFixed(0) + '%).';
         else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f0(diff) + ' (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
-        var wa = 100 * a / ((a + b) || 1);
-        var uneven = (cA && cB && cA !== cB)
-          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost.</div>'
-          : '';
+
+        var wa = 100 * b / ((a + b) || 1);   /* side A's bar = value A receives → leans toward whoever's favoured */
+
+        var subA = cA + ' asset' + (cA !== 1 ? 's' : '') + (crunch && crunch.side === 'a' ? ' · +' + crunch.gap + ' cut' : '');
+        var subB = cB + ' asset' + (cB !== 1 ? 's' : '') + (crunch && crunch.side === 'b' ? ' · +' + crunch.gap + ' cut' : '');
+
+        var tip = '';
+        if (crunch){
+          var nm = crunch.players.map(function(p){ return esc(p.name); }).join(', ');
+          tip = '<div class="tc-tip"><b>' + esc(pName(crunch.pid)) + '</b> takes on ' + crunch.gap + ' more player' +
+            (crunch.gap !== 1 ? 's' : '') + ', so a roster spot has to clear — counting ' +
+            (crunch.gap === 1 ? 'their cheapest bench player' : 'their ' + crunch.gap + ' cheapest bench players') +
+            ' (' + nm + ', ' + f0(crunch.val) + ').</div>';
+        } else if (cA && cB && pA !== pB){
+          tip = '<div class="tc-tip">Uneven on players (' + pA + '&nbsp;for&nbsp;' + pB +
+            '). Tick the box below to count the roster cut the smaller side has to make.</div>';
+        }
+
         verdict.innerHTML =
           '<div class="tc-vtot">' +
             '<div class="tc-t"><span class="tc-lbl">' + esc(na) + ' sends</span>' + f0(a) +
-              '<span class="tc-sub"> &nbsp;' + cA + ' asset' + (cA !== 1 ? 's' : '') + '</span></div>' +
+              '<span class="tc-sub"> &nbsp;' + subA + '</span></div>' +
             '<div class="tc-mid">vs</div>' +
             '<div class="tc-t r"><span class="tc-lbl">' + esc(nb) + ' sends</span>' + f0(b) +
-              '<span class="tc-sub"> &nbsp;' + cB + ' asset' + (cB !== 1 ? 's' : '') + '</span></div>' +
+              '<span class="tc-sub"> &nbsp;' + subB + '</span></div>' +
           '</div>' +
           '<div class="tc-track"><span class="tc-fa" style="width:' + wa + '%"></span><span class="tc-fb" style="width:' + (100 - wa) + '%"></span></div>' +
-          '<div class="tc-say ' + cls + '">' + word + '</div>' + uneven +
+          '<div class="tc-say ' + cls + '">' + word + '</div>' + tip +
+          '<label class="tc-crunch"><input type="checkbox"' + (crunchOn ? ' checked' : '') +
+            '> Count the roster spot the side getting more players gives up</label>' +
           '<div class="tc-fine">Market estimate from recent trade activity — a sanity check, not a verdict.</div>' +
           '<button type="button" class="tc-clear">Clear</button>';
         intel();
@@ -3184,6 +3227,12 @@
         if (!e.target.closest('.tc-clear')) return;
         sel.a = {}; sel.b = {};
         renderList('a', selA.value, listA); renderList('b', selB.value, listB);
+        draw();
+      });
+      verdict.addEventListener('change', function(e){
+        if (!e.target.closest('.tc-crunch')) return;
+        crunchOn = e.target.checked;
+        try { localStorage.setItem('fm-tc-crunch', crunchOn ? '1' : '0'); } catch(_){}
         draw();
       });
 
