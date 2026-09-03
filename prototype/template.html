@@ -368,6 +368,22 @@
   .tc-clear{margin-top:12px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:600;
     color:var(--ink-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;cursor:pointer}
   .tc-clear:hover{color:var(--ink);border-color:var(--border-strong)}
+
+  /* trade intelligence report */
+  .tc-intel{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .tc-intel .ti-side{border:1px solid var(--border);border-radius:11px;background:var(--surface);box-shadow:var(--shadow);padding:14px 16px}
+  .tc-intel h4{font-family:var(--disp);text-transform:uppercase;letter-spacing:.06em;font-size:12px;color:var(--ink-muted);
+    margin:0 0 4px;font-weight:700}
+  .tc-intel .ti-win{font-size:11px;color:var(--ink-faint);margin-bottom:9px}
+  .tc-intel .ti-win b{color:var(--ink-muted);font-weight:600}
+  .tc-intel .ti-l{display:flex;gap:8px;font-size:12.5px;line-height:1.5;padding:5px 0;border-top:1px solid var(--border)}
+  .tc-intel .ti-l:first-of-type{border-top:0}
+  .tc-intel .ti-l .ti-dot{flex:none;width:7px;height:7px;border-radius:50%;margin-top:5px;background:var(--ink-faint)}
+  .tc-intel .ti-l.pos .ti-dot{background:var(--win)}
+  .tc-intel .ti-l.neg .ti-dot{background:var(--loss)}
+  .tc-intel .ti-l b{font-weight:600}
+  .tc-intel .ti-note{font-size:11px;color:var(--ink-faint);margin-top:10px;line-height:1.45}
+  @media (max-width:700px){ .tc-intel{grid-template-columns:1fr} }
   @media (max-width:700px){ .tc-teams{grid-template-columns:1fr} .tc-vtot .tc-t{font-size:18px} }
   .rv-trades{margin-top:18px;font-size:13px}
   .rv-trades .rv-tr{padding:8px 0;border-top:1px solid var(--border)}
@@ -905,6 +921,7 @@
       </div>
     </div>
     <div class="tc-verdict" id="tcVerdict"></div>
+    <div class="tc-intel" id="tcIntel" hidden></div>
   </div>
 
   <div class="panel" id="p-research" hidden>
@@ -2923,6 +2940,46 @@
         (fmt.teams || 12) + '-team), weighted toward recent trades · ' + esc(V.generated || '') +
         '. Check the players and picks each side sends. <b>▲▼</b> shows 30-day market movement.';
 
+      /* ---- league reference stats for the intelligence report ---- */
+      var T = fmt.teams || Object.keys(teams).length || 12;
+      var NQB = fmt.numQbs || 1;
+      var SLOT = { QB:NQB, RB:2.5, WR:3, TE:1.3, K:1, DST:1 };   /* starting slots/team incl. flex share */
+      var POS_ORD = ['QB','RB','WR','TE','K','DST'];
+      var _all = [];
+      Object.keys(teams).forEach(function(pid){ (teams[pid].players || []).forEach(function(p){ _all.push(p); }); });
+      _all.sort(function(x, y){ return (y.value || 0) - (x.value || 0); });
+      var ORANK = {}; _all.forEach(function(p, i){ ORANK[p.key] = i + 1; });
+      function tierOf(p){ var r = ORANK[p.key] || 9999; return r <= T*2 ? 'elite' : r <= T*7 ? 'starter' : 'depth'; }
+      function startable(p){ return (p.posRank || 999) <= Math.round(T * (SLOT[p.pos] || 2)); }
+      var TEAM = {};
+      Object.keys(teams).forEach(function(pid){
+        var pl = (teams[pid].players || []).slice().sort(function(x, y){ return (y.value || 0) - (x.value || 0); });
+        var byPos = {}; pl.forEach(function(p){ if (startable(p)) byPos[p.pos] = (byPos[p.pos] || 0) + 1; });
+        var core = pl.slice(0, Math.max(1, Math.round(T * 1.2)));
+        var aw = 0, as = 0;
+        core.forEach(function(p){ if (p.age){ aw += p.age * (p.value || 0); as += (p.value || 0); } });
+        var pks = teams[pid].picks || [];
+        TEAM[pid] = {
+          totVal: pl.reduce(function(s, p){ return s + (p.value || 0); }, 0),
+          coreAge: as ? aw / as : null,
+          byPos: byPos
+        };
+      });
+      var _vr = Object.keys(TEAM).sort(function(a, b){ return TEAM[b].totVal - TEAM[a].totVal; });
+      _vr.forEach(function(pid, i){ TEAM[pid].vrank = i + 1; });
+      var NT = _vr.length;
+      function ord(n){ var s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+      function windowLabel(pid){
+        if (!isDyn) return null;
+        var t = TEAM[pid], third = NT / 3;
+        var strong = t.vrank <= Math.ceil(third), weak = t.vrank > NT - Math.floor(third);
+        var old = t.coreAge != null && t.coreAge >= 26.5;
+        if (strong && old) return 'win-now';
+        if (strong) return 'contending';
+        if (weak) return 'rebuilding';
+        return 'middle of the pack';
+      }
+
       var pids = Object.keys(teams).filter(function(id){
         return (teams[id].players || []).length || (teams[id].picks || []).length;
       }).sort(function(a, b){ return pName(a).localeCompare(pName(b)); });
@@ -2999,6 +3056,105 @@
           '<div class="tc-say ' + cls + '">' + word + '</div>' + uneven +
           '<div class="tc-fine">Market estimate from recent trade activity — a sanity check, not a verdict.</div>' +
           '<button type="button" class="tc-clear">Clear</button>';
+        intel();
+      }
+
+      /* ---- intelligence report (descriptive, per side) ---- */
+      function selAssets(side){
+        var t = teams[(side === 'a' ? selA : selB).value] || { players:[], picks:[] };
+        var out = { players:[], picks:[] };
+        (t.players || []).forEach(function(p){ if (sel[side]['p:' + p.key] != null) out.players.push(p); });
+        (t.picks || []).forEach(function(pk){
+          if (sel[side]['k:' + pk.season + '.' + pk.round + '.' + (pk.via || '')] != null) out.picks.push(pk);
+        });
+        return out;
+      }
+      function avgAge(list){ var w = 0, s = 0; list.forEach(function(p){ if (p.age){ w += p.age; s++; } }); return s ? w / s : null; }
+      function tierStr(c){
+        var b = [];
+        if (c.elite) b.push(c.elite + ' elite');
+        if (c.starter) b.push(c.starter + ' starter' + (c.starter !== 1 ? 's' : ''));
+        if (c.depth) b.push(c.depth + ' depth');
+        return b.join(', ');
+      }
+      function intelLines(mePid, send, get){
+        var t = TEAM[mePid], sp = send.players, gp = get.players, lines = [];
+
+        POS_ORD.forEach(function(pos){
+          var din = 0, dout = 0;
+          gp.forEach(function(p){ if (p.pos === pos && startable(p)) din++; });
+          sp.forEach(function(p){ if (p.pos === pos && startable(p)) dout++; });
+          if (!din && !dout) return;
+          var d = din - dout, cur = t.byPos[pos] || 0, after = cur + d, slot = Math.ceil(SLOT[pos]);
+          var read = after >= slot + 1 ? 'a surplus you can deal from'
+                   : after >= slot ? 'covers your starting slots'
+                   : 'still short of your slots';
+          if (d === 0){
+            lines.push({ cls:'', t: '<b>' + pos + '</b> — even swap, still ' + after + ' startable (' + read + ').' });
+          } else {
+            lines.push({ cls: d > 0 ? ' pos' : ' neg',
+              t: '<b>' + pos + '</b> ' + (d > 0 ? 'gains' : 'loses') + ' startable depth: ' + cur +
+                 '&nbsp;&rarr;&nbsp;' + after + ' (' + read + ').' });
+          }
+        });
+
+        if (sp.length || gp.length){
+          var tally = function(list){ var c = { elite:0, starter:0, depth:0 }; list.forEach(function(p){ c[tierOf(p)]++; }); return c; };
+          var so = tally(sp), ge = tally(gp), frame = '';
+          if (sp.length && gp.length){
+            frame = gp.length < sp.length ? ' — consolidating into fewer, bigger pieces.'
+                  : gp.length > sp.length ? ' — spreading value across more pieces.'
+                  : ' — piece-for-piece.';
+          }
+          lines.push({ cls:'', t: 'Sends ' + (tierStr(so) || 'no players') + '; gets ' + (tierStr(ge) || 'no players') + frame });
+        }
+
+        if (isDyn && (send.picks.length || get.picks.length)){
+          var pv = get.picks.reduce(function(s, p){ return s + (p.value || 0); }, 0) -
+                   send.picks.reduce(function(s, p){ return s + (p.value || 0); }, 0);
+          var f1 = get.picks.filter(function(p){ return p.round === 1; }).length -
+                   send.picks.filter(function(p){ return p.round === 1; }).length;
+          var nP = get.picks.length - send.picks.length;
+          lines.push({ cls: nP > 0 ? ' pos' : nP < 0 ? ' neg' : '',
+            t: (nP >= 0 ? 'Adds ' : 'Gives up ') + Math.abs(nP) + ' pick' + (Math.abs(nP) !== 1 ? 's' : '') +
+               (f1 ? ' (' + (f1 > 0 ? '+' : '−') + Math.abs(f1) + ' first-rounder' + (Math.abs(f1) !== 1 ? 's' : '') + ')' : '') +
+               ' &nbsp;·&nbsp; ' + (pv >= 0 ? '+' : '−') + f0(Math.abs(pv)) + ' in pick value.' });
+        }
+
+        var aIn = avgAge(gp), aOut = avgAge(sp);
+        if (aIn != null && aOut != null && Math.abs(aIn - aOut) >= 1.0){
+          var gap = aIn - aOut;
+          lines.push({ cls:'', t: 'Incoming players average ' + Math.abs(gap).toFixed(1) + ' yrs ' + (gap < 0 ? 'younger' : 'older') +
+            ' (' + aIn.toFixed(1) + ' in vs ' + aOut.toFixed(1) + ' out)' +
+            (isDyn ? (gap < 0 ? ' — leans into a longer window.' : ' — a more win-now profile.') : '.') });
+        }
+        return lines;
+      }
+      function intel(){
+        var box = document.getElementById('tcIntel');
+        var aS = selAssets('a'), bS = selAssets('b');
+        if (!(aS.players.length + aS.picks.length) || !(bS.players.length + bS.picks.length)){
+          box.hidden = true; box.innerHTML = ''; return;
+        }
+        box.hidden = false;
+        function card(mePid, send, get){
+          var t = TEAM[mePid], wl = windowLabel(mePid);
+          var win = isDyn
+            ? 'Core age <b>' + (t.coreAge != null ? t.coreAge.toFixed(1) : '—') + '</b> · <b>' + ord(t.vrank) +
+              '</b>-strongest roster of ' + NT + (wl ? ' — <b>' + wl + '</b>' : '')
+            : '<b>' + ord(t.vrank) + '</b>-strongest roster of ' + NT +
+              (t.coreAge != null ? ' · core age ' + t.coreAge.toFixed(1) : '');
+          var lines = intelLines(mePid, send, get);
+          return '<div class="ti-side"><h4>For ' + esc(pName(mePid)) + '</h4><div class="ti-win">' + win + '</div>' +
+            (lines.length
+              ? lines.map(function(l){ return '<div class="ti-l' + l.cls + '"><span class="ti-dot"></span><span>' + l.t + '</span></div>'; }).join('')
+              : '<div class="ti-l"><span class="ti-dot"></span><span>Nothing notable — a small, even swap.</span></div>') +
+            '</div>';
+        }
+        document.getElementById('tcIntel').innerHTML =
+          card(selA.value, aS, bS) + card(selB.value, bS, aS) +
+          '<div class="ti-note" style="grid-column:1/-1">Descriptive context — positional need, roster tiers, age and draft capital — not a recommendation. “Startable” means a top ' +
+          T + '&times;slots player at the position.</div>';
       }
 
       [['a', listA], ['b', listB]].forEach(function(p){
