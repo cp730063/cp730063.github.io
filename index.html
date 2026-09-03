@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<title>The Eternal Dischnasty Almanac</title>
+<title>FantasyMags</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -890,7 +890,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903182803","manifest":{"leagues":[{"firstSeason":2015,"hasPlayers":true,"label":"The Eternal Dischnasty","lastSeason":2025,"type":"dynasty","hasDrafts":true,"seasons":11,"hasTrades":true,"primary":1,"slug":"dischnasty"},{"label":"C Diddy's Annual FFL","firstSeason":2003,"hasPlayers":true,"type":"redraft","lastSeason":2025,"hasDrafts":true,"seasons":22,"primary":0,"hasTrades":false,"slug":"cdiddy"}]}}</script>
+<script id="fmdata" type="application/json">{"version":"20260903183232","manifest":{"leagues":[{"hasDrafts":true,"lastSeason":2025,"slug":"dischnasty","primary":1,"hasTrades":true,"type":"dynasty","label":"The Eternal Dischnasty","seasons":11,"hasPlayers":true,"firstSeason":2015},{"seasons":22,"label":"C Diddy's Annual FFL","hasPlayers":true,"firstSeason":2003,"type":"redraft","lastSeason":2025,"slug":"cdiddy","primary":0,"hasTrades":false,"hasDrafts":true}]}}</script>
 <script>
 "use strict";
 (function(){
@@ -1031,6 +1031,7 @@
   function renderHeader(){
     var lg = DATA.league || {};
     document.getElementById('lgName').textContent = lg.name || 'League Almanac';
+    document.title = lg.name ? 'FantasyMags · ' + lg.name : 'FantasyMags';
     var platforms = seasons.some(function(s){return s.platform==='sleeper';}) ? 'ESPN + Sleeper'
                   : seasons.some(function(s){return s.platform==='manual';}) ? 'ESPN + manual records' : 'ESPN';
     document.getElementById('lgSub').textContent = played.length + ' seasons · ' + yFirst + '–' + yLast + ' · ' + platforms;
