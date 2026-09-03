@@ -249,6 +249,12 @@
   .tc-item .tc-sub{color:var(--ink-faint);font-size:10.5px;font-family:var(--mono);margin-left:6px}
   .tc-item .tc-val{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-muted)}
   .tc-item.on .tc-val{color:var(--accent);font-weight:600}
+  .tc-item .tc-tr{font-family:var(--mono);font-size:9.5px;margin-left:6px;letter-spacing:.01em}
+  .tc-item .tc-tr.up{color:var(--win)}
+  .tc-item .tc-tr.down{color:var(--loss)}
+  .tc-tip{margin-top:10px;font-size:12px;line-height:1.45;color:var(--ink);background:var(--accent-soft);
+    border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:9px 12px}
+  .tc-fine{margin-top:10px;font-size:11px;color:var(--ink-faint)}
   .tc-verdict{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);padding:16px 18px}
   .tc-vtot{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:baseline;margin-bottom:12px}
   .tc-vtot .tc-t{font-family:var(--disp);font-weight:700;font-size:22px}
@@ -2134,8 +2140,8 @@
         (isDyn ? 'dynasty' : 'redraft') + ' · ' +
         (fmt.numQbs === 2 ? 'Superflex' : '1QB') + ' · ' +
         (fmt.ppr === 1 ? 'PPR' : fmt.ppr === 0.5 ? 'Half-PPR' : 'Standard') + ' · ' +
-        (fmt.teams || 12) + '-team) · ' + esc(V.generated || '') +
-        '. Check what each side sends.';
+        (fmt.teams || 12) + '-team), weighted toward recent trades · ' + esc(V.generated || '') +
+        '. Check the players and picks each side sends. <b>▲▼</b> shows 30-day market movement.';
 
       var pids = Object.keys(teams).filter(function(id){
         return (teams[id].players || []).length || (teams[id].picks || []).length;
@@ -2154,14 +2160,19 @@
 
       function aidP(pl){ return 'p:' + pl.key; }
       function aidK(pk){ return 'k:' + pk.season + '.' + pk.round + '.' + (pk.via || ''); }
+      function trendBadge(v, trend){
+        var tp = v ? Math.round(100 * (trend || 0) / v) : 0;
+        if (Math.abs(tp) < 4) return '';
+        return '<span class="tc-tr ' + (tp > 0 ? 'up' : 'down') + '">' + (tp > 0 ? '▲' : '▼') + Math.abs(tp) + '%</span>';
+      }
       function renderList(side, pid, host){
         var t = teams[pid] || { players:[], picks:[] };
-        function item(aid, v, posLabel, name, sub){
+        function item(aid, v, posLabel, name, sub, trend){
           var on = sel[side][aid] != null;
           return '<label class="tc-item' + (on ? ' on' : '') + '" data-aid="' + esc(aid) + '" data-v="' + v + '">' +
             '<input type="checkbox"' + (on ? ' checked' : '') + '>' +
             '<span class="tc-nm"><span class="pos-tag">' + esc(posLabel) + '</span>' + esc(name) +
-              (sub ? '<span class="tc-sub">' + sub + '</span>' : '') + '</span>' +
+              (sub ? '<span class="tc-sub">' + sub + '</span>' : '') + trendBadge(v, trend) + '</span>' +
             '<span class="tc-val">' + (v ? f0(v) : '—') + '</span></label>';
         }
         var h = '';
@@ -2169,13 +2180,13 @@
           h += '<div class="tc-grp">Players</div>';
           t.players.forEach(function(pl){
             h += item(aidP(pl), pl.value, pl.pos, pl.name,
-              (pl.nfl ? esc(pl.nfl) + (pl.age ? ' · ' + pl.age.toFixed(0) : '') : ''));
+              (pl.nfl ? esc(pl.nfl) + (pl.age ? ' · ' + pl.age.toFixed(0) : '') : ''), pl.trend);
           });
         }
         if ((t.picks || []).length){
           h += '<div class="tc-grp">Draft picks</div>';
           t.picks.forEach(function(pk){
-            h += item(aidK(pk), pk.value, 'PICK', pk.label, pk.via ? 'via ' + esc(pName(pk.via)) : '');
+            h += item(aidK(pk), pk.value, 'PICK', pk.label, pk.via ? 'via ' + esc(pName(pk.via)) : '', 0);
           });
         }
         host.innerHTML = h || '<div class="tc-grp">No valued assets</div>';
@@ -2193,6 +2204,9 @@
         else if (pct < 20) word = '<b>' + esc(fav) + '</b> comes out ahead — ' + f0(diff) + ' (' + pct.toFixed(0) + '%).';
         else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f0(diff) + ' (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
         var wa = 100 * a / ((a + b) || 1);
+        var uneven = (cA && cB && cA !== cB)
+          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost. That’s cleaner than guessing a “consolidation” bonus.</div>'
+          : '';
         verdict.innerHTML =
           '<div class="tc-vtot">' +
             '<div class="tc-t"><span class="tc-lbl">' + esc(na) + ' sends</span>' + f0(a) +
@@ -2202,7 +2216,8 @@
               '<span class="tc-sub"> &nbsp;' + cB + ' asset' + (cB !== 1 ? 's' : '') + '</span></div>' +
           '</div>' +
           '<div class="tc-track"><span class="tc-fa" style="width:' + wa + '%"></span><span class="tc-fb" style="width:' + (100 - wa) + '%"></span></div>' +
-          '<div class="tc-say ' + cls + '">' + word + '</div>' +
+          '<div class="tc-say ' + cls + '">' + word + '</div>' + uneven +
+          '<div class="tc-fine">Market estimate from recent trade activity — a sanity check, not a verdict.</div>' +
           '<button type="button" class="tc-clear">Clear</button>';
       }
 
