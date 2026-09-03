@@ -669,7 +669,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903152102","manifest":{"leagues":[{"hasTrades":true,"primary":1,"hasPlayers":true,"firstSeason":2015,"type":"dynasty","lastSeason":2025,"label":"The Eternal Dischnasty","hasDrafts":true,"slug":"dischnasty","seasons":11},{"label":"C Diddy's Annual FFL","hasDrafts":true,"hasPlayers":true,"primary":0,"hasTrades":false,"lastSeason":2025,"type":"redraft","firstSeason":2003,"seasons":22,"slug":"cdiddy"}]}}</script>
+<script id="fmdata" type="application/json">{"version":"20260903153407","manifest":{"leagues":[{"slug":"dischnasty","hasPlayers":true,"hasDrafts":true,"label":"The Eternal Dischnasty","primary":1,"type":"dynasty","firstSeason":2015,"seasons":11,"hasTrades":true,"lastSeason":2025},{"seasons":22,"hasTrades":false,"firstSeason":2003,"lastSeason":2025,"primary":0,"hasDrafts":true,"label":"C Diddy's Annual FFL","slug":"cdiddy","hasPlayers":true,"type":"redraft"}]}}</script>
 <script>
 "use strict";
 (function(){
@@ -900,7 +900,7 @@
     var lg = DATA.league || {};
     var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
-                  tradecalc: (lg.type === 'dynasty') };
+                  tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft') };
     Object.keys(avail).forEach(function(p){
       var btn = tabs.querySelector('button[data-p="'+p+'"]');
       if (btn) btn.hidden = !avail[p];
@@ -2119,7 +2119,7 @@
 
   function sec_tradecalc(){
     var lg = DATA.league || {};
-    if (lg.type !== 'dynasty') return;   /* tab hidden by applyTabAvailability */
+    if (lg.type !== 'dynasty' && lg.type !== 'redraft') return;   /* tab hidden by applyTabAvailability */
     var slug = lg.slug;
     var note = document.getElementById('tcNote');
     var selA = document.getElementById('tcA'), selB = document.getElementById('tcB');
@@ -2129,7 +2129,9 @@
 
     loadValues(slug).then(function(V){
       var teams = V.teams || {}, fmt = V.format || {};
-      note.innerHTML = 'Player &amp; pick values from <b>FantasyCalc</b> (' +
+      var isDyn = fmt.dynasty !== false;
+      note.innerHTML = (isDyn ? 'Player &amp; pick values' : 'Player values') + ' from <b>FantasyCalc</b> (' +
+        (isDyn ? 'dynasty' : 'redraft') + ' · ' +
         (fmt.numQbs === 2 ? 'Superflex' : '1QB') + ' · ' +
         (fmt.ppr === 1 ? 'PPR' : fmt.ppr === 0.5 ? 'Half-PPR' : 'Standard') + ' · ' +
         (fmt.teams || 12) + '-team) · ' + esc(V.generated || '') +
