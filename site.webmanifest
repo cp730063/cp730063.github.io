@@ -1,0 +1,14 @@
+{
+  "name": "FantasyMags",
+  "short_name": "FantasyMags",
+  "description": "Your personal fantasy magazine — league history, records and a trade calculator for ESPN and Sleeper leagues.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f1e8",
+  "theme_color": "#f4f1e8",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "maskable any" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable any" }
+  ]
+}

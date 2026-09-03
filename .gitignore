@@ -9,3 +9,9 @@ _serve.pl
 Thumbs.db
 *.tmp
 *~
+
+_raster.html
+_out/
+_b64/
+_mkico.pl
+_serve.pl
