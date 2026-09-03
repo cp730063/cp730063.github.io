@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Normalizes one league (ESPN API + optional Sleeper + optional manual overlay) into
-# prototype/bundles/<slug>.json.   Usage: build_bundle2.pl <league-slug>
+# bundles/<slug>.json.   Usage: build_bundle2.pl <league-slug>
 use strict; use warnings;
 use JSON::PP;
 my $j = JSON::PP->new->canonical(0);
@@ -954,7 +954,7 @@ my $out = {
   drafts => \@draftsOut,
   futurePicks => \@futurePicks,
 };
-mkdir "$ROOT/prototype/bundles" unless -d "$ROOT/prototype/bundles"; open my $fh, ">:raw", "$ROOT/prototype/bundles/$SLUG.json" or die $!;
+mkdir "$ROOT/bundles" unless -d "$ROOT/bundles"; open my $fh, ">:raw", "$ROOT/bundles/$SLUG.json" or die $!;
 print $fh $j->encode($out);
 close $fh;
 
@@ -962,4 +962,4 @@ printf STDERR "seasons: %d (%s..%s)  people: %d  trades: %d  players: %d  player
   scalar(@seasons), $seasons[0]{year}, $seasons[-1]{year},
   scalar(@peopleOut), scalar(@tradesOut), scalar(keys %playersOut),
   scalar(@playerSeasons), scalar(keys %ownershipOut),
-  scalar(@draftsOut), scalar(@futurePicks), (-s "$ROOT/prototype/bundles/$SLUG.json");
+  scalar(@draftsOut), scalar(@futurePicks), (-s "$ROOT/bundles/$SLUG.json");

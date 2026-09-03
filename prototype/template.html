@@ -108,6 +108,16 @@
   @media (min-width:901px){ .nav-scrim{display:none!important} }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
 
+  #loadNote{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
+    background:var(--surface);border:1px solid var(--border-strong);border-radius:999px;box-shadow:var(--shadow);
+    padding:8px 18px;font-size:13px;color:var(--ink-muted);max-width:90vw}
+  #loadNote[hidden]{display:none}
+  #loadNote::before{content:"";flex:none;width:13px;height:13px;border:2px solid var(--border-strong);
+    border-top-color:var(--accent);border-radius:50%;animation:fmspin .7s linear infinite}
+  #loadNote.err{color:var(--loss);border-color:var(--loss)}
+  #loadNote.err::before{display:none}
+  @keyframes fmspin{to{transform:rotate(360deg)}}
+
   .panel{padding-top:30px}
   .panel[hidden]{display:none}
   .lede{color:var(--ink-muted);max-width:62ch;margin:0 0 24px}
@@ -288,10 +298,11 @@
     .side+.side{border-left:0;border-top:1px solid var(--border)}
     .rec .rv{font-size:18px}
   }
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}#loadNote::before{animation-duration:1.6s}}
 </style>
 
 <div id="app">
+<div id="loadNote" hidden role="status">Loading…</div>
 <button class="nav-scrim" id="navScrim" type="button" hidden aria-hidden="true" tabindex="-1"></button>
 
 <aside class="sidebar" id="sidebar">
@@ -512,6 +523,39 @@
   var FM;
   try { FM = JSON.parse(document.getElementById('fmdata').textContent); }
   catch(e){ document.querySelector('main').innerHTML = '<p style="padding:40px">Could not load league data.</p>'; return; }
+  FM.bundles = FM.bundles || {};                 /* per-league data, fetched on demand */
+
+  var loadNote = document.getElementById('loadNote');
+  function setLoad(mode, msg){
+    if (mode === 'off'){ loadNote.hidden = true; return; }
+    loadNote.hidden = false;
+    loadNote.className = (mode === 'err') ? 'err' : '';
+    loadNote.textContent = msg || (mode === 'err' ? 'Could not load league data.' : 'Loading…');
+  }
+
+  var _bundleFetch = {};
+  function loadBundle(slug){
+    if (FM.bundles[slug]) return Promise.resolve(FM.bundles[slug]);
+    if (_bundleFetch[slug]) return _bundleFetch[slug];
+    var v = FM.version ? ('?v=' + encodeURIComponent(FM.version)) : '';
+    _bundleFetch[slug] = fetch('bundles/' + encodeURIComponent(slug) + '.json' + v)
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(data){ FM.bundles[slug] = data; return data; })
+      .catch(function(err){ delete _bundleFetch[slug]; throw err; });
+    return _bundleFetch[slug];
+  }
+  function manifestSlugs(){ return (FM.manifest && FM.manifest.leagues || []).map(function(L){ return L.slug; }); }
+  function manifestLabel(slug){
+    var m = (FM.manifest && FM.manifest.leagues || []).filter(function(L){ return L.slug === slug; })[0];
+    return m ? m.label : slug;
+  }
+  var _prefetchDone = false;
+  function prefetchOthers(activeSlug){
+    if (_prefetchDone) return; _prefetchDone = true;
+    var rest = manifestSlugs().filter(function(s){ return s !== activeSlug; });
+    var go = function(){ rest.forEach(function(s){ loadBundle(s).catch(function(){}); }); };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 1200);
+  }
 
   var f2 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var f0 = function(n){ return Math.round(n==null?0:n).toLocaleString(); };
@@ -709,11 +753,18 @@
   lgSel.addEventListener('change', function(){ switchLeague(this.value); });
 
   function switchLeague(slug){
-    if (!FM.bundles[slug]) return;
-    DATA = FM.bundles[slug];
+    if (manifestSlugs().indexOf(slug) < 0) return;
     try { localStorage.setItem('fm-league', slug); } catch(e){}
     lgSel.value = slug;
-    renderAll();
+    if (!FM.bundles[slug]) setLoad('on', 'Loading ' + manifestLabel(slug) + '…');
+    loadBundle(slug).then(function(data){
+      setLoad('off');
+      DATA = data;
+      renderAll();
+      prefetchOthers(slug);
+    }).catch(function(){
+      setLoad('err', 'Couldn’t load ' + manifestLabel(slug) + ' — check your connection and reload.');
+    });
   }
 
   /* panel templates captured before any render mutates them */
@@ -1616,11 +1667,12 @@
   }
 
   /* ---- boot ---- */
-  var slugs = (FM.manifest && FM.manifest.leagues || []).map(function(L){ return L.slug; });
+  var slugs = manifestSlugs();
   var want; try { want = localStorage.getItem('fm-league'); } catch(e){}
-  if (!want || slugs.indexOf(want) < 0) want = slugs[0] || Object.keys(FM.bundles)[0];
-  switchLeague(want);
+  if (!want || slugs.indexOf(want) < 0) want = slugs[0];
   selectTab(currentTab());
+  if (want) switchLeague(want);
+  else setLoad('err', 'No leagues are configured.');
 
 })();
 </script>

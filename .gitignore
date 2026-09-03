@@ -1,11 +1,7 @@
 # raw API dumps — large, and contain private league detail; kept local only
 data/
 
-# built site: repo-root index.html is tracked & served by Pages;
-# the prototype/ mirror is a local convenience copy
-prototype/index.html
-
-# local dev throwaway HTTP server
+# local dev throwaway static server
 _serve.pl
 
 # OS / editor cruft

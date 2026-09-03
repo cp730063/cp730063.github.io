@@ -17,7 +17,7 @@ for my $cfgpath (@cfgs) {
   my $rc = system($^X, "$ROOT/scripts/build_bundle2.pl", $slug);
   die "build failed for $slug\n" if $rc != 0;
 
-  local $/; open my $f, '<:raw', "$ROOT/prototype/bundles/$slug.json" or die;
+  local $/; open my $f, '<:raw', "$ROOT/bundles/$slug.json" or die;
   my $b = $j->decode(<$f>); close $f;
   push @manifest, {
     slug => $b->{league}{slug}, label => $b->{league}{name}, type => $b->{league}{type},
@@ -30,7 +30,7 @@ for my $cfgpath (@cfgs) {
 }
 # primary league first, then most seasons
 @manifest = sort { $b->{primary} <=> $a->{primary} || $b->{seasons} <=> $a->{seasons} || $a->{label} cmp $b->{label} } @manifest;
-open my $m, '>:raw', "$ROOT/prototype/bundles/leagues.json" or die;
+open my $m, '>:raw', "$ROOT/bundles/leagues.json" or die;
 print $m $j->canonical->pretty->encode({ leagues => \@manifest });
 close $m;
 print STDERR "\nwrote manifest: ", join(", ", map { "$_->{slug} ($_->{seasons} seasons)" } @manifest), "\n";
