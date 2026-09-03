@@ -344,9 +344,9 @@ for my $y (sort keys %SLE_LEAGUES) {
     champion=>$champ, runnerUp=>$ru, third=>$th, regSeasonChamp=>($played ? $sRegChamp : undef),
   };
 
-  # ---- trades (2025 only, but generic) ----
-  next unless $played;
-  for my $w (1..18) {
+  # ---- trades: every completed trade in the transaction log (incl. offseason
+  #      trades filed under an unplayed season's round 1) ----
+  for my $w (0..18) {
     my $tx = jload("$dir/transactions/week_$w.json");
     next unless ref $tx eq 'ARRAY';
     for my $t (@$tx) {
@@ -369,12 +369,44 @@ for my $y (sort keys %SLE_LEAGUES) {
         }
         push @sides, {
           personId=>$pid, got=>\@got,
-          poResult=>$poRes{$pid},
-          madePlayoffs=>($poRes{$pid} ? 1 : 0),
+          poResult=>($played ? $poRes{$pid} : undef),
+          madePlayoffs=>($played && $poRes{$pid} ? 1 : 0),
         };
       }
       push @tradesOut, { season=>$y+0, week=>$w+0, created=>($t->{created}//0), sides=>\@sides };
     }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# 3a. Manual trade overlay: trades executed via commissioner tools / outside
+#     the in-app trade flow, which never land in Sleeper's transaction log.
+# ---------------------------------------------------------------------------
+if (my $TOV = $CFG->{tradeOverlay}) {
+  if (-e "$ROOT/$TOV") {
+    my $tov = jload("$ROOT/$TOV") || {};
+    for my $tr (@{ $tov->{trades} || [] }) {
+      my $ts = 0;
+      if (($tr->{date} // '') =~ /^(\d{4})-(\d{2})-(\d{2})/) {
+        eval { require Time::Local; $ts = Time::Local::timegm(0,0,12,$3+0,$2-1,$1-1900) * 1000; };
+      }
+      my @sides;
+      for my $sd (@{ $tr->{sides} || [] }) {
+        my $pid = $sd->{person};
+        next unless $pid && $P{$pid};
+        my @got;
+        for my $g (@{ $sd->{got} || [] }) {
+          if    ($g =~ /^\s*\d{4}\s*R\d/i)  { push @got, { kind=>'pick',  text=>$g }; }
+          elsif ($g =~ /FAAB|\$/i)          { push @got, { kind=>'faab',  text=>$g }; }
+          else                              { push @got, { kind=>'player', name=>$g }; }
+        }
+        push @sides, { personId=>$pid, got=>\@got };
+      }
+      push @tradesOut, { season=>($tr->{season} || 0)+0, week=>0, created=>$ts,
+                         manual=>\1, sides=>\@sides } if @sides >= 2;
+    }
+  } else {
+    warn "tradeOverlay not found: $ROOT/$TOV\n";
   }
 }
 
@@ -481,12 +513,12 @@ for my $tr (@tradesOut) {
   for my $s (@{$tr->{sides}}) {
     my $tot = 0; my $has = 0;
     for my $g (@{$s->{got}}) {
-      if ($g->{kind} eq 'player') {
-        my $nm = $pmap{$g->{id}} || [$g->{id},'',''];
-        $g->{name} = $nm->[0]; $g->{pos} = $nm->[1];
-        my $p = 0; for my $w ($fromW..18) { $p += $wkpts{$w}{$g->{id}} if $wkpts{$w} && defined $wkpts{$w}{$g->{id}} }
-        $g->{after} = r2($p); $tot += $p; $has = 1;
-      }
+      next unless $g->{kind} eq 'player';
+      next unless defined $g->{id};                       # manual-overlay players carry a name, no id
+      my $nm = $pmap{$g->{id}} || [$g->{id},'',''];
+      $g->{name} = $nm->[0]; $g->{pos} = $nm->[1];
+      my $p = 0; for my $w ($fromW..18) { $p += $wkpts{$w}{$g->{id}} if $wkpts{$w} && defined $wkpts{$w}{$g->{id}} }
+      $g->{after} = r2($p); $tot += $p; $has = 1;
     }
     $s->{afterTotal} = $has ? r2($tot) : undef;
   }

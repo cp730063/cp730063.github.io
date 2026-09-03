@@ -1,0 +1,13 @@
+{
+  "_note": "Trades executed via commissioner tools / outside Sleeper's in-app trade flow, so they never appear in the transaction log. person = canonical id from scripts/leagues/dischnasty.json. got = list of strings; a token like '2027 R1' is read as a pick, '$5 FAAB' as FAAB, anything else as a player. date is approximate unless confirmed.",
+  "trades": [
+    {
+      "season": 2026,
+      "date": "2026-07-01",
+      "sides": [
+        { "person": "schwenk", "got": ["Jayden Daniels", "Terry McLaurin"] },
+        { "person": "cdiddy",  "got": ["2027 R1"] }
+      ]
+    }
+  ]
+}

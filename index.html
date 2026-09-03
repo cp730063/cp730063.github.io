@@ -570,7 +570,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"type":"dynasty","firstSeason":2015,"lastSeason":2025,"hasDrafts":true,"label":"The Eternal Dischnasty","hasPlayers":true,"hasTrades":true,"slug":"dischnasty","seasons":11,"primary":1},{"type":"redraft","firstSeason":2003,"lastSeason":2025,"hasDrafts":true,"label":"C Diddy's Annual FFL","hasPlayers":true,"hasTrades":false,"slug":"cdiddy","seasons":22,"primary":0}]},"version":"20260903141025"}</script>
+<script id="fmdata" type="application/json">{"version":"20260903143232","manifest":{"leagues":[{"type":"dynasty","label":"The Eternal Dischnasty","seasons":11,"slug":"dischnasty","lastSeason":2025,"hasTrades":true,"firstSeason":2015,"primary":1,"hasPlayers":true,"hasDrafts":true},{"hasTrades":false,"lastSeason":2025,"slug":"cdiddy","seasons":22,"primary":0,"firstSeason":2003,"type":"redraft","label":"C Diddy's Annual FFL","hasDrafts":true,"hasPlayers":true}]}}</script>
 <script>
 "use strict";
 (function(){
@@ -1258,17 +1258,23 @@
       }).join('') + '</div>' : '';
 
       var trs = rvTrades(a, b);
-      var trHtml = trs.length ? '<div class="rv-trades"><div class="h-kicker">Trades between them</div>' +
-        trs.map(function(tr){
-          var d = tr.created ? new Date(tr.created) : null;
-          var when = d ? d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : (tr.season||'');
-          var lines = (tr.sides||[]).map(function(sd){
-            var got = (sd.got||[]).map(function(gg){ return gg.kind==='player' ? esc(gg.name||gg.id) : esc(gg.text||''); })
-              .filter(Boolean).join(', ') || 'nothing';
-            return '<b>'+esc(pName(sd.personId))+'</b> got '+got;
-          }).join(' &nbsp;·&nbsp; ');
-          return '<div class="rv-tr"><span class="rv-tw">'+esc(when)+'</span> — '+lines+'</div>';
-        }).join('') + '</div>' : '';
+      var trHtml = '';
+      if (trs.length){
+        trHtml = '<div class="rv-trades"><div class="h-kicker">Trades between them</div>' +
+          trs.map(function(tr){
+            var d = tr.created ? new Date(tr.created) : null;
+            var when = d ? d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}) : (tr.season||'');
+            var lines = (tr.sides||[]).map(function(sd){
+              var got = (sd.got||[]).map(function(gg){ return gg.kind==='player' ? esc(gg.name||gg.id) : esc(gg.text||''); })
+                .filter(Boolean).join(', ') || 'nothing';
+              return '<b>'+esc(pName(sd.personId))+'</b> got '+got;
+            }).join(' &nbsp;·&nbsp; ');
+            return '<div class="rv-tr"><span class="rv-tw">'+esc(when)+'</span> — '+lines+'</div>';
+          }).join('') + '</div>';
+      } else if ((DATA.league||{}).hasTrades){
+        trHtml = '<div class="rv-trades"><div class="h-kicker">Trades between them</div>' +
+          '<div class="rv-empty" style="padding:6px 0">No trades between these two.</div></div>';
+      }
 
       host.innerHTML =
         '<div class="rv-head"><h3>'+esc(na)+' <span style="color:var(--ink-faint)">vs</span> '+esc(nb)+'</h3>' +
@@ -1594,12 +1600,13 @@
   }
 
   function sec_trades(){
-    function poLine(s){
+    function poLine(s, yr){
       if (s.poResult && PO_LABEL[s.poResult]){
         var cls = s.poResult==='champion' ? 'po champ' : 'po made';
         var mark = s.poResult==='champion' ? '🏆 ' : '';
         return '<div class="'+cls+'">'+mark+esc(PO_LABEL[s.poResult])+'</div>';
       }
+      if (!played.some(function(x){ return x.year===yr; })) return '';   // season not played yet
       return '<div class="po">Missed playoffs</div>';
     }
     var items = (DATA.trades||[]).slice();
@@ -1623,7 +1630,7 @@
           return '<div class="asset"><span class="ap">'+label+'</span>'+pts+'</div>';
         }).join('') : '<div class="asset" style="color:var(--ink-faint)">nothing</div>';
         return '<div class="side"><h4>'+esc(pName(s.personId))+'</h4><div class="mn">'+esc(pMgr(s.personId))+'</div>'+
-          poLine(s)+
+          poLine(s, t.season)+
           '<div class="got-label">Receives</div>'+rows+
           (s.afterTotal!=null ? '<div class="tot">after trade: <b>'+f2(s.afterTotal)+'</b> pts</div>' : '')+
           '</div>';
