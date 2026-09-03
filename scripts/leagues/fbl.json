@@ -4,19 +4,13 @@
     2008,
     2026
   ],
-  "label" : "The Annual FBL",
+  "label" : "24th Annual FBL",
   "people" : [
     {
       "espn" : "{C2E726CA-E7DC-4E21-A528-76BC1F69CB2F}",
       "id" : "benvenuti",
       "mgr" : "LouieB8469",
       "name" : "Louie Benvenuti"
-    },
-    {
-      "espn" : "{789BF6AF-010D-43A7-8E9E-15FBFD2E6ED0}",
-      "id" : "biness",
-      "mgr" : "abnd14",
-      "name" : "A Biness"
     },
     {
       "espn" : "{2E52ACE1-72C7-46EA-8B05-2250C73FEC1A}",
@@ -29,12 +23,6 @@
       "id" : "campbell",
       "mgr" : "slamson10",
       "name" : "Tim Campbell"
-    },
-    {
-      "espn" : "{ADBAAB67-6CFA-4E43-B901-D5E6BD25EC16}",
-      "id" : "campo",
-      "mgr" : "ardmorepizza",
-      "name" : "Guy Campo"
     },
     {
       "espn" : "{4F756F6E-0454-491A-AF18-0A55498E909D}",
@@ -56,9 +44,12 @@
     },
     {
       "espn" : "{EC460EAA-0CD5-489A-B2DD-A03EE3281C08}",
+      "espnAlt" : [
+        "{ADBAAB67-6CFA-4E43-B901-D5E6BD25EC16}"
+      ],
       "id" : "cosgrove",
       "mgr" : "Cozninja22",
-      "name" : "Steve Cosgrove"
+      "name" : "Steve Cosgrove / Guy Campo"
     },
     {
       "espn" : "{239106C4-49CF-41EF-BF1B-70129CF1E97A}",
@@ -69,11 +60,12 @@
     {
       "espn" : "{65B22561-B66D-45F1-9032-ABF5C140732B}",
       "espnAlt" : [
-        "{E59EA390-14F1-472E-9EA3-9014F1372ED1}"
+        "{E59EA390-14F1-472E-9EA3-9014F1372ED1}",
+        "{47D80CD6-EEC3-45B7-BC8C-46DC0886A203}"
       ],
       "id" : "dinicola",
       "mgr" : "heels3229",
-      "name" : "Rob DiNicola"
+      "name" : "Rob DiNicola / Jim McGarrity"
     },
     {
       "espn" : "{5665F499-0FFE-48B4-95A0-6D790350D82B}",
@@ -116,12 +108,6 @@
       "id" : "kerrigan",
       "mgr" : "MKATZ2269",
       "name" : "Linda Kerrigan"
-    },
-    {
-      "espn" : "{47D80CD6-EEC3-45B7-BC8C-46DC0886A203}",
-      "id" : "mcgarrity",
-      "mgr" : "qb101515",
-      "name" : "Jim McGarrity"
     },
     {
       "espn" : "{570A8534-7628-4490-9E1F-1259B957E52F}",
@@ -167,9 +153,12 @@
     },
     {
       "espn" : "{248E5D4E-6341-41CD-B648-7C8EFEC43C70}",
+      "espnAlt" : [
+        "{789BF6AF-010D-43A7-8E9E-15FBFD2E6ED0}"
+      ],
       "id" : "quigley",
       "mgr" : "jquigs276",
-      "name" : "Joe Quigley"
+      "name" : "Joe Quigley / Alex Bradley"
     },
     {
       "espn" : "{EC9D4D86-5554-4BF6-90B5-DED0722C0B39}",

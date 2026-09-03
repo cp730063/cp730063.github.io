@@ -48,6 +48,12 @@ my %SLE_DRAFT_INFO;    # year -> { rounds, teams, type, order{}, uid2pid{}, pick
 my %SLE_FUTURE_PICKS;  # sleeper year -> [ league-level traded_picks with season > that year ]
 my %SLE_FUTURE_R2P;    # sleeper year -> { roster_id -> pid } for resolving future picks
 
+# non-NFL sports have no playerWeeks file; resolve player names from ESPN roster
+# snapshots in the raw season files instead (id -> [name, pos]).
+my %ESPN_PLAYER_NAME;
+my %MLB_POS = (1=>'SP', 2=>'C', 3=>'1B', 4=>'2B', 5=>'3B', 6=>'SS',
+               7=>'OF', 8=>'OF', 9=>'OF', 10=>'DH', 11=>'RP');
+
 # ---------------------------------------------------------------------------
 # 2. ESPN seasons 2015-2024
 # ---------------------------------------------------------------------------
@@ -55,6 +61,17 @@ my @seasons;
 for my $y (@ESPN_Y) {
   my $raw = jload("$ESPN/$y.json") or next;
   my $d = ref $raw eq 'ARRAY' ? $raw->[0] : $raw;
+
+  if ($SPORT ne 'nfl') {
+    for my $t (@{ $d->{teams} || [] }) {
+      for my $en (@{ ($t->{roster} || {})->{entries} || [] }) {
+        my $pl = ($en->{playerPoolEntry} || {})->{player} or next;
+        next unless defined $pl->{id} && defined $pl->{fullName};
+        $ESPN_PLAYER_NAME{ $pl->{id} } ||=
+          [ $pl->{fullName}, ($MLB_POS{ $pl->{defaultPositionId} // -1 } // '') ];
+      }
+    }
+  }
   my $st = $d->{settings} || {};
   my $ss = $st->{scheduleSettings} || {};
   my $regWeeks = $ss->{matchupPeriodCount} || 14;
@@ -906,7 +923,8 @@ my @draftsOut;
 sub espn_player_meta {
   my ($ep) = @_;
   my $key  = $ESPN_PID2KEY{$ep};
-  my $meta = $key ? $KEY_META{$key} : ($epw_players->{$ep} || undef);
+  my $meta = $key ? $KEY_META{$key}
+                  : ($epw_players->{$ep} || $ESPN_PLAYER_NAME{$ep} || undef);
   return ( ($meta ? $meta->[0] : "Player $ep"),
            ($meta ? uc($meta->[1] // '') : ''),
            $key );
