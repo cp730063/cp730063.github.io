@@ -8,8 +8,10 @@
          "label" : "The Eternal Dischnasty",
          "lastSeason" : 2025,
          "primary" : 1,
+         "scoring" : "points",
          "seasons" : 11,
          "slug" : "dischnasty",
+         "sport" : "nfl",
          "type" : "dynasty"
       },
       {
@@ -20,8 +22,24 @@
          "label" : "C Diddy's Annual FFL",
          "lastSeason" : 2025,
          "primary" : 0,
+         "scoring" : "points",
          "seasons" : 22,
          "slug" : "cdiddy",
+         "sport" : "nfl",
+         "type" : "redraft"
+      },
+      {
+         "firstSeason" : 2008,
+         "hasDrafts" : true,
+         "hasPlayers" : false,
+         "hasTrades" : false,
+         "label" : "The Annual FBL",
+         "lastSeason" : 2026,
+         "primary" : 0,
+         "scoring" : "cats",
+         "seasons" : 19,
+         "slug" : "fbl",
+         "sport" : "mlb",
          "type" : "redraft"
       }
    ]

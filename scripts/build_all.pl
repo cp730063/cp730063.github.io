@@ -21,6 +21,7 @@ for my $cfgpath (@cfgs) {
   my $b = $j->decode(<$f>); close $f;
   push @manifest, {
     slug => $b->{league}{slug}, label => $b->{league}{name}, type => $b->{league}{type},
+    sport => ($b->{league}{sport} || 'nfl'), scoring => ($b->{league}{scoring} || 'points'),
     primary => ($b->{league}{primary} ? 1 : 0),
     firstSeason => $b->{league}{firstSeason}, lastSeason => $b->{league}{lastSeason},
     seasons => scalar(grep { $_->{played} } @{$b->{seasons}}),

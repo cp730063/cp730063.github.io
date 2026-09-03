@@ -1068,7 +1068,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"seasons":11,"slug":"dischnasty","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"seasons":22,"slug":"cdiddy","type":"redraft"}]},"version":"20260903222119"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":false,"hasTrades":false,"label":"The Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260903232543"}</script>
 <script>
 "use strict";
 (function(){
@@ -1126,11 +1126,19 @@
 
   var f2 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var f0 = function(n){ return Math.round(n==null?0:n).toLocaleString(); };
+  function ord(n){ var s=['th','st','nd','rd'], v=n%100; return n + (s[(v-20)%10] || s[v] || s[0]); }
   var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
   var mDash = function(n){ return n==null ? '—' : f2(n); };
 
   /* per-league model, rebuilt on every league switch */
   var DATA, P, seasons, played, years, yFirst, yLast, latestPlayed;
+  var SPORT = 'nfl', SCORING = 'points', isCats = false;
+  /* scoring-aware labels: football = points; baseball H2H = categories won */
+  function ptsLabel(){ return isCats ? 'category wins' : 'points'; }
+  function pfShort(){ return isCats ? 'CW' : 'PF'; }
+  function pfPer(){ return isCats ? 'CW/wk' : 'PF/G'; }
+  function scoreLeaderLabel(){ return isCats ? 'Most category wins' : 'Scoring leader'; }
+  function seasonScoreless(s){ return (s.scoring || SCORING) === 'roto'; }   /* no weekly games */
   var openPlayerCard = null;   /* set by sec_players once its modal is wired */
   var _dgShow = null;          /* set by sec_draftGrades; sec_drafts calls it on board change */
   function pName(id){ return P[id] ? P[id].name : id; }
@@ -1138,6 +1146,9 @@
   function deriveModel(){
     P = {};
     (DATA.people||[]).forEach(function(p){ P[p.id] = p; });
+    SPORT = (DATA.league && DATA.league.sport) || 'nfl';
+    SCORING = (DATA.league && DATA.league.scoring) || 'points';
+    isCats = (SCORING === 'cats' || SCORING === 'roto');
     seasons = (DATA.seasons||[]).slice().sort(function(a,b){ return a.year-b.year; });
     played  = seasons.filter(function(s){ return s.played; });
     years   = played.map(function(s){ return s.year; });
@@ -1301,9 +1312,10 @@
   }
   function applyTabAvailability(){
     var lg = DATA.league || {};
-    var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
+    var football = (lg.sport || 'nfl') === 'nfl';
+    var avail = { players: !!lg.hasPlayers && football, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
-                  tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft') };
+                  tradecalc: football && (lg.type === 'dynasty' || lg.type === 'redraft') };
     Object.keys(avail).forEach(function(p){
       var btn = tabs.querySelector('button[data-p="'+p+'"]');
       if (btn) btn.hidden = !avail[p];
@@ -1417,8 +1429,8 @@
     var tiles = [
       ['Seasons', played.length, yFirst+'–'+yLast],
       ['Managers', activeManagers, pastManagers+' more have played'],
-      ['Games played', games, 'all weeks, all seasons'],
-      ['Points scored', Math.round(pts), 'every team, every week']
+      [isCats ? 'Matchups played' : 'Games played', games, 'all weeks, all seasons'],
+      [isCats ? 'Category wins' : 'Points scored', Math.round(pts), 'every team, every week']
     ];
     document.getElementById('kpis').innerHTML = tiles.map(function(t){
       return '<div class="tile"><div class="k">'+t[0]+'</div>'+
@@ -1469,21 +1481,23 @@
 
     document.getElementById('ledger').innerHTML =
       '<thead><tr><th>Season</th><th style="text-align:left">Champion</th><th style="text-align:left">Runner&#8209;up</th>'+
-      '<th style="text-align:left">No.&nbsp;1 seed</th><th style="text-align:left">Scoring leader</th></tr></thead><tbody>'+
+      '<th style="text-align:left">No.&nbsp;1 seed</th><th style="text-align:left">'+scoreLeaderLabel()+'</th></tr></thead><tbody>'+
       seasons.map(function(s){
+        var yr = s.year + (seasonScoreless(s) ? ' <span class="mn" style="color:var(--ink-faint)">roto</span>' : '');
         if (!s.played) return '<tr><td class="team-cell"><span class="tn">'+s.year+'</span><span class="mn">'+esc(s.platform)+'</span></td>'+
           '<td colspan="4" style="text-align:left;color:var(--ink-faint)">Upcoming — no games played</td></tr>';
         var ch = s.champion?P[s.champion]:null, ru = s.runnerUp?P[s.runnerUp]:null;
         var ents = (s.entries||[]).slice();
-        var seed1 = ents.filter(function(e){ return e.seed===1; })[0] ||
-          ents.slice().sort(function(a,b){ return (b.w-a.w)||((b.pf||0)-(a.pf||0)); })[0];
-        var lead = ents.filter(function(e){ return e.pf!=null; }).sort(function(a,b){ return b.pf-a.pf; })[0];
+        var roto = seasonScoreless(s);
+        var seed1 = roto ? null : (ents.filter(function(e){ return e.seed===1; })[0] ||
+          ents.slice().sort(function(a,b){ return (b.w-a.w)||((b.pf||0)-(a.pf||0)); })[0]);
+        var lead = roto ? null : ents.filter(function(e){ return e.pf!=null && (e.w+e.l+e.t)>0; }).sort(function(a,b){ return b.pf-a.pf; })[0];
         return '<tr>'+
-          '<td class="team-cell"><span class="tn">'+s.year+'</span><span class="mn">'+esc(s.platform)+' · '+s.teams+' tm</span></td>'+
+          '<td class="team-cell"><span class="tn">'+yr+'</span><span class="mn">'+esc(s.platform)+' · '+s.teams+' tm</span></td>'+
           '<td style="text-align:left">'+(ch?'<span class="badge champ">Champ</span> '+esc(ch.name):'—')+'</td>'+
           '<td style="text-align:left">'+(ru?esc(ru.name):'—')+'</td>'+
           '<td style="text-align:left">'+(seed1?esc(pName(seed1.personId))+' <span class="mn" style="color:var(--ink-faint)">'+seed1.w+'–'+seed1.l+'</span>':'—')+'</td>'+
-          '<td style="text-align:left">'+(lead?esc(pName(lead.personId))+' <span class="num" style="color:var(--ink-muted)">'+f2(lead.pf)+'</span>':'—')+'</td>'+
+          '<td style="text-align:left">'+(lead?esc(pName(lead.personId))+' <span class="num" style="color:var(--ink-muted)">'+f0(lead.pf)+'</span>':'—')+'</td>'+
           '</tr>';
       }).join('')+'</tbody>';
 
@@ -1524,8 +1538,8 @@
       {key:'l', label:'L', num:true, val:function(r){return r.l;}, cell:function(r){return r.l;}},
       {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?r.w/g:0;},
         cell:function(r){var g=r.w+r.l+r.t;return g?(100*r.w/g).toFixed(1)+'%':'—';}},
-      {key:'pf', label:'PF', num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
-      {key:'avg', label:'PF/G', num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
+      {key:'pf', label:pfShort(), num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
+      {key:'avg', label:pfPer(), num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
         cell:function(r){return r.gp?f2(r.pf/r.gp):'—';}}
     ], frArr, {sortKey:'titles', rownum:true});
   }
@@ -1556,9 +1570,9 @@
         {key:'l', label:'L', num:true, val:function(r){return r.l;}, cell:function(r){return r.l;}},
         {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?r.w/g:0;},
           cell:function(r){var g=r.w+r.l+r.t;return g?(100*r.w/g).toFixed(1)+'%':'—';}},
-        {key:'pf', label:'PF', num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
-        {key:'pa', label:'PA', num:true, val:function(r){return r.pa;}, cell:function(r){return r.gp?f0(r.pa):'—';}},
-        {key:'avg', label:'PF/G', num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
+        {key:'pf', label:pfShort(), num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
+        {key:'pa', label:(isCats?'CL':'PA'), num:true, val:function(r){return r.pa;}, cell:function(r){return r.gp?f0(r.pa):'—';}},
+        {key:'avg', label:pfPer(), num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
           cell:function(r){return r.gp?f2(r.pf/r.gp):'—';}},
         {key:'titles', label:'Titles', num:true, val:function(r){return r.titles;}, cell:function(r){return r.titles?('🏆 '+r.titles):'—';}}
       ], rows, {sortKey:'w', rownum:true});
@@ -1568,19 +1582,24 @@
       var s = seasons.filter(function(x){ return x.year===y; })[0];
       document.getElementById('standNote').textContent = s.manual
         ? y+' — hand-entered standings (no game scores).'
-        : s.played
-          ? y+' regular season — '+s.platform+', '+s.teams+' teams, '+s.regWeeks+' weeks. Click a column to sort.'
-          : y+' hasn’t started.';
+        : seasonScoreless(s)
+          ? y+' — roto season. Final category standings; no weekly matchups.'
+          : s.played
+            ? y+' regular season — '+s.platform+', '+s.teams+' teams, '+s.regWeeks+' weeks. Click a column to sort.'
+            : y+' hasn’t started.';
       var showOpt = s.hasOptimal && s.played;
       document.getElementById('optNote').textContent = showOpt
         ? 'Optimal is the best possible lineup score; Bench is the gap to it (Sleeper only).' : '';
       var cols = [
         {key:'team', label:'Team', align:'left', val:function(e){return e.team;},
           cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(pName(e.personId))+'</span></div>';}},
-        {key:'rec', label:'Rec', num:true, val:function(e){return s.played ? (e.w*100000 + (e.pf||0)) : 0;},
-          cell:function(e){return s.played ? e.w+'–'+e.l+(e.t?'–'+e.t:'') : '—';}},
-        {key:'pf', label:'PF', num:true, val:function(e){return e.pf;}, cell:function(e){return e.pf==null?'—':f2(e.pf);}},
-        {key:'pa', label:'PA', num:true, val:function(e){return e.pa;}, cell:function(e){return e.pa==null?'—':f2(e.pa);}}
+        {key:'rec', label:'Rec', num:true,
+          val:function(e){return seasonScoreless(s) ? -(e.finalRank||99) : (s.played ? (e.w*100000 + (e.pf||0)) : 0);},
+          cell:function(e){return (seasonScoreless(s) || !s.played) ? '—' : e.w+'–'+e.l+(e.t?'–'+e.t:'');}},
+        {key:'pf', label:pfShort(), num:true, val:function(e){return e.pf;},
+          cell:function(e){return (seasonScoreless(s)||e.pf==null)?'—':(isCats?f0(e.pf):f2(e.pf));}},
+        {key:'pa', label:(isCats?'CL':'PA'), num:true, val:function(e){return e.pa;},
+          cell:function(e){return (seasonScoreless(s)||e.pa==null)?'—':(isCats?f0(e.pa):f2(e.pa));}}
       ];
       if (showOpt){
         cols.push({key:'opt', label:'Optimal', num:true, val:function(e){return e.optimal||0;},

@@ -1,0 +1,202 @@
+{
+  "espnId" : 3714,
+  "espnYears" : [
+    2008,
+    2026
+  ],
+  "label" : "The Annual FBL",
+  "people" : [
+    {
+      "espn" : "{C2E726CA-E7DC-4E21-A528-76BC1F69CB2F}",
+      "id" : "benvenuti",
+      "mgr" : "LouieB8469",
+      "name" : "Louie Benvenuti"
+    },
+    {
+      "espn" : "{789BF6AF-010D-43A7-8E9E-15FBFD2E6ED0}",
+      "id" : "biness",
+      "mgr" : "abnd14",
+      "name" : "A Biness"
+    },
+    {
+      "espn" : "{2E52ACE1-72C7-46EA-8B05-2250C73FEC1A}",
+      "id" : "brown",
+      "mgr" : "BROWNIE03231976",
+      "name" : "Michael Brown"
+    },
+    {
+      "espn" : "{2EAF81A6-DB53-44BE-AAE1-E19A02275CFE}",
+      "id" : "campbell",
+      "mgr" : "slamson10",
+      "name" : "Tim Campbell"
+    },
+    {
+      "espn" : "{ADBAAB67-6CFA-4E43-B901-D5E6BD25EC16}",
+      "id" : "campo",
+      "mgr" : "ardmorepizza",
+      "name" : "Guy Campo"
+    },
+    {
+      "espn" : "{4F756F6E-0454-491A-AF18-0A55498E909D}",
+      "id" : "cassidy",
+      "mgr" : "irish1333",
+      "name" : "Tim Cassidy"
+    },
+    {
+      "espn" : "{FE2E9C4A-9351-4E53-8ED3-82B9656545E4}",
+      "id" : "condo",
+      "mgr" : "jcdragon819",
+      "name" : "John Condo"
+    },
+    {
+      "espn" : "{1955488F-06AE-4C9F-9E31-52F5763A24EC}",
+      "id" : "conway",
+      "mgr" : "mconway10@hotmail.com",
+      "name" : "Michael Conway"
+    },
+    {
+      "espn" : "{EC460EAA-0CD5-489A-B2DD-A03EE3281C08}",
+      "id" : "cosgrove",
+      "mgr" : "Cozninja22",
+      "name" : "Steve Cosgrove"
+    },
+    {
+      "espn" : "{239106C4-49CF-41EF-BF1B-70129CF1E97A}",
+      "id" : "diienno",
+      "mgr" : "briandno11",
+      "name" : "Brian DiIenno"
+    },
+    {
+      "espn" : "{65B22561-B66D-45F1-9032-ABF5C140732B}",
+      "espnAlt" : [
+        "{E59EA390-14F1-472E-9EA3-9014F1372ED1}"
+      ],
+      "id" : "dinicola",
+      "mgr" : "heels3229",
+      "name" : "Rob DiNicola"
+    },
+    {
+      "espn" : "{5665F499-0FFE-48B4-95A0-6D790350D82B}",
+      "id" : "englese",
+      "mgr" : "DerekEnglese",
+      "name" : "Derek Englese"
+    },
+    {
+      "espn" : "{411A40B1-D0D6-44D2-9193-48249A653BDD}",
+      "id" : "giordano",
+      "mgr" : "espn08317717",
+      "name" : "Joseph Giordano"
+    },
+    {
+      "espn" : "{F3BD4829-5FB0-11D2-9B2E-00A0C9862BBB}",
+      "id" : "gratz",
+      "mgr" : "Sgratz",
+      "name" : "Dave GRATZ"
+    },
+    {
+      "espn" : "{29C9C82B-0CF5-4DBE-846A-3DE14C425CD5}",
+      "id" : "graziano",
+      "mgr" : "sjg5513",
+      "name" : "Stephen Graziano"
+    },
+    {
+      "espn" : "{EC156C40-669D-4E67-BE97-B379ADBC1823}",
+      "id" : "hickman",
+      "mgr" : "hickman4444",
+      "name" : "Pat Hickman"
+    },
+    {
+      "espn" : "{DA6A84ED-43C4-49A2-B0D5-6BE5CC9DA26D}",
+      "id" : "hood",
+      "mgr" : "mhood21",
+      "name" : "Matt Hood"
+    },
+    {
+      "espn" : "{358C4167-B023-4F6E-BC58-B12E132DC0A9}",
+      "id" : "kerrigan",
+      "mgr" : "MKATZ2269",
+      "name" : "Linda Kerrigan"
+    },
+    {
+      "espn" : "{47D80CD6-EEC3-45B7-BC8C-46DC0886A203}",
+      "id" : "mcgarrity",
+      "mgr" : "qb101515",
+      "name" : "Jim McGarrity"
+    },
+    {
+      "espn" : "{570A8534-7628-4490-9E1F-1259B957E52F}",
+      "id" : "mclaughlin",
+      "mgr" : "buttsoda",
+      "name" : "Mike McLaughlin"
+    },
+    {
+      "espn" : "{302CFFCA-94FB-48D0-9BE7-77B362D2303C}",
+      "id" : "melito",
+      "mgr" : "mmelito22",
+      "name" : "Michael Melito"
+    },
+    {
+      "espn" : "{7BCB78AC-3620-4CEF-8B78-AC3620CCEF65}",
+      "id" : "morrissey",
+      "mgr" : "RobGazinya",
+      "name" : "Kevin Morrissey"
+    },
+    {
+      "espn" : "{161ACF70-485A-490B-8333-61DD7DB7CFAC}",
+      "id" : "murray",
+      "mgr" : "irish22hockey",
+      "name" : "Ryan Murray"
+    },
+    {
+      "espn" : "{5348C33F-1521-46E8-8C81-6D35A4286BD7}",
+      "id" : "nelson",
+      "mgr" : "1MVP1L23",
+      "name" : "Brendan Nelson"
+    },
+    {
+      "espn" : "{ADD6A8E2-9261-4912-982A-D94F3D470047}",
+      "id" : "pashko",
+      "mgr" : "patriots122436",
+      "name" : "Carl Pashko"
+    },
+    {
+      "espn" : "{D7D1D8CB-D28A-433C-91D8-CBD28AF33CE9}",
+      "id" : "potts",
+      "mgr" : "Potts1689",
+      "name" : "Matt Potts"
+    },
+    {
+      "espn" : "{248E5D4E-6341-41CD-B648-7C8EFEC43C70}",
+      "id" : "quigley",
+      "mgr" : "jquigs276",
+      "name" : "Joe Quigley"
+    },
+    {
+      "espn" : "{EC9D4D86-5554-4BF6-90B5-DED0722C0B39}",
+      "id" : "rorke",
+      "mgr" : "chaz0213",
+      "name" : "Charles Rorke"
+    },
+    {
+      "espn" : "{DB4588F5-DF12-4B86-9459-108857BD0B4B}",
+      "id" : "scelsa",
+      "mgr" : "ThePoPo88",
+      "name" : "Michael Scelsa"
+    }
+  ],
+  "playerWeeksFile" : null,
+  "prestige" : {
+    "championship" : 10,
+    "divisionTitle" : 0,
+    "lastPlace" : 0,
+    "playoffBerth" : 0,
+    "regularSeasonTitle" : 4,
+    "runnerUp" : 3,
+    "thirdPlace" : 0
+  },
+  "sleeper" : {},
+  "sleeperPlayerWeeksLeague" : null,
+  "slug" : "fbl",
+  "sport" : "mlb",
+  "type" : "redraft"
+}

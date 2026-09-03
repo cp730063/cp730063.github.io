@@ -15,6 +15,7 @@ sub r2 { my ($n)=@_; defined $n ? 0+sprintf("%.2f",$n) : 0 }
 
 my $SLUG = $ARGV[0] or die "usage: build_bundle2.pl <league-slug>\n";
 my $CFG  = jload("$ROOT/scripts/leagues/$SLUG.json") or die "no config: scripts/leagues/$SLUG.json\n";
+my $SPORT = $CFG->{sport} || 'nfl';                 # 'nfl' (points) | 'mlb' (category / roto)
 my $ESPN   = "$ROOT/data/raw/espn/$CFG->{espnId}/history";
 my @ESPN_Y = ($CFG->{espnYears}[0] .. $CFG->{espnYears}[1]);
 my $PW_FILE = $CFG->{playerWeeksFile};              # ESPN player-week pull, or undef
@@ -107,7 +108,16 @@ for my $y (@ESPN_Y) {
     my $tier = $g->{playoffTierType} || 'NONE';
     my $h = $g->{home} || {}; my $a = $g->{away} || {};
     next unless defined $h->{teamId} && defined $a->{teamId};
-    my $hp = r2($h->{totalPoints}); my $ap = r2($a->{totalPoints});
+    # nfl: totalPoints is the score. mlb (H2H categories): the weekly "score" is
+    # categories won, in cumulativeScore.wins (ESPN stopped mirroring it to
+    # totalPoints in 2019).
+    my ($hp, $ap);
+    if ($SPORT eq 'mlb') {
+      $hp = r2( ($h->{cumulativeScore}||{})->{wins} // $h->{totalPoints} );
+      $ap = r2( ($a->{cumulativeScore}||{})->{wins} // $a->{totalPoints} );
+    } else {
+      $hp = r2($h->{totalPoints}); $ap = r2($a->{totalPoints});
+    }
     my $type = $tier eq 'NONE' ? 'reg'
              : $tier eq 'WINNERS_BRACKET' ? 'playoff'
              : 'consolation';
@@ -116,9 +126,15 @@ for my $y (@ESPN_Y) {
     push @games, { week=>$wk, type=>$type, a=>$hpid, ap=>$hp, b=>$apid, bp=>$ap };
   }
 
+  # scoring model: nfl = points; mlb = category wins per matchup, or roto (no matchups)
+  my $isRoto = uc( ($st->{scoringSettings} || {})->{scoringType} // '' ) eq 'ROTO';
+
   # a season ESPN has scheduled but not yet played: fixtures exist, every score is 0.
-  # Keep its teams + draft, but emit no games / records / standings.
   my $espnPlayed = grep { $_->{type} eq 'reg' && (($_->{ap}||0) > 0 || ($_->{bp}||0) > 0) } @games;
+  # a roto season has no weekly games but does have real final standings.
+  my $standingsOnly = !$espnPlayed
+    && grep { ($_->{rankCalculatedFinal} || $_->{rankFinal}) } @{ $d->{teams} || [] };
+  my $counts = $espnPlayed || $standingsOnly;   # season is real (played or roto), vs. not-yet-played
 
   # entries: per person, reg-season record computed from games + final placement from teams[]
   my %entry;
@@ -126,7 +142,7 @@ for my $y (@ESPN_Y) {
     my $pid = $tid2pid{$t->{id}};
     my $nm = (($t->{location}//'').' '.($t->{nickname}//'')); $nm =~ s/^\s+|\s+$//g;
     $nm ||= $t->{name} // $t->{abbrev} // "Team $t->{id}";
-    my $fr = $espnPlayed ? ($t->{rankCalculatedFinal} || $t->{rankFinal} || 0) : 0;
+    my $fr = $counts ? ($t->{rankCalculatedFinal} || $t->{rankFinal} || 0) : 0;
     my $por = $fr==1 ? 'champion' : $fr==2 ? 'runner_up' : $fr==3 ? 'third'
             : ($fr==4 && $poTeams>=4) ? 'r1_loss' : undef;
     $entry{$pid} = {
@@ -134,7 +150,7 @@ for my $y (@ESPN_Y) {
       w=>0,l=>0,t=>0, pf=>0,pa=>0,
       seed=>($espnPlayed ? ($t->{playoffSeed}||undef) : undef), finalRank=>$fr||undef,
       poResult=>$por,
-      madePlayoffs=>($fr && $fr<=$poTeams ? 1 : 0),
+      madePlayoffs=>($fr && $poTeams && $fr<=$poTeams ? 1 : 0),
     };
   }
   if ($espnPlayed) {
@@ -151,7 +167,9 @@ for my $y (@ESPN_Y) {
 
   # regular-season champ (best record, PF tiebreak) + per-division champ
   my @byRec = sort { $b->{w} <=> $a->{w} || ($b->{pf}||0) <=> ($a->{pf}||0) } values %entry;
-  my $regChamp = ($espnPlayed && @byRec) ? $byRec[0]{personId} : undef;
+  my $regChamp = $standingsOnly
+    ? ( (map { $_->{personId} } grep { ($_->{finalRank}||0)==1 } values %entry)[0] )
+    : ( ($espnPlayed && @byRec) ? $byRec[0]{personId} : undef );
   if ($hasDivs && $espnPlayed) {
     my %dbest;
     for my $e (@byRec) { my $d = $e->{division} // next; $dbest{$d} ||= $e; }
@@ -167,8 +185,8 @@ for my $y (@ESPN_Y) {
   { my @pg = grep { $_->{type} eq 'playoff' } @games;
     if (@pg) { my $mx = 0; for (@pg) { $mx = $_->{week} if $_->{week} > $mx } $_->{final} = 1 for grep { $_->{week}==$mx } @pg; } }
 
-  # register people seasons/titles (played seasons only)
-  if ($espnPlayed) {
+  # register people seasons/titles (real seasons only — played or roto, not not-yet-played)
+  if ($counts) {
     for my $pid (keys %entry) {
       my $p = $P{$pid}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y<$p->{firstSeason};
     }
@@ -178,7 +196,8 @@ for my $y (@ESPN_Y) {
   push @seasons, {
     year=>$y, platform=>'espn', teams=>scalar(keys %entry),
     regWeeks=>$regWeeks, playoffTeams=>$poTeams, hasDivisions=>($hasDivs?\1:\0),
-    played=>($espnPlayed ? 1 : 0), hasOptimal=>0,
+    played=>($counts ? 1 : 0), hasOptimal=>0,
+    scoring=>($SPORT eq 'nfl' ? 'points' : $isRoto ? 'roto' : 'cats'),
     entries=>[ map { $entry{$_} } sort { $entry{$a}{personId} cmp $entry{$b}{personId} } keys %entry ],
     games=>($espnPlayed ? \@games : []),
     champion=>$champ, runnerUp=>$ru, third=>$th, regSeasonChamp=>$regChamp,
@@ -506,7 +525,9 @@ if ($sle2025) {
   my $ros = jload("$sle2025/rosters.json") || [];
   for my $r (@$ros) { $need{$_}=1 for @{$r->{players}||[]} }
 }
-$need{$_}=1 for qw(ARI ATL BAL BUF CAR CHI CIN CLE DAL DEN DET GB HOU IND JAX KC LAC LAR LV MIA MIN NE NO NYG NYJ PHI PIT SEA SF TB TEN WAS);
+$need{$_}=1 for ($SPORT eq 'nfl'
+  ? qw(ARI ATL BAL BUF CAR CHI CIN CLE DAL DEN DET GB HOU IND JAX KC LAC LAR LV MIA MIN NE NO NYG NYJ PHI PIT SEA SF TB TEN WAS)
+  : ());
 my $catalog = -e "$ROOT/data/raw/sleeper_players_nfl.json" ? slurp("$ROOT/data/raw/sleeper_players_nfl.json") : '';
 my %pmap;
 for my $id (keys %need) {
@@ -1090,6 +1111,9 @@ unless (defined $generated && $generated =~ /^\d{4}-\d{2}-\d{2}$/) {
 my $out = {
   league => {
     slug => $CFG->{slug}, name => $CFG->{label}, type => $CFG->{type},
+    sport => $SPORT,
+    scoring => ($SPORT eq 'nfl' ? 'points'
+                : ((grep { ($_->{scoring}//'') eq 'cats' } @seasons) ? 'cats' : 'roto')),
     primary => ($CFG->{primary} ? \1 : \0),
     firstSeason => ($playedYears[0] // undef), lastSeason => ($playedYears[-1] // undef),
     hasPlayers => ($PW_FILE ? \1 : \0), hasTrades => ($SLE_PW ? \1 : \0),
