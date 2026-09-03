@@ -928,15 +928,16 @@ for my $y (@ESPN_Y) {
       my ($pname,$ppos,$key) = espn_player_meta($p->{playerId});
       my $pid = $t2p->{$p->{teamId}} || undef;
       my $rp  = $p->{roundPick} || 0;
-      # direction of this round within the segment
+      # board column: place the pick by its roundPick, accounting for snake direction
       my ($rp1tid) = map { $_->{teamId} } grep { $_->{round}==$p->{round} && ($_->{roundPick}||0)==1 } @picks;
       my $rev = (defined $rp1tid && $ncol && $rp1tid == $base[-1] && $base[0] != $base[-1]) ? 1 : 0;
       my $col = $rev ? ($ncol + 1 - $rp) : $rp;                 # 1-based board column
-      my $ownerTid = ($col >= 1 && $col <= $ncol) ? $base[$col-1] : undef;
-      my $via = ($ownerTid && $ownerTid != $p->{teamId} && !$p->{kept}) ? ($t2p->{$ownerTid} || undef) : undef;
+      # NOTE: ESPN's draftDetail records only who made each pick, never original pick
+      # ownership, so traded-pick ("via") attribution is impossible for ESPN drafts.
+      # (Inferring it from column drift produced false positives on draft-order quirks.)
       push @outPicks, {
         round=>($p->{round} - $s0 + 1)+0, roundPick=>$rp+0, overall=>$p->{overall}+0,
-        slot=>$col+0, personId=>$pid, viaPersonId=>$via,
+        slot=>$col+0, personId=>$pid, viaPersonId=>undef,
         keeper=>($p->{kept} ? \1 : \0),
         rookie=>($kind eq 'rookie' ? \1 : \0), rookieRound=>($kind eq 'rookie' ? ($p->{round}-$s0+1)+0 : undef),
         bid=>undef, player=>{ name=>$pname, pos=>$ppos, nfl=>undef }, playerKey=>$key,

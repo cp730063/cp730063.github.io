@@ -439,7 +439,8 @@
   .dcell .dp.plink{border-bottom:1px dotted var(--border-strong)}
   .dcell .dmeta{font-family:var(--mono);font-size:10px;color:var(--ink-faint);display:flex;gap:6px;align-items:center}
   .dcell .dpos{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:var(--ink-faint);border:1px solid var(--border);border-radius:3px;padding:0 3px}
-  .dcell .dvia{font-size:10px;color:var(--accent)}
+  .dcell .dvia{font-size:10px;color:var(--accent);font-weight:600}
+  .dcell.traded{box-shadow:inset 3px 0 0 var(--accent)}
   .dcell[data-pos="QB"]{background:rgba(214,69,90,.12)}
   .dcell[data-pos="RB"]{background:rgba(31,150,92,.14)}
   .dcell[data-pos="WR"]{background:rgba(51,120,214,.13)}
@@ -457,6 +458,9 @@
   .dcell.empty,.dcell.empty[data-pos]{background:repeating-linear-gradient(45deg,transparent,transparent 6px,var(--surface-2) 6px,var(--surface-2) 12px)}
   .draft-meta{display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:14px;font-size:12.5px;color:var(--ink-muted)}
   .draft-meta b{color:var(--ink);font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em;font-size:12px}
+  .draft-caveat{margin:-6px 0 16px;font-size:11.5px;color:var(--ink-faint);max-width:60ch}
+  .draft-legend{margin:-6px 0 16px;font-size:11.5px;color:var(--ink-faint);display:flex;align-items:center;gap:7px}
+  .draft-legend i{width:14px;height:14px;border-radius:3px;box-shadow:inset 3px 0 0 var(--accent);background:var(--surface-2);flex:none}
 
   @media (max-width:620px){
     .trade-body{grid-template-columns:1fr}
@@ -890,7 +894,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903183232","manifest":{"leagues":[{"hasDrafts":true,"lastSeason":2025,"slug":"dischnasty","primary":1,"hasTrades":true,"type":"dynasty","label":"The Eternal Dischnasty","seasons":11,"hasPlayers":true,"firstSeason":2015},{"seasons":22,"label":"C Diddy's Annual FFL","hasPlayers":true,"firstSeason":2003,"type":"redraft","lastSeason":2025,"slug":"cdiddy","primary":0,"hasTrades":false,"hasDrafts":true}]}}</script>
+<script id="fmdata" type="application/json">{"version":"20260903184417","manifest":{"leagues":[{"primary":1,"hasTrades":true,"hasDrafts":true,"hasPlayers":true,"slug":"dischnasty","seasons":11,"label":"The Eternal Dischnasty","firstSeason":2015,"type":"dynasty","lastSeason":2025},{"firstSeason":2003,"label":"C Diddy's Annual FFL","seasons":22,"slug":"cdiddy","lastSeason":2025,"type":"redraft","hasDrafts":true,"hasTrades":false,"primary":0,"hasPlayers":true}]}}</script>
 <script>
 "use strict";
 (function(){
@@ -2016,12 +2020,32 @@
 
       var slots = d.slots || [];
       var ncol = slots.length || d.teams || 0;
+      var slotPid = {};
+      slots.forEach(function(s){ slotPid[s.slot] = s.personId; });
       var byCell = {};
       (d.picks||[]).forEach(function(p){ if (p.slot) byCell[p.round + ':' + p.slot] = p; });
       var nKeep = (d.picks||[]).filter(function(p){ return p.keeper; }).length;
       var markKeepers = nKeep > 0 && nKeep < (d.picks||[]).length;   /* only flag keepers when the board is mixed */
 
-      var h = metaLine(d) +
+      /* Sleeper records who actually made each pick, so a pick in someone else's
+         slot column = a traded pick, tagged with who drafted it. ESPN keeps no
+         pick-ownership data, so its boards just show picks where they were made. */
+      var isSleeper = d.platform === 'sleeper';
+      function tradedTo(p, col){
+        if (!isSleeper || !p.personId) return null;
+        var owner = slotPid[col];
+        return (owner && p.personId !== owner) ? pnm(p.personId) : null;
+      }
+      var anyTraded = false;
+      (d.picks||[]).forEach(function(p){ if (p.slot && tradedTo(p, p.slot)) anyTraded = true; });
+
+      var note = '';
+      if (d.platform === 'espn' && (d.kind === 'keeper' || d.kind === 'rookie' || d.kind === 'startup'))
+        note = '<p class="draft-caveat">ESPN doesn’t retain pick-trade history — every pick is shown in the slot where it was made.</p>';
+      else if (anyTraded)
+        note = '<p class="draft-legend"><i></i> Pick that changed hands — “→ name” is who drafted it.</p>';
+
+      var h = metaLine(d) + note +
         '<div class="dboard-wrap"><div class="dboard" style="grid-template-columns:38px repeat('+ncol+',minmax(116px,1fr))">' +
         '<div class="dh corner"></div>';
       slots.forEach(function(s){ h += '<div class="dh" title="'+esc(pnm(s.personId))+'">'+esc(pnm(s.personId))+'</div>'; });
@@ -2030,9 +2054,10 @@
         for (var c = 1; c <= ncol; c++){
           var p = byCell[r + ':' + c];
           if (!p){ h += '<div class="dcell empty"></div>'; continue; }
-          var via = p.viaPersonId ? '<span class="dvia">via '+esc(pnm(p.viaPersonId))+'</span>' : '';
+          var tt  = tradedTo(p, c);
+          var via = tt ? '<span class="dvia" title="Traded away by '+esc(pnm(slotPid[c]))+'">→ '+esc(tt)+'</span>' : '';
           var kb  = (p.keeper && markKeepers) ? '<span class="dpos">K</span>' : '';
-          h += '<div class="dcell'+(p.keeper && markKeepers ?' keeper':'')+'" data-pos="'+esc(p.player.pos||'')+'">' + pcell(p) +
+          h += '<div class="dcell'+(p.keeper && markKeepers ?' keeper':'')+(tt?' traded':'')+'" data-pos="'+esc(p.player.pos||'')+'">' + pcell(p) +
                '<span class="dmeta">'+posTag(p.player.pos) +
                (p.player.nfl ? '<span>'+esc(p.player.nfl)+'</span>' : '') + kb + via + '</span></div>';
         }
