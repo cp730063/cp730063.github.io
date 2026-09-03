@@ -462,6 +462,27 @@
   .draft-legend{margin:-6px 0 16px;font-size:11.5px;color:var(--ink-faint);display:flex;align-items:center;gap:7px}
   .draft-legend i{width:14px;height:14px;border-radius:3px;box-shadow:inset 3px 0 0 var(--accent);background:var(--surface-2);flex:none}
 
+  /* draft grades */
+  .dg{display:inline-flex;align-items:center;justify-content:center;min-width:32px;padding:2px 7px;border-radius:6px;
+    font-family:var(--disp);font-weight:700;font-size:14px;letter-spacing:.02em;line-height:1}
+  .dg-a{background:var(--accent-soft);color:var(--accent)}
+  .dg-b{background:var(--gold-soft);color:var(--gold)}
+  .dg-c{background:var(--inset);color:var(--ink-muted)}
+  .dg-d{background:rgba(176,64,30,.16);color:var(--loss)}
+  .dg-tbd{color:var(--ink-faint);font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.08em}
+  .dg-na{color:var(--ink-faint)}
+  .dg-delta{font-family:var(--mono);font-size:10.5px}
+  .dg-delta.up{color:var(--win)} .dg-delta.down{color:var(--loss)}
+  tr.dg-row{cursor:pointer} tr.dg-row:hover td{background:var(--surface-2)}
+  tr.dg-row.on td{background:var(--accent-soft)}
+  .dg-detail{margin:14px 0 4px;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
+  .dg-detail h4{margin:0;padding:9px 13px;background:var(--surface-2);font-family:var(--disp);text-transform:uppercase;
+    letter-spacing:.05em;font-size:11.5px;color:var(--ink-muted);border-bottom:1px solid var(--border)}
+  .dg-method{margin-top:16px;font-size:12px;color:var(--ink-muted)}
+  .dg-method summary{cursor:pointer;color:var(--accent);font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em;font-size:11.5px}
+  .dg-method p{margin:8px 0;max-width:68ch;line-height:1.55}
+  .dg-note{font-size:11.5px;color:var(--ink-faint);margin:4px 0 14px;max-width:68ch}
+
   @media (max-width:620px){
     .trade-body{grid-template-columns:1fr}
     .side+.side{border-left:0;border-top:1px solid var(--border)}
@@ -738,6 +759,20 @@
     <p class="sec-note" id="draftNote"></p>
     <div class="rec-controls" id="draftPick" role="group" aria-label="Draft"></div>
     <div id="draftView"></div>
+    <section id="draftGradesSec" hidden style="margin-top:36px">
+      <div class="h-kicker">Report card</div>
+      <h2 class="sec">Draft Grades</h2>
+      <p class="sec-note" id="dgHead"></p>
+      <div class="dg-note" id="dgSubnote"></div>
+      <div class="tbl-wrap"><table id="dgTbl"></table></div>
+      <div id="dgDetail"></div>
+      <h3 class="sec" style="font-size:15px;margin-top:28px">Career draft résumé</h3>
+      <div class="tbl-wrap"><table id="dgResumeTbl"></table></div>
+      <details class="dg-method">
+        <summary>How these grades are calculated</summary>
+        <div id="dgMethodBody"></div>
+      </details>
+    </section>
     <section id="futureCapSec" hidden style="margin-top:38px">
       <div class="h-kicker">Dynasty</div>
       <h2 class="sec">Future Draft Capital</h2>
@@ -958,6 +993,7 @@
   /* per-league model, rebuilt on every league switch */
   var DATA, P, seasons, played, years, yFirst, yLast, latestPlayed;
   var openPlayerCard = null;   /* set by sec_players once its modal is wired */
+  var _dgShow = null;          /* set by sec_draftGrades; sec_drafts calls it on board change */
   function pName(id){ return P[id] ? P[id].name : id; }
   function pMgr(id){ return P[id] ? P[id].mgr : ''; }
   function deriveModel(){
@@ -1174,7 +1210,7 @@
     deriveModel();
     renderHeader();
     sec_overview(); sec_standings(); sec_records(); sec_legacy(); sec_h2h();
-    sec_names(); sec_players(); sec_drafts(); sec_trades(); sec_playoffs(); sec_tradecalc();
+    sec_names(); sec_players(); sec_drafts(); sec_draftGrades(); sec_trades(); sec_playoffs(); sec_tradecalc();
     applyTabAvailability();
   }
 
@@ -1963,6 +1999,7 @@
   }
 
   function sec_drafts(){
+    _dgShow = null;   /* cleared each render; sec_draftGrades re-arms it for this league */
     var drafts = (DATA.drafts || []).slice();
     if (!drafts.length) return;   /* tab hidden by applyTabAvailability */
 
@@ -2004,6 +2041,7 @@
     function render(i){
       var d = drafts[i];
       var host = document.getElementById('draftView');
+      if (_dgShow) _dgShow(d);
 
       if (d.format === 'auction'){
         host.innerHTML = metaLine(d) + '<div class="tbl-wrap"><table id="dAucTbl"></table></div>';
@@ -2092,6 +2130,321 @@
           cell:function(r){ return '<b>'+esc(pnm(r.ownerPersonId))+'</b>'; } }
       ], fp.slice(), { sortKey:'season', sortDir:1 });
     }
+  }
+
+  function sec_draftGrades(){
+    var sec = document.getElementById('draftGradesSec');
+    if (!sec) return;
+    var lg = DATA.league || {};
+    var GRADEABLE = { rookie:1, redraft:1, startup:1 };
+    var drafts = (DATA.drafts || []);
+    var gradeable = drafts.map(function(d, i){ return { d:d, i:i }; })
+                          .filter(function(x){ return GRADEABLE[x.d.kind]; });
+    if (!gradeable.length || !(DATA.playerSeasons || []).length){ sec.hidden = true; return; }
+    sec.hidden = false;
+
+    var isDyn = lg.type === 'dynasty';
+    var lastYr = latestPlayed ? latestPlayed.year : null;
+
+    /* points a drafted player actually scored — total per (key, year), summed across stints */
+    var ptsKY = {};
+    (DATA.playerSeasons || []).forEach(function(r){
+      if (!r.key) return;
+      ptsKY[r.key + '|' + r.year] = (ptsKY[r.key + '|' + r.year] || 0) + (r.pts || 0);
+    });
+    function seasonPts(key, yr){ return ptsKY[key + '|' + yr] || 0; }
+
+    /* per-year scoring baseline (mean of the top half of that year's drafted-player points)
+       → lets seasons from different eras be compared on one scale */
+    var yrBase = {};
+    (function(){
+      var byYr = {};
+      gradeable.forEach(function(x){
+        (x.d.picks || []).forEach(function(p){
+          if (!p.playerKey) return;
+          (byYr[x.d.year] = byYr[x.d.year] || []).push(seasonPts(p.playerKey, x.d.year));
+        });
+      });
+      Object.keys(byYr).forEach(function(y){
+        var a = byYr[y].slice().sort(function(m, n){ return n - m; });
+        var top = a.slice(0, Math.max(1, Math.round(a.length / 2)));
+        var m = top.reduce(function(s, v){ return s + v; }, 0) / top.length;
+        yrBase[y] = m > 0 ? m : 1;
+      });
+    })();
+
+    function completedSeasons(dy){ return lastYr == null ? 0 : Math.max(0, lastYr - dy + 1); }
+
+    function prodOutcome(d, p){
+      if (!p.playerKey) return null;
+      if (d.kind !== 'rookie'){
+        if (lastYr != null && d.year > lastYr) return null;
+        return seasonPts(p.playerKey, d.year) / (yrBase[d.year] || 1);
+      }
+      if (completedSeasons(d.year) <= 0) return null;              // TBD
+      var sum = 0, n = 0;
+      for (var y = d.year; y <= lastYr; y++){ sum += seasonPts(p.playerKey, y) / (yrBase[y] || 1); n++; }
+      return n ? sum / n : null;
+    }
+
+    var valByKey = null;   // set once the trade-values sidecar resolves
+    function valOutcome(d, p){
+      if (!isDyn || d.kind !== 'rookie' || !valByKey || !p.playerKey) return null;
+      if (completedSeasons(d.year) > 1) return null;               // too old for a fair value read
+      return valByKey[p.playerKey] || 0;
+    }
+
+    function buildCurve(metricFn, restrict){
+      var acc = {};
+      gradeable.forEach(function(x){
+        if (restrict && !restrict(x.d)) return;
+        (x.d.picks || []).forEach(function(p){
+          var o = metricFn(x.d, p);
+          if (o == null) return;
+          (acc[p.round] = acc[p.round] || []).push(o);
+        });
+      });
+      var raw = {};
+      Object.keys(acc).forEach(function(r){
+        raw[r] = acc[r].reduce(function(s, v){ return s + v; }, 0) / acc[r].length;
+      });
+      var out = {};
+      Object.keys(raw).forEach(function(rk){
+        var r = +rk, sum = raw[r], w = 1;
+        if (raw[r - 1] != null){ sum += 0.25 * raw[r - 1]; w += 0.25; }
+        if (raw[r + 1] != null){ sum += 0.25 * raw[r + 1]; w += 0.25; }
+        out[r] = sum / w;
+      });
+      return out;
+    }
+    var expProd = buildCurve(prodOutcome, null);
+
+    function scoreDraft(d, metricFn, exp){
+      var by = {};
+      (d.picks || []).forEach(function(p){
+        if (!p.personId) return;
+        var o = metricFn(d, p), e = exp[p.round];
+        if (o == null || e == null) return;
+        var surplus = o - e, wt = 1 / Math.sqrt(p.round);
+        var g = by[p.personId] = by[p.personId] || { sw:0, w:0, picks:[] };
+        g.sw += surplus * wt; g.w += wt;
+        g.picks.push({ p:p, o:o, e:e, surplus:surplus });
+      });
+      Object.keys(by).forEach(function(pid){ by[pid].score = by[pid].w ? by[pid].sw / by[pid].w : 0; });
+      return by;
+    }
+
+    function grader(scores){
+      var m = scores.reduce(function(s, v){ return s + v; }, 0) / (scores.length || 1);
+      var sd = Math.sqrt(scores.reduce(function(s, v){ return s + (v - m) * (v - m); }, 0) / (scores.length || 1)) || 1;
+      var CUT = [[1.30,'A+'],[0.90,'A'],[0.55,'A-'],[0.20,'B+'],[-0.20,'B'],[-0.55,'B-'],
+                 [-0.90,'C+'],[-1.30,'C'],[-1.75,'C-'],[-2.20,'D']];
+      return function(score){
+        var z = (score - m) / sd;
+        for (var i = 0; i < CUT.length; i++) if (z >= CUT[i][0]) return CUT[i][1];
+        return 'F';
+      };
+    }
+    var GPA = { 'A+':4.3,'A':4.0,'A-':3.7,'B+':3.3,'B':3.0,'B-':2.7,'C+':2.3,'C':2.0,'C-':1.7,'D':1.0,'F':0 };
+    function gcls(l){ return 'dg dg-' + (l[0] === 'A' ? 'a' : l[0] === 'B' ? 'b' : l[0] === 'C' ? 'c' : 'd'); }
+    function pill(l){ return '<span class="' + gcls(l) + '">' + l + '</span>'; }
+
+    var M;
+    function build(){
+      var prodScores = gradeable.map(function(x){ return { i:x.i, by:scoreDraft(x.d, prodOutcome, expProd) }; });
+      var allProd = [];
+      prodScores.forEach(function(s){ Object.keys(s.by).forEach(function(pid){ allProd.push(s.by[pid].score); }); });
+
+      var valScores = null, gradeVal = null;
+      if (isDyn && valByKey){
+        var expVal = buildCurve(valOutcome, function(d){ return completedSeasons(d.year) <= 1; });
+        valScores = gradeable.map(function(x){ return { i:x.i, by:scoreDraft(x.d, valOutcome, expVal) }; });
+        var allVal = [];
+        valScores.forEach(function(s){ Object.keys(s.by).forEach(function(pid){ allVal.push(s.by[pid].score); }); });
+        gradeVal = allVal.length ? grader(allVal) : null;
+      }
+      M = { prodScores:prodScores, gradeProd:grader(allProd), valScores:valScores, gradeVal:gradeVal };
+    }
+    build();
+
+    function pickLabel(p){ return esc(p.player.name) + ' <span class="dg-sub">' + p.round + '.' + (p.roundPick || '–') + '</span>'; }
+    function extreme(picks, hi){
+      if (!picks || !picks.length) return '—';
+      var b = picks.slice().sort(function(a, c){ return hi ? c.surplus - a.surplus : a.surplus - c.surplus; })[0];
+      return pickLabel(b.p);
+    }
+
+    function showDetail(d, row){
+      var detail = document.getElementById('dgDetail');
+      if (!row){ detail.innerHTML = ''; return; }
+      var useVal = !row.prod && !!row.val;
+      var isRookie = d.kind === 'rookie';
+      var base = yrBase[d.year] || 1, lastBase = yrBase[lastYr] || 1;
+      var picks = row.picks.slice().sort(function(a, c){ return a.p.round - c.p.round || (a.p.roundPick || 0) - (c.p.roundPick || 0); });
+      var body = picks.map(function(x){
+        var a, e, diff;
+        if (useVal){ a = Math.round(x.o); e = Math.round(x.e); diff = x.o - x.e; }
+        else { var k = isRookie ? lastBase : base; a = Math.round(x.o * k); e = Math.round(x.e * k); diff = (x.o - x.e) * k; }
+        return '<tr><td style="text-align:left">' + x.p.round + '.' + (x.p.roundPick || '–') + '</td>' +
+          '<td style="text-align:left">' + esc(x.p.player.name) +
+          (x.p.player.pos ? ' <span class="dg-sub">' + esc(x.p.player.pos) + '</span>' : '') + '</td>' +
+          '<td>' + a + '</td><td class="dg-sub">' + e + '</td>' +
+          '<td class="dg-delta ' + (diff >= 0 ? 'up' : 'down') + '">' + (diff >= 0 ? '+' : '') + Math.round(diff) + '</td></tr>';
+      }).join('');
+      detail.innerHTML = '<div class="dg-detail"><h4>' + esc(pName(row.pid)) + ' — ' + d.year + ' pick by pick ' +
+        '<span class="dg-sub">(' + (useVal ? 'current trade value' : isRookie ? 'points per season since drafted' : 'season points') +
+        ' vs. slot average)</span></h4><div class="tbl-wrap"><table><thead><tr>' +
+        '<th style="text-align:left">Pick</th><th style="text-align:left">Player</th><th>Actual</th><th>Slot avg</th><th>+/–</th>' +
+        '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
+    }
+
+    _dgShow = function(d){
+      var host = document.getElementById('dgTbl');
+      var head = document.getElementById('dgHead');
+      document.getElementById('dgDetail').innerHTML = '';
+      var gi = gradeable.filter(function(x){ return x.d === d; })[0];
+      if (!gi){
+        host.innerHTML = '';
+        head.textContent = (d ? d.year + ' ' + (d.kind || '') + ' board' : 'This board') +
+          ' isn’t graded — grades cover rookie, startup and redraft drafts.';
+        return;
+      }
+      head.innerHTML = 'Grades for the <b>' + d.year + '</b> ' +
+        (d.kind === 'rookie' ? 'rookie draft' : d.kind === 'startup' ? 'startup draft' : 'draft') +
+        '. Each pick is measured against what that round’s slot has historically returned; earlier picks weigh more.';
+
+      var prodBy = (M.prodScores.filter(function(s){ return s.i === gi.i; })[0] || {}).by || {};
+      var valBy  = M.valScores ? ((M.valScores.filter(function(s){ return s.i === gi.i; })[0] || {}).by || {}) : {};
+      var freshVal = isDyn && d.kind === 'rookie' && completedSeasons(d.year) <= 1 && !!valByKey && !!M.gradeVal;
+
+      var rows = (d.slots || []).map(function(s){ return s.personId; })
+        .filter(function(pid, k, a){ return pid && a.indexOf(pid) === k; })
+        .map(function(pid){
+          var pb = prodBy[pid], vb = valBy[pid];
+          return { pid:pid,
+            prod: pb ? M.gradeProd(pb.score) : null,
+            val:  (freshVal && vb) ? M.gradeVal(vb.score) : null,
+            best: pb ? extreme(pb.picks, true) : (vb ? extreme(vb.picks, true) : '—'),
+            reach: pb ? extreme(pb.picks, false) : (vb ? extreme(vb.picks, false) : '—'),
+            picks: pb ? pb.picks : (vb ? vb.picks : []) };
+        });
+
+      var cols = [{ key:'mgr', label:'Manager', align:'left', val:function(r){ return pName(r.pid); },
+        cell:function(r){ return '<span class="mn2" data-pid="' + esc(r.pid) + '">' + esc(pName(r.pid)) + '</span>'; } }];
+      if (isDyn && d.kind === 'rookie'){
+        cols.push({ key:'val', label:'Draft', val:function(r){ return r.val ? GPA[r.val] : -1; },
+          cell:function(r){ return r.val ? pill(r.val) : '<span class="dg-na">—</span>'; } });
+        cols.push({ key:'prod', label:'Through ’' + (lastYr ? String(lastYr).slice(2) : '—'),
+          val:function(r){ return r.prod ? GPA[r.prod] : -1; },
+          cell:function(r){ return r.prod ? pill(r.prod) : '<span class="dg-tbd">TBD</span>'; } });
+      } else {
+        cols.push({ key:'prod', label:'Grade', val:function(r){ return r.prod ? GPA[r.prod] : -1; },
+          cell:function(r){ return r.prod ? pill(r.prod) : '<span class="dg-tbd">TBD</span>'; } });
+      }
+      cols.push({ key:'best', label:'Best pick', align:'left', val:function(r){ return r.best; }, cell:function(r){ return r.best; } });
+      cols.push({ key:'reach', label:'Biggest reach', align:'left', val:function(r){ return r.reach; }, cell:function(r){ return r.reach; } });
+
+      var startCol = (isDyn && d.kind === 'rookie' && completedSeasons(d.year) > 0) ? 'prod'
+                   : (isDyn && d.kind === 'rookie') ? 'val' : 'prod';
+      sortableTable(host, cols, rows, { sortKey:startCol, sortDir:-1 });
+
+      host._rows = rows; host._d = d;
+      if (!host._wired){
+        host._wired = 1;
+        host.addEventListener('click', function(e){
+          var tr = e.target.closest('tbody tr'); if (!tr) return;
+          var span = tr.querySelector('.mn2[data-pid]'); if (!span) return;
+          Array.prototype.forEach.call(host.querySelectorAll('tr'), function(t){ t.classList.remove('on'); });
+          tr.classList.add('on');
+          showDetail(host._d, (host._rows || []).filter(function(r){ return r.pid === span.getAttribute('data-pid'); })[0]);
+        });
+        host.style.cursor = 'default';
+      }
+      Array.prototype.forEach.call(host.querySelectorAll('tbody tr'), function(tr){ tr.classList.add('dg-row'); });
+    };
+
+    function renderResume(){
+      var perMgr = {};
+      M.prodScores.forEach(function(s){
+        var d = drafts[s.i];
+        Object.keys(s.by).forEach(function(pid){
+          var g = M.gradeProd(s.by[pid].score);
+          var e = perMgr[pid] = perMgr[pid] || { n:0, gpa:0, best:null, worst:null, vN:0, vGpa:0 };
+          e.n++; e.gpa += GPA[g];
+          if (!e.best  || GPA[g] > e.best.v)  e.best  = { v:GPA[g], g:g, y:d.year };
+          if (!e.worst || GPA[g] < e.worst.v) e.worst = { v:GPA[g], g:g, y:d.year };
+        });
+      });
+      if (M.valScores && M.gradeVal) M.valScores.forEach(function(s){
+        Object.keys(s.by).forEach(function(pid){
+          var e = perMgr[pid]; if (!e) return;
+          e.vN++; e.vGpa += GPA[M.gradeVal(s.by[pid].score)];
+        });
+      });
+      var rows = Object.keys(perMgr).map(function(pid){
+        var e = perMgr[pid];
+        return { pid:pid, n:e.n, gpa:e.n ? e.gpa / e.n : 0, vgpa:e.vN ? e.vGpa / e.vN : null, best:e.best, worst:e.worst };
+      });
+      var cols = [
+        { key:'mgr', label:'Manager', align:'left', val:function(r){ return pName(r.pid); },
+          cell:function(r){ return '<span class="mn2">' + esc(pName(r.pid)) + '</span>'; } },
+        { key:'n', label:'Drafts', num:true, val:function(r){ return r.n; }, cell:function(r){ return r.n; } },
+        { key:'gpa', label:(isDyn ? 'Production GPA' : 'Draft GPA'), num:true, val:function(r){ return r.gpa; },
+          cell:function(r){ return r.gpa.toFixed(2); } }
+      ];
+      if (isDyn && M.gradeVal) cols.push({ key:'vgpa', label:'Value GPA', num:true,
+        val:function(r){ return r.vgpa == null ? -1 : r.vgpa; },
+        cell:function(r){ return r.vgpa == null ? '—' : r.vgpa.toFixed(2); } });
+      cols.push({ key:'best', label:'Best draft', align:'left', val:function(r){ return r.best ? r.best.v : -1; },
+        cell:function(r){ return r.best ? (pill(r.best.g) + ' <span class="dg-sub">’' + String(r.best.y).slice(2) + '</span>') : '—'; } });
+      cols.push({ key:'worst', label:'Worst draft', align:'left', val:function(r){ return r.worst ? r.worst.v : 99; },
+        cell:function(r){ return r.worst ? (pill(r.worst.g) + ' <span class="dg-sub">’' + String(r.worst.y).slice(2) + '</span>') : '—'; } });
+      sortableTable(document.getElementById('dgResumeTbl'), cols, rows, { sortKey:'gpa', sortDir:-1 });
+    }
+
+    function renderMethod(){
+      document.getElementById('dgMethodBody').innerHTML =
+        '<p><b>The idea.</b> Every pick is compared with what that slot has actually returned across your league’s history — ' +
+        'draft an above-average player for your round and the pick scores positive, below-average and it scores negative. ' +
+        'Slot value is measured by <i>round</i>, and earlier rounds carry more weight in the grade.</p>' +
+        (isDyn
+          ? '<p><b>Two columns for rookie drafts.</b> <b>Draft</b> grades the class right away on current dynasty trade value ' +
+            '(FantasyCalc) versus what that round is worth — a projection that moves with the market. It only shows for classes ' +
+            'under two seasons old; after that, production is the verdict. <b>Through ’' + (lastYr ? String(lastYr).slice(2) : '—') +
+            '</b> grades the same picks on the fantasy points they’ve actually scored per season since being drafted, and updates ' +
+            'after every season (<b>TBD</b> until the first one is complete).</p>'
+          : '<p><b>Redraft.</b> A pick is graded on every fantasy point the drafted player scored that season — whether or not you ' +
+            'kept them. Points are put on a common scale first so different eras compare fairly.</p>') +
+        '<p><b>Letters are curved</b> against every graded manager-draft in league history. This is a results grade: it doesn’t model ' +
+        'positional need, bye weeks or best-player-available.</p>';
+    }
+
+    renderResume();
+    renderMethod();
+
+    var sub = document.getElementById('dgSubnote');
+    if (isDyn){
+      sub.textContent = 'Loading trade values for the Draft column…';
+      loadValues(lg.slug).then(function(V){
+        valByKey = {};
+        Object.keys(V.teams || {}).forEach(function(pid){
+          (V.teams[pid].players || []).forEach(function(pl){ if (pl.key) valByKey[pl.key] = pl.value; });
+        });
+        build();
+        sub.innerHTML = 'Draft column: current <b>FantasyCalc</b> dynasty values (' + esc(V.generated || '') +
+          '). Classes two or more seasons old show “—” there and are judged on production.';
+        renderResume(); renderMethod();
+        var pr = document.querySelector('#draftPick button[aria-pressed="true"]');
+        _dgShow(pr && drafts[+pr.dataset.i] ? drafts[+pr.dataset.i] : (gradeable[0] && gradeable[0].d));
+      }).catch(function(){
+        sub.textContent = 'Trade values aren’t available yet, so the “Draft” column is blank — run the values pull to enable it.';
+      });
+    } else {
+      sub.textContent = '';
+    }
+
+    var pr = document.querySelector('#draftPick button[aria-pressed="true"]');
+    _dgShow(pr && drafts[+pr.dataset.i] ? drafts[+pr.dataset.i] : (gradeable[0] && gradeable[0].d));
   }
 
   function sec_trades(){
