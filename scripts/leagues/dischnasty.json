@@ -1,0 +1,28 @@
+{
+  "slug": "dischnasty",
+  "label": "The Eternal Dischnasty",
+  "type": "dynasty",
+  "primary": true,
+  "espnId": 472853,
+  "espnYears": [2015, 2024],
+  "sleeper": { "2025": "1179881509322113024", "2026": "1343022509649330176" },
+  "sleeperPlayerWeeksLeague": "1179881509322113024",
+  "playerWeeksFile": "data/espn_player_weeks_472853.json",
+  "overlay": null,
+  "prestige": { "championship": 10, "regularSeasonTitle": 4, "runnerUp": 3, "divisionTitle": 2, "thirdPlace": 0, "lastPlace": 0, "playoffBerth": 0 },
+  "people": [
+    { "id": "blueballs",  "name": "Blue Balls",         "mgr": "plegradi830 / Peegebear",     "espn": "{583D8B24-6FFE-49FA-84A2-900190E26EC6}", "sleeperName": "peegebear" },
+    { "id": "peoples",    "name": "The People's Champ",  "mgr": "Bove640 / OlDirtyBove",       "espn": "{824FC1DE-1D87-487B-A3B0-D5DF33FC54B9}", "sleeperName": "oldirtybove" },
+    { "id": "dischdm",    "name": "Disch DM'd Me",       "mgr": "vinniemac89 / itsvincequinn", "espn": "{EC00FCEA-8E95-4BD6-8261-42A393D0B060}", "sleeperName": "itsvincequinn" },
+    { "id": "schwenk",    "name": "Schwenk Nation",      "mgr": "wideeye23 / DMSCHWENKE",      "espn": "{006911B1-262C-43C3-A666-AFC8E76BEF54}", "sleeperName": "dmschwenke" },
+    { "id": "cdiddy",     "name": "C Diddy",             "mgr": "patriots122436",              "espn": "{ADD6A8E2-9261-4912-982A-D94F3D470047}", "sleeperName": "patriots122436" },
+    { "id": "ronso",      "name": "Ronso Fangs",         "mgr": "ChimpDudley / chimpdudley",   "espn": "{41EAEEC1-750C-4EC8-AD7F-82DDD41C8BB5}", "sleeperName": "chimpdudley" },
+    { "id": "poutine",    "name": "Poutine Machine",     "mgr": "NittWitts11 / DelcoFutbol",   "espn": "{42BDBB61-2656-4968-BCE9-03441E6FC977}", "sleeperName": "delcofutbol" },
+    { "id": "goldengods", "name": "Golden Gods",         "mgr": "aws353 / bmt353",             "espn": "{2A78AB49-0368-45C6-8A94-FE5A0A08734C}", "sleeperName": "bmt353" },
+    { "id": "weightup",   "name": "Get Your Weight Up",  "mgr": "Lombardi240 / Lombardi2026",  "espn": "{0701E21C-DC62-493C-AD88-5591D6CECA31}", "sleeperName": "lombardi2026" },
+    { "id": "pitty",      "name": "Je Suis, C.P.",       "mgr": "pt618 / Pitty618",            "espn": "{BD5195A8-B14F-4106-811B-886325393F70}", "sleeperName": "pitty618" },
+    { "id": "tursage",    "name": "Tursi",               "mgr": "tursage (2015-17)",           "espn": "{D750A21D-101E-41CE-ABCD-C896AEBADE35}" },
+    { "id": "usual",      "name": "Usual Suspects",      "mgr": "UsualSuspects7011 / UsualSuspects1601", "espn": "{AD67B6FA-B18B-486F-A7B6-FAB18BF86F56}", "sleeperName": "usualsuspects1601" },
+    { "id": "leftovers",  "name": "The Leftovers",       "mgr": "mf5974 (2026-)",              "sleeperName": "mf5974" }
+  ]
+}

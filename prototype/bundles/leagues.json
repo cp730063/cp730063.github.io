@@ -1,0 +1,28 @@
+{
+   "leagues" : [
+      {
+         "firstSeason" : 2015,
+         "hasDrafts" : true,
+         "hasPlayers" : true,
+         "hasTrades" : true,
+         "label" : "The Eternal Dischnasty",
+         "lastSeason" : 2025,
+         "primary" : 1,
+         "seasons" : 11,
+         "slug" : "dischnasty",
+         "type" : "dynasty"
+      },
+      {
+         "firstSeason" : 2003,
+         "hasDrafts" : true,
+         "hasPlayers" : true,
+         "hasTrades" : false,
+         "label" : "C Diddy's Annual FFL",
+         "lastSeason" : 2025,
+         "primary" : 0,
+         "seasons" : 22,
+         "slug" : "cdiddy",
+         "type" : "redraft"
+      }
+   ]
+}

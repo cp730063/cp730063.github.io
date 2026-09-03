@@ -1,0 +1,111 @@
+{
+  "leagueId": "espn:110701",
+  "label": "C Diddy's Annual FFL",
+  "note": "Manual overlay for pre-API seasons. Standings W-L-T from the owner's xlsx 'Data' sheet; champions/runners-up from the PDF deck. NO per-game scores exist for these years, so all-play / rivalries / closest-games do not extend here. 2008: league did not play.",
+  "regWeeksByYear": { "2003": 12, "2004": 15, "2005": 13, "2006": 13, "2007": 13, "2009": 13, "2010": 13 },
+  "playoffTeamsByYear": { "2003": 2, "2004": 2, "2005": 4, "2006": 4, "2007": 4, "2009": 4, "2010": 4 },
+  "seasons": [
+    {
+      "year": 2003, "source": "manual", "champion": "Mike Lombardi", "runnerUp": "Carl Pashko",
+      "teams": [
+        { "owner": "Mike Lombardi", "w": 11, "l": 1, "t": 0 },
+        { "owner": "Carl Pashko",   "w": 7,  "l": 5, "t": 0 },
+        { "owner": "PJ Legradi",    "w": 7,  "l": 5, "t": 0 },
+        { "owner": "Dave Schwenke", "w": 4,  "l": 8, "t": 0 },
+        { "owner": "Pat Trembeth",  "w": 1,  "l": 11, "t": 0 }
+      ]
+    },
+    {
+      "year": 2004, "source": "manual", "champion": "Carl Pashko", "runnerUp": "PJ Legradi",
+      "teams": [
+        { "owner": "Carl Pashko",      "w": 11, "l": 2, "t": 1 },
+        { "owner": "PJ Legradi",       "w": 8,  "l": 6, "t": 0 },
+        { "owner": "Matt Hood",        "w": 8,  "l": 6, "t": 0 },
+        { "owner": "Dave Schwenke",    "w": 7,  "l": 6, "t": 1 },
+        { "owner": "Tim Vanderslice",  "w": 5,  "l": 9, "t": 0 },
+        { "owner": "Pat Trembeth",     "w": 5,  "l": 9, "t": 0 },
+        { "owner": "Matt Cook",        "w": 5,  "l": 9, "t": 0 },
+        { "owner": "Greg Fitzgerald",  "w": 5,  "l": 9, "t": 0 }
+      ]
+    },
+    {
+      "year": 2005, "source": "manual", "champion": "PJ Legradi", "runnerUp": null,
+      "teams": [
+        { "owner": "Mike Lombardi",     "w": 9, "l": 4,  "t": 0 },
+        { "owner": "Broomall Brawlers", "w": 8, "l": 4,  "t": 1 },
+        { "owner": "PJ Legradi",        "w": 8, "l": 5,  "t": 0 },
+        { "owner": "Mike Tursi",        "w": 8, "l": 5,  "t": 0 },
+        { "owner": "Dave Schwenke",     "w": 6, "l": 6,  "t": 1 },
+        { "owner": "Carl Pashko",       "w": 7, "l": 6,  "t": 0 },
+        { "owner": "Matt Cook",         "w": 6, "l": 7,  "t": 0 },
+        { "owner": "Pat Trembeth",      "w": 5, "l": 8,  "t": 0 },
+        { "owner": "Mike Scelsa",       "w": 4, "l": 9,  "t": 0 },
+        { "owner": "Greg Fitzgerald",   "w": 3, "l": 10, "t": 0 }
+      ]
+    },
+    {
+      "year": 2006, "source": "manual", "champion": "Mike Lombardi", "runnerUp": null,
+      "teams": [
+        { "owner": "Dave Schwenke", "w": 9, "l": 4,  "t": 0 },
+        { "owner": "Mike Lombardi", "w": 9, "l": 4,  "t": 0 },
+        { "owner": "PJ Legradi",    "w": 9, "l": 4,  "t": 0 },
+        { "owner": "Joe Bove",      "w": 8, "l": 5,  "t": 0 },
+        { "owner": "Carl Pashko",   "w": 7, "l": 6,  "t": 0 },
+        { "owner": "Mike Scelsa",   "w": 7, "l": 6,  "t": 0 },
+        { "owner": "Andrew Bucko",  "w": 7, "l": 6,  "t": 0 },
+        { "owner": "Mike Tursi",    "w": 5, "l": 8,  "t": 0 },
+        { "owner": "Pat Trembeth",  "w": 5, "l": 8,  "t": 0 },
+        { "owner": "Matt Cook",     "w": 0, "l": 13, "t": 0 }
+      ]
+    },
+    {
+      "year": 2007, "source": "manual", "champion": "Pat Trembeth", "runnerUp": null,
+      "teams": [
+        { "owner": "Carl Pashko",    "w": 11, "l": 2,  "t": 0 },
+        { "owner": "Pat Trembeth",   "w": 8,  "l": 5,  "t": 0 },
+        { "owner": "Dave Schwenke",  "w": 8,  "l": 5,  "t": 0 },
+        { "owner": "Matt Hood",      "w": 7,  "l": 6,  "t": 0 },
+        { "owner": "PJ Legradi",     "w": 7,  "l": 6,  "t": 0 },
+        { "owner": "Mike Scelsa",    "w": 6,  "l": 7,  "t": 0 },
+        { "owner": "Jim McGarrity",  "w": 6,  "l": 7,  "t": 0 },
+        { "owner": "Notre Dame",     "w": 5,  "l": 8,  "t": 0 },
+        { "owner": "Mike Lombardi",  "w": 4,  "l": 9,  "t": 0 },
+        { "owner": "Matt Cook",      "w": 3,  "l": 10, "t": 0 }
+      ]
+    },
+    {
+      "year": 2009, "source": "manual", "champion": "PJ Legradi", "runnerUp": null,
+      "teams": [
+        { "owner": "Carl Pashko",    "w": 11, "l": 2,  "t": 0 },
+        { "owner": "Mike Tursi",     "w": 9,  "l": 4,  "t": 0 },
+        { "owner": "Dave Gratz",     "w": 9,  "l": 4,  "t": 0 },
+        { "owner": "PJ Legradi",     "w": 8,  "l": 5,  "t": 0 },
+        { "owner": "Dave Schwenke",  "w": 8,  "l": 5,  "t": 0 },
+        { "owner": "Mike Sweeney",   "w": 7,  "l": 6,  "t": 0 },
+        { "owner": "Pat Trembeth",   "w": 6,  "l": 6,  "t": 1 },
+        { "owner": "Jim Duffy",      "w": 6,  "l": 6,  "t": 1 },
+        { "owner": "Charles Rorke",  "w": 4,  "l": 9,  "t": 0 },
+        { "owner": "Pat Hickman",    "w": 3,  "l": 10, "t": 0 },
+        { "owner": "Mike Lombardi",  "w": 3,  "l": 10, "t": 0 },
+        { "owner": "Mike Scelsa",    "w": 3,  "l": 10, "t": 0 }
+      ]
+    },
+    {
+      "year": 2010, "source": "manual", "champion": "PJ Legradi", "runnerUp": "Pat Trembeth", "divisions": ["East", "West"],
+      "teams": [
+        { "owner": "Ryan Lenahan",  "w": 9, "l": 4,  "t": 0, "division": "East" },
+        { "owner": "PJ Legradi",    "w": 8, "l": 5,  "t": 0, "division": "East" },
+        { "owner": "Dave Schwenke", "w": 7, "l": 6,  "t": 0, "division": "East" },
+        { "owner": "Carl Pashko",   "w": 6, "l": 7,  "t": 0, "division": "East" },
+        { "owner": "Jim Duffy",     "w": 6, "l": 7,  "t": 0, "division": "East" },
+        { "owner": "Pat Hickman",   "w": 2, "l": 11, "t": 0, "division": "East" },
+        { "owner": "Mike Sweeney",  "w": 9, "l": 4,  "t": 0, "division": "West" },
+        { "owner": "Pat Trembeth",  "w": 7, "l": 6,  "t": 0, "division": "West" },
+        { "owner": "Mike Tursi",    "w": 7, "l": 6,  "t": 0, "division": "West" },
+        { "owner": "Mike Scelsa",   "w": 6, "l": 7,  "t": 0, "division": "West" },
+        { "owner": "Mike Lombardi", "w": 6, "l": 7,  "t": 0, "division": "West" },
+        { "owner": "Charles Rorke", "w": 5, "l": 8,  "t": 0, "division": "West" }
+      ]
+    }
+  ]
+}
