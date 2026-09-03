@@ -195,6 +195,44 @@
   .tile .v.sm{font-size:20px}
   .tile .sub{font-size:12px;color:var(--ink-muted);margin-top:2px}
 
+  /* ---- overview: identity band ---- */
+  .ov-top{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;margin-bottom:30px}
+  .ov-champ{position:relative;overflow:hidden;border:1px solid var(--border);border-left:3px solid var(--gold);
+    border-radius:11px;background:var(--surface);box-shadow:var(--shadow);padding:16px 18px}
+  .ov-champ .k{font-family:var(--disp);text-transform:uppercase;letter-spacing:.13em;font-size:11px;font-weight:700;color:var(--gold)}
+  .ov-champ .name{font-family:var(--disp);font-weight:700;font-size:27px;line-height:1.08;margin:6px 0 3px;color:var(--ink);text-wrap:balance}
+  .ov-champ .meta{font-size:12.5px;color:var(--ink-muted)}
+  .ov-champ .meta b{color:var(--ink);font-weight:600}
+  .ov-champ .glyph{position:absolute;right:12px;top:8px;font-size:34px;line-height:1;opacity:.16;filter:grayscale(1)}
+  .ov-note{border:1px solid var(--border);border-radius:11px;background:var(--surface-2);padding:14px 16px;
+    font-size:12.5px;line-height:1.5;color:var(--ink-muted);align-self:start}
+  .ov-note b{color:var(--ink);font-weight:600}
+
+  /* ---- overview: title-history timeline ---- */
+  .tl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow);padding:14px 16px;--tl-name:150px}
+  .tl-grid{display:grid;gap:5px 0;min-width:520px}
+  .tl-row{display:grid;grid-template-columns:var(--tl-name) 1fr;align-items:center;gap:10px}
+  .tl-name{display:flex;flex-direction:column;gap:1px;min-width:0}
+  .tl-name .tn{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-name .mn{font-size:11px;color:var(--ink-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-track{position:relative;display:flex;height:22px;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+  .tl-cell{flex:1 1 0;position:relative;border-right:1px dotted var(--border)}
+  .tl-cell:last-child{border-right:0}
+  .tl-cell .dot{position:absolute;left:50%;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);
+    background:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  .tl-cell .dot.first{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .tl-axis{display:grid;grid-template-columns:var(--tl-name) 1fr;gap:10px;margin-top:6px}
+  .tl-axis .ticks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .tl-empty{color:var(--ink-faint);font-size:13px;padding:6px 2px}
+
+  /* ---- overview: franchise sparkline ---- */
+  .spark{display:block}
+  .spark .ln{fill:none;stroke:var(--accent);stroke-width:1.6}
+  .spark .dt{fill:var(--gold)}
+  .spark .base{stroke:var(--border-strong);stroke-width:1;stroke-dasharray:2 2}
+
+  @media (max-width:720px){ .ov-top{grid-template-columns:1fr} }
+
   .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
   table{width:100%;border-collapse:collapse;font-size:14px}
   thead th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12px;font-weight:600;color:var(--ink-muted);text-align:right;padding:11px 12px;border-bottom:1px solid var(--border-strong);white-space:nowrap;user-select:none}
@@ -599,15 +637,23 @@
   </header>
   <main class="wrap">
   <div class="panel" id="p-overview">
-    <div class="note">
-      <span>&#9432;</span>
-      <span><b id="noteHead"></b> <span id="noteBody"></span></span>
+    <div class="ov-top">
+      <div class="ov-champ" id="ovChamp"></div>
+      <div class="ov-note" id="ovNote"></div>
     </div>
     <section><div class="tiles" id="kpis"></div></section>
     <section>
       <div class="h-kicker">The mantel</div>
-      <h2 class="sec">Championships</h2>
-      <p class="sec-note">Every title since the league&rsquo;s first season.</p>
+      <h2 class="sec">Title history</h2>
+      <p class="sec-note" id="tlNote"></p>
+      <div class="tl-wrap">
+        <div class="tl-grid" id="titleTimeline"></div>
+        <div class="tl-axis"><span></span><div class="ticks" id="tlTicks"></div></div>
+      </div>
+    </section>
+    <section>
+      <div class="h-kicker">Roll of champions</div>
+      <h2 class="sec">By titles</h2>
       <div class="tbl-wrap"><table id="titles"></table></div>
     </section>
     <section>
@@ -619,7 +665,7 @@
     <section>
       <div class="h-kicker">All&#8209;time</div>
       <h2 class="sec">Franchises</h2>
-      <p class="sec-note">Regular-season results across every season a manager has played. Click a column to sort.</p>
+      <p class="sec-note">Regular-season results across every season a manager has played &middot; the sparkline is win&#8202;% by season, gold dots mark title years. Click a column to sort.</p>
       <div class="tbl-wrap"><table id="franchises"></table></div>
     </section>
   </div>
@@ -1079,7 +1125,7 @@
       (lg.type ? lg.type.charAt(0).toUpperCase() + lg.type.slice(1) + ' league' : 'League almanac');
     document.getElementById('snapChip').textContent = 'snapshot · ' + yFirst + '–' + yLast;
     document.getElementById('genFoot').textContent =
-      'Static snapshot · generated ' + (DATA.generated_at||'') + ' · prototype, not the finished product.';
+      'Updated ' + (DATA.generated_at||'') + ' · ' + platforms + ' · ' + played.length + ' seasons on record.';
   }
 
   /* ---- init once (theme, tabs, league picker) ---- */
@@ -1233,15 +1279,37 @@
   function sec_overview(){
     var manualYears = seasons.filter(function(s){return s.manual;}).map(function(s){return s.year;});
     var lg = DATA.league || {};
-    document.getElementById('noteHead').textContent = played.length + ' seasons loaded (' + yFirst + '–' + yLast + ').';
-    document.getElementById('noteBody').textContent =
+
+    /* ---- reigning-champion callout ---- */
+    var champSeason = played.slice().reverse().filter(function(s){ return s.champion; })[0];
+    var ovC = document.getElementById('ovChamp');
+    if (champSeason){
+      var cc = P[champSeason.champion] || {name:'—', mgr:''};
+      var cru = champSeason.runnerUp ? P[champSeason.runnerUp] : null;
+      var tc = (cc.titles||[]).length;
+      var ord = tc===1?'1st':tc===2?'2nd':tc===3?'3rd':tc+'th';
+      ovC.innerHTML =
+        '<div class="k">Reigning champion</div>' +
+        '<div class="name">' + esc(cc.name) + '</div>' +
+        '<div class="meta"><b>' + esc(cc.mgr) + '</b> &middot; ' + champSeason.year + ' &middot; ' + ord + ' title' +
+          (cru ? ' &middot; def. ' + esc(cru.name) : '') + '</div>' +
+        '<div class="glyph">&#127942;</div>';
+    } else {
+      ovC.innerHTML = '<div class="k">Reigning champion</div><div class="name">Up for grabs</div>' +
+        '<div class="meta">No season completed yet.</div><div class="glyph">&#127942;</div>';
+    }
+
+    /* ---- context note ---- */
+    document.getElementById('ovNote').innerHTML =
+      '<b>' + played.length + ' seasons</b> loaded (' + yFirst + '–' + yLast + '). ' +
       (manualYears.length
-        ? manualYears.length + ' early season' + (manualYears.length>1?'s':'') + ' (' + manualYears[0] + '–' + manualYears[manualYears.length-1] + ') are hand-entered standings — no game data, so records / head-to-head cover the API era only. '
+        ? manualYears.length + ' early season' + (manualYears.length>1?'s':'') + ' (' + manualYears[0] + '–' + manualYears[manualYears.length-1] + ') are hand-entered standings — no game data, so records and head-to-head cover the API era only. '
         : '') +
       (lg.hasPlayers ? 'Player-level history is loaded for the API seasons. ' : '') +
       (lg.hasTrades ? 'Trades are Sleeper-era only — ESPN doesn’t retain past transaction logs.'
                     : 'Trade history isn’t available (ESPN doesn’t retain it).');
 
+    /* ---- hero stat tiles ---- */
     var games=0, pts=0;
     played.forEach(function(s){
       (s.games||[]).forEach(function(g){ pts += (g.ap||0)+(g.bp||0); });
@@ -1250,26 +1318,51 @@
     });
     var activeManagers = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).indexOf(yLast)>=0; }).length;
     var pastManagers = (DATA.people||[]).length - activeManagers;
-    var reign = latestPlayed && latestPlayed.champion ? P[latestPlayed.champion] : null;
-    var mostTitles = (DATA.people||[]).slice().sort(function(a,b){ return (b.titles||[]).length-(a.titles||[]).length; })[0];
-
     var tiles = [
       ['Seasons', played.length, yFirst+'–'+yLast],
       ['Managers', activeManagers, pastManagers+' more have played'],
-      ['Games played', f0(games), 'all weeks, all seasons'],
-      ['Points scored', f0(pts), 'every team, every week'],
-      ['Reigning champ', reign?reign.name:'—', reign?(yLast+' · '+reign.mgr):''],
-      ['Most titles', mostTitles?(mostTitles.titles.length+'× '+mostTitles.name):'—', mostTitles?mostTitles.titles.join(', '):'']
+      ['Games played', games, 'all weeks, all seasons'],
+      ['Points scored', Math.round(pts), 'every team, every week']
     ];
     document.getElementById('kpis').innerHTML = tiles.map(function(t){
-      var isText = typeof t[1] !== 'number';
       return '<div class="tile"><div class="k">'+t[0]+'</div>'+
-        '<div class="v'+(isText?' sm':'')+'">'+(isText?esc(t[1]):f0(t[1]))+'</div>'+
-        '<div class="sub">'+esc(t[2])+'</div></div>';
+        '<div class="v">'+f0(t[1])+'</div><div class="sub">'+esc(t[2])+'</div></div>';
     }).join('');
 
+    /* ---- title-history timeline ---- */
     var champs = (DATA.people||[]).filter(function(p){ return (p.titles||[]).length; })
       .sort(function(a,b){ return b.titles.length-a.titles.length || a.titles[0]-b.titles[0]; });
+    var tl = document.getElementById('titleTimeline');
+    var tlTicks = document.getElementById('tlTicks');
+    var neverWon = (DATA.people||[]).filter(function(p){
+      return !(p.titles||[]).length && Object.keys(p.seasons||{}).length;
+    }).length;
+    document.getElementById('tlNote').innerHTML =
+      champs.length
+        ? champs.length + ' manager' + (champs.length>1?'s have':' has') + ' hoisted a trophy since ' + yFirst +
+          (neverWon ? ' &middot; ' + neverWon + ' still chasing their first' : '') +
+          '. <span style="color:var(--ink-faint)">Green marks a first title.</span>'
+        : 'No champions on record yet.';
+    if (champs.length){
+      tl.innerHTML = champs.map(function(p){
+        var first = p.titles.slice().sort(function(a,b){ return a-b; })[0];
+        var cells = years.map(function(y){
+          var won = p.titles.indexOf(y) >= 0;
+          return '<div class="tl-cell">' + (won ? '<span class="dot'+(y===first?' first':'')+'" title="'+y+'"></span>' : '') + '</div>';
+        }).join('');
+        return '<div class="tl-row"><div class="tl-name"><span class="tn">'+esc(p.name)+'</span>'+
+          '<span class="mn">'+esc(p.mgr)+'</span></div><div class="tl-track">'+cells+'</div></div>';
+      }).join('');
+      var step = years.length > 16 ? 4 : years.length > 9 ? 2 : 1;
+      tlTicks.innerHTML = years.map(function(y, i){
+        var show = (i % step === 0) || i === years.length-1;
+        return '<span style="flex:1 1 0;text-align:center">' + (show ? "’"+String(y).slice(2) : '') + '</span>';
+      }).join('');
+    } else {
+      tl.innerHTML = '<div class="tl-empty">The first title is still up for grabs.</div>';
+      tlTicks.innerHTML = '';
+    }
+
     document.getElementById('titles').innerHTML =
       '<thead><tr><th>Manager</th><th>Titles</th><th style="text-align:left">Seasons won</th></tr></thead><tbody>'+
       champs.map(function(p){
@@ -1302,15 +1395,33 @@
     var fr = {};
     played.forEach(function(s){
       entryTotals(s).forEach(function(x){
-        var e = fr[x.pid] = fr[x.pid] || {id:x.pid,w:0,l:0,t:0,pf:0,pa:0,gp:0,seasons:{}};
+        var e = fr[x.pid] = fr[x.pid] || {id:x.pid,w:0,l:0,t:0,pf:0,pa:0,gp:0,seasons:{},form:[]};
         e.seasons[s.year]=1; e.w+=x.w; e.l+=x.l; e.t+=x.t;
         if (x.pf!=null){ e.pf+=x.pf; e.pa+=x.pa; e.gp += x.w+x.l+x.t; }
+        var sg = (x.w||0)+(x.l||0)+(x.t||0);
+        if (sg) e.form.push({ y:s.year, p:x.w/sg, won:(P[x.pid]&&(P[x.pid].titles||[]).indexOf(s.year)>=0) });
       });
     });
+    function svgSpark(r){
+      var pts = (r.form||[]).slice().sort(function(a,b){ return a.y-b.y; });
+      if (pts.length < 2) return '<span class="mn" style="color:var(--ink-faint)">—</span>';
+      var W=68, H=20, pad=2;
+      var xs = function(i){ return pad + i*(W-2*pad)/(pts.length-1); };
+      var ys = function(p){ return pad + (1-p)*(H-2*pad); };
+      var d = pts.map(function(pt,i){ return (i?'L':'M')+xs(i).toFixed(1)+' '+ys(pt.p).toFixed(1); }).join(' ');
+      var dots = pts.filter(function(pt){ return pt.won; }).map(function(pt){
+        return '<circle class="dt" cx="'+xs(pts.indexOf(pt)).toFixed(1)+'" cy="'+ys(pt.p).toFixed(1)+'" r="2.1"/>';
+      }).join('');
+      return '<svg class="spark" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+
+        '<line class="base" x1="'+pad+'" y1="'+ys(0.5).toFixed(1)+'" x2="'+(W-pad)+'" y2="'+ys(0.5).toFixed(1)+'"/>'+
+        '<path class="ln" d="'+d+'"/>'+dots+'</svg>';
+    }
     var frArr = Object.keys(fr).map(function(id){ var e=fr[id]; e.titles=(P[id]&&P[id].titles||[]).length; e.ns=Object.keys(e.seasons).length; return e; });
     sortableTable(document.getElementById('franchises'), [
       {key:'name', label:'Franchise', align:'left', val:function(r){return pName(r.id);},
         cell:function(r){return '<div class="team-cell"><span class="tn">'+esc(pName(r.id))+'</span><span class="mn">'+esc(pMgr(r.id))+'</span></div>';}},
+      {key:'form', label:'Form', align:'left', val:function(r){ var g=r.w+r.l+r.t; return g?r.w/g:0; },
+        cell:function(r){ return svgSpark(r); }},
       {key:'titles', label:'Titles', num:true, val:function(r){return r.titles;}, cell:function(r){return r.titles?('🏆 '+r.titles):'—';}},
       {key:'ns', label:'Seasons', num:true, val:function(r){return r.ns;}, cell:function(r){return r.ns;}},
       {key:'w', label:'W', num:true, val:function(r){return r.w;}, cell:function(r){return '<span class="w">'+r.w+'</span>';}},
