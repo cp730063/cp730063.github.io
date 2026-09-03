@@ -3,7 +3,7 @@
 # bundles/<slug>.json.   Usage: build_bundle2.pl <league-slug>
 use strict; use warnings;
 use JSON::PP;
-my $j = JSON::PP->new->canonical(0);
+my $j = JSON::PP->new->canonical(1);
 
 use FindBin qw($RealBin);
 my $ROOT = "$RealBin/..";
