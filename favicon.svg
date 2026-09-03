@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="127 7 210 210" role="img" aria-label="FantasyMags">
+<style>
+  svg{
+    --fur:#191d24; --fur-lt:#272e38; --fur-dk:#0d1014;
+    --grz:#bdb8aa; --grz-lt:#d8d3c5;
+    --nose:#0a0c10; --eye:#4a3320; --pupil:#130e07; --sclera:#d8cfbe; --hl:#ffffff;
+    --tongue:#c9737e;
+  }
+  @media (prefers-color-scheme:dark){
+    svg{
+      --fur:#39434f; --fur-lt:#4b5764; --fur-dk:#28303a;
+      --grz:#c6c1b3; --grz-lt:#e0dbcd;
+      --nose:#1a1f28; --eye:#c39a63; --pupil:#231a10; --sclera:#8d8574; --hl:#ffffff;
+      --tongue:#cf7d88;
+    }
+  }
+</style>
+
+<!-- ears -->
+<path fill="var(--fur-dk)" d="M200,34 C186,26 168,32 162,50 C156,68 158,100 168,126 C175,144 186,156 195,156 C201,156 204,149 202,141 C194,112 192,64 200,34 Z"/>
+<path fill="var(--fur-lt)" opacity=".35" d="M180,40 C190,33 199,34 203,40 C200,54 187,60 179,51 C177,46 178,42 180,40 Z"/>
+<path fill="var(--fur-dk)" d="M264,34 C278,26 296,32 302,50 C308,68 306,100 296,126 C289,144 278,156 269,156 C263,156 260,149 262,141 C270,112 272,64 264,34 Z"/>
+<path fill="var(--fur-lt)" opacity=".35" d="M284,40 C274,33 265,34 261,40 C264,54 277,60 285,51 C287,46 286,42 284,40 Z"/>
+
+<!-- skull -->
+<path fill="var(--fur)" d="M232,26 C218,26 208,29 202,38 C195,48 189,68 185,86 C182,100 183,109 189,117 C194,125 196,138 196,152 C196,166 197,178 203,186 C210,194 220,198 232,198 C244,198 254,194 261,186 C267,178 268,166 268,152 C268,138 270,125 275,117 C281,109 282,100 279,86 C275,68 269,48 262,38 C256,29 246,26 232,26 Z"/>
+<path fill="var(--fur-lt)" opacity=".4" d="M232,34 C222,34 215,40 212,52 C210,62 210,72 212,80 C218,74 246,74 252,80 C254,72 254,62 252,52 C249,40 242,34 232,34 Z"/>
+
+<!-- brows -->
+<path fill="var(--fur-lt)" opacity=".5" d="M190,80 C196,73 208,70 218,74 C212,76 200,79 193,85 Z"/>
+<path fill="var(--fur-lt)" opacity=".5" d="M274,80 C268,73 256,70 246,74 C252,76 264,79 271,85 Z"/>
+<path stroke="var(--fur-dk)" stroke-width="2" stroke-linecap="round" opacity=".28" fill="none" d="M232,72 L232,82"/>
+<g fill="var(--grz)" opacity=".75">
+  <circle cx="202" cy="80" r="1.8"/><circle cx="211" cy="76" r="1.6"/>
+  <circle cx="262" cy="80" r="1.8"/><circle cx="253" cy="76" r="1.6"/>
+</g>
+
+<!-- eyes -->
+<ellipse cx="208" cy="92" rx="19" ry="15" fill="var(--fur-dk)" opacity=".4"/>
+<ellipse cx="256" cy="92" rx="19" ry="15" fill="var(--fur-dk)" opacity=".4"/>
+<path fill="var(--sclera)" d="M194,93 C198,86 205,83 213,85 C219,87 222,91 221,95 C219,102 209,104 201,101 C196,99 193,97 194,93 Z"/>
+<circle cx="207.5" cy="93" r="7.5" fill="var(--eye)"/>
+<circle cx="207.5" cy="93.5" r="3.6" fill="var(--pupil)"/>
+<circle cx="210" cy="90" r="1.8" fill="var(--hl)" opacity=".85"/>
+<path fill="var(--fur)" d="M194,93 C198,86 205,83 213,85 C219,87 222,91 221,95 C220,89 214,86 206,86 C199,86 195,89 194,93 Z"/>
+<path stroke="var(--fur-dk)" stroke-width="2" opacity=".5" fill="none" d="M196,98 C202,104 212,105 219,100"/>
+<path fill="var(--sclera)" d="M270,93 C266,86 259,83 251,85 C245,87 242,91 243,95 C245,102 255,104 263,101 C268,99 271,97 270,93 Z"/>
+<circle cx="256.5" cy="93" r="7.5" fill="var(--eye)"/>
+<circle cx="256.5" cy="93.5" r="3.6" fill="var(--pupil)"/>
+<circle cx="254" cy="90" r="1.8" fill="var(--hl)" opacity=".85"/>
+<path fill="var(--fur)" d="M270,93 C266,86 259,83 251,85 C245,87 242,91 243,95 C244,89 250,86 258,86 C265,86 269,89 270,93 Z"/>
+<path stroke="var(--fur-dk)" stroke-width="2" opacity=".5" fill="none" d="M268,98 C262,104 252,105 245,100"/>
+
+<!-- bridge + her pale smudge -->
+<ellipse cx="232" cy="122" rx="12" ry="8" fill="var(--fur-lt)" opacity=".3"/>
+<ellipse cx="214" cy="118" rx="6.5" ry="4.5" fill="var(--grz)" opacity=".4"/>
+
+<!-- grizzle -->
+<path fill="var(--grz)" d="M201,173 C204,183 212,191 222,194 C229,196 235,196 242,194 C252,191 260,183 263,173 C266,179 265,186 259,191 C251,196 242,198 232,198 C222,198 213,196 205,191 C199,186 198,179 201,173 Z"/>
+<path fill="var(--grz-lt)" opacity=".7" d="M216,190 C222,193 242,193 248,190 C249,194 242,197 232,197 C222,197 215,194 216,190 Z"/>
+<g fill="var(--grz)" opacity=".45">
+  <circle cx="203" cy="158" r="1.8"/><circle cx="200" cy="170" r="1.6"/><circle cx="209" cy="179" r="1.4"/><circle cx="216" cy="184" r="1.2"/>
+  <circle cx="261" cy="158" r="1.8"/><circle cx="264" cy="170" r="1.6"/><circle cx="255" cy="179" r="1.4"/><circle cx="248" cy="184" r="1.2"/>
+</g>
+
+<!-- nose -->
+<path fill="var(--nose)" d="M232,130 C218,130 209,137 208,147 C207,157 218,163 232,163 C246,163 257,157 256,147 C255,137 246,130 232,130 Z"/>
+<ellipse cx="219" cy="148" rx="4" ry="5.4" fill="#000" opacity=".7" transform="rotate(-18 219 148)"/>
+<ellipse cx="245" cy="148" rx="4" ry="5.4" fill="#000" opacity=".7" transform="rotate(18 245 148)"/>
+<ellipse cx="222" cy="137" rx="8" ry="3.5" fill="var(--hl)" opacity=".1"/>
+
+<!-- mouth -->
+<path stroke="var(--fur-dk)" stroke-width="2.4" stroke-linecap="round" d="M232,163 L232,172"/>
+<path stroke="var(--fur-dk)" stroke-width="2.2" stroke-linecap="round" opacity=".42" fill="none" d="M217,173 C211,179 206,185 204,191 M247,173 C253,179 258,185 260,191"/>
+<path fill="var(--nose)" d="M219,172 C224,170 240,170 245,172 C245,181 240,187 232,187 C224,187 219,181 219,172 Z"/>
+<path fill="var(--tongue)" d="M223,175 C227,173 237,173 241,175 C242,182 238,186 232,186 C226,186 222,182 223,175 Z"/>
+<path stroke="var(--nose)" stroke-width="1.3" stroke-linecap="round" opacity=".3" fill="none" d="M232,177 L232,185"/>
+</svg>
