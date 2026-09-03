@@ -875,6 +875,7 @@
       <div id="dgDetail"></div>
       <h3 class="sec" style="font-size:15px;margin-top:28px">Career draft résumé</h3>
       <div class="tbl-wrap"><table id="dgResumeTbl"></table></div>
+      <p class="dg-note" id="dgResumeNote"></p>
       <details class="dg-method">
         <summary>How these grades are calculated</summary>
         <div id="dgMethodBody"></div>
@@ -2587,10 +2588,17 @@
           e.vN++; e.vGpa += GPA[M.gradeVal(s.by[pid].score)];
         });
       });
-      var rows = Object.keys(perMgr).map(function(pid){
+      var allRows = Object.keys(perMgr).map(function(pid){
         var e = perMgr[pid];
         return { pid:pid, n:e.n, gpa:e.n ? e.gpa / e.n : 0, vgpa:e.vN ? e.vGpa / e.vN : null, best:e.best, worst:e.worst };
       });
+      var MIN_RES = 3;   /* a GPA off one or two drafts isn't a résumé */
+      var rows = allRows.filter(function(r){ return r.n >= MIN_RES; });
+      if (rows.length < 2) rows = allRows;
+      var hid = allRows.length - rows.length;
+      document.getElementById('dgResumeNote').textContent = hid
+        ? hid + ' manager' + (hid !== 1 ? 's' : '') + ' with fewer than ' + MIN_RES + ' graded drafts omitted.'
+        : '';
       var cols = [
         { key:'mgr', label:'Manager', align:'left', val:function(r){ return pName(r.pid); },
           cell:function(r){ return '<span class="mn2">' + esc(pName(r.pid)) + '</span>'; } },
