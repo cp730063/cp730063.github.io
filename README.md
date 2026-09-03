@@ -14,9 +14,11 @@ Everything is a static, self-contained `index.html`. No server, no framework.
   - `pull_espn_player_weeks.pl` — pulls ESPN weekly rosters/scoring
   - `build_bundle2.pl <slug>` — normalizes one league (config in `scripts/leagues/<slug>.json`)
   - `build_all.pl` — builds every league + the manifest
-  - `build_index.pl` — injects all bundle data into `prototype/template.html` → `index.html`
+  - `build_index.pl` — injects the league manifest into `prototype/template.html` → `index.html`
+  - `pull_values.pl` — dynasty trade values (FantasyCalc) + current rosters → `bundles/<slug>.values.json` (run periodically; not part of build_all)
 - `prototype/template.html` — the app (HTML + CSS + one JS file)
-- `prototype/bundles/*.json` — normalized league data (build output, tracked)
+- `bundles/*.json` — per-league data fetched on demand: `<slug>.json` (history), `<slug>.lineups.json` (box scores), `<slug>.values.json` (trade calc), `leagues.json` (manifest)
+- `index.html` — the built shell (repo root; what GitHub Pages serves)
 - `reference/` — manual pre-API overlays and source material
 - `data/` — raw API dumps (local only, not tracked)
 

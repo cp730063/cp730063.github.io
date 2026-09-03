@@ -230,6 +230,42 @@
   .bx-pts{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
   .bx-r.zero .bx-nm,.bx-r.zero .bx-pts{color:var(--ink-faint)}
   @media (max-width:620px){ .bx-cols{grid-template-columns:1fr} }
+
+  /* trade calculator */
+  .tc-teams{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .tc-side select{width:100%;font:inherit;font-size:14px;padding:9px 11px;border:1px solid var(--border-strong);
+    border-radius:8px;background:var(--surface);color:var(--ink);cursor:pointer;margin-bottom:8px}
+  .tc-picklist{border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow);
+    max-height:520px;overflow-y:auto}
+  .tc-grp{font-family:var(--disp);text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:var(--ink-faint);
+    font-weight:600;padding:10px 12px 5px;position:sticky;top:0;background:var(--surface)}
+  .tc-item{display:grid;grid-template-columns:16px 1fr auto;gap:9px;align-items:center;padding:6px 12px;
+    font-size:13px;border-top:1px solid var(--border);cursor:pointer}
+  .tc-item:hover{background:var(--surface-2)}
+  .tc-item.on{background:var(--accent-soft)}
+  .tc-item input{margin:0;accent-color:var(--accent)}
+  .tc-item .tc-nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tc-item .tc-nm .pos-tag{margin-left:0;margin-right:6px}
+  .tc-item .tc-sub{color:var(--ink-faint);font-size:10.5px;font-family:var(--mono);margin-left:6px}
+  .tc-item .tc-val{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-muted)}
+  .tc-item.on .tc-val{color:var(--accent);font-weight:600}
+  .tc-verdict{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);padding:16px 18px}
+  .tc-vtot{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:baseline;margin-bottom:12px}
+  .tc-vtot .tc-t{font-family:var(--disp);font-weight:700;font-size:22px}
+  .tc-vtot .tc-t.r{text-align:right}
+  .tc-vtot .tc-lbl{font-size:11px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;display:block;font-weight:600}
+  .tc-vtot .tc-mid{font-family:var(--mono);font-size:12px;color:var(--ink-faint);align-self:center}
+  .tc-track{height:10px;border-radius:6px;background:var(--inset);overflow:hidden;display:flex;margin-bottom:10px}
+  .tc-track .tc-fa{background:var(--accent)}
+  .tc-track .tc-fb{background:var(--gold)}
+  .tc-say{font-size:14px}
+  .tc-say b{font-weight:700}
+  .tc-say.even b{color:var(--win)}
+  .tc-say.lop b{color:var(--loss)}
+  .tc-clear{margin-top:12px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.08em;font-size:12px;font-weight:600;
+    color:var(--ink-muted);background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 14px;cursor:pointer}
+  .tc-clear:hover{color:var(--ink);border-color:var(--border-strong)}
+  @media (max-width:700px){ .tc-teams{grid-template-columns:1fr} .tc-vtot .tc-t{font-size:18px} }
   .rv-trades{margin-top:18px;font-size:13px}
   .rv-trades .rv-tr{padding:8px 0;border-top:1px solid var(--border)}
   .rv-trades .rv-tr:first-child{border-top:0}
@@ -391,7 +427,10 @@
       </div>
     </div>
     <div class="nav-sec">
-      <button type="button" class="nav-sec-h" disabled>Trade Values <span class="soon">soon</span></button>
+      <button type="button" class="nav-sec-h" data-sec="values" aria-expanded="true">Trade Values</button>
+      <div class="nav-sub" role="tablist" aria-label="Trade value tools">
+        <button role="tab" aria-selected="false" data-p="tradecalc">Trade Calculator</button>
+      </div>
     </div>
     <div class="nav-sec">
       <button type="button" class="nav-sec-h" disabled>Trade Block <span class="soon">soon</span></button>
@@ -608,6 +647,23 @@
     </section>
   </div>
 
+  <div class="panel" id="p-tradecalc" hidden>
+    <div class="h-kicker">What's it worth</div>
+    <h2 class="sec">Trade Calculator</h2>
+    <p class="sec-note" id="tcNote"></p>
+    <div class="tc-teams">
+      <div class="tc-side">
+        <select id="tcA" aria-label="Team A"></select>
+        <div class="tc-picklist" id="tcListA"></div>
+      </div>
+      <div class="tc-side">
+        <select id="tcB" aria-label="Team B"></select>
+        <div class="tc-picklist" id="tcListB"></div>
+      </div>
+    </div>
+    <div class="tc-verdict" id="tcVerdict"></div>
+  </div>
+
   <div class="foot" id="genFoot"></div>
   </main>
 </div>
@@ -642,17 +698,20 @@
       .catch(function(err){ delete _bundleFetch[slug]; throw err; });
     return _bundleFetch[slug];
   }
-  var _lineupFetch = {};
-  function loadLineups(slug){
-    if (FM.lineups[slug]) return Promise.resolve(FM.lineups[slug]);
-    if (_lineupFetch[slug]) return _lineupFetch[slug];
+  function _sidecar(bag, cache, slug, suffix){
+    if (bag[slug]) return Promise.resolve(bag[slug]);
+    if (cache[slug]) return cache[slug];
     var v = FM.version ? ('?v=' + encodeURIComponent(FM.version)) : '';
-    _lineupFetch[slug] = fetch('bundles/' + encodeURIComponent(slug) + '.lineups.json' + v)
+    cache[slug] = fetch('bundles/' + encodeURIComponent(slug) + suffix + v)
       .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function(data){ FM.lineups[slug] = data; return data; })
-      .catch(function(err){ delete _lineupFetch[slug]; throw err; });
-    return _lineupFetch[slug];
+      .then(function(data){ bag[slug] = data; return data; })
+      .catch(function(err){ delete cache[slug]; throw err; });
+    return cache[slug];
   }
+  var _lineupFetch = {}, _valuesFetch = {};
+  FM.values = FM.values || {};
+  function loadLineups(slug){ return _sidecar(FM.lineups, _lineupFetch, slug, '.lineups.json'); }
+  function loadValues(slug){ return _sidecar(FM.values, _valuesFetch, slug, '.values.json'); }
   function manifestSlugs(){ return (FM.manifest && FM.manifest.leagues || []).map(function(L){ return L.slug; }); }
   function manifestLabel(slug){
     var m = (FM.manifest && FM.manifest.leagues || []).filter(function(L){ return L.slug === slug; })[0];
@@ -762,7 +821,7 @@
   }
 
   /* ---- init once (theme, tabs, league picker) ---- */
-  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs'];
+  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs','tradecalc'];
   var root = document.documentElement, TKEY='dischnasty-theme';
   try { var sv = localStorage.getItem(TKEY); if (sv) root.setAttribute('data-theme', sv); } catch(e){}
   function toggleTheme(){
@@ -840,15 +899,19 @@
   function applyTabAvailability(){
     var lg = DATA.league || {};
     var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
-                  drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)) };
+                  drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
+                  tradecalc: (lg.type === 'dynasty') };
     Object.keys(avail).forEach(function(p){
       var btn = tabs.querySelector('button[data-p="'+p+'"]');
       if (btn) btn.hidden = !avail[p];
+      var sec = btn && btn.closest('.nav-sec');
+      if (sec && !sec.querySelector('.nav-sub button:not([hidden])')) sec.hidden = true;
+      else if (sec) sec.hidden = false;
       document.getElementById('p-'+p).hidden = document.getElementById('p-'+p).hidden || !avail[p];
     });
-    if (currentTab()==='players' && !avail.players) selectTab('overview');
-    if (currentTab()==='trades'  && !avail.trades)  selectTab('overview');
-    if (currentTab()==='drafts'  && !avail.drafts)  selectTab('overview');
+    ['players','trades','drafts','tradecalc'].forEach(function(p){
+      if (currentTab()===p && !avail[p]) selectTab('overview');
+    });
   }
 
   /* league picker */
@@ -885,7 +948,7 @@
     deriveModel();
     renderHeader();
     sec_overview(); sec_standings(); sec_records(); sec_legacy(); sec_h2h();
-    sec_names(); sec_players(); sec_drafts(); sec_trades(); sec_playoffs();
+    sec_names(); sec_players(); sec_drafts(); sec_trades(); sec_playoffs(); sec_tradecalc();
     applyTabAvailability();
   }
 
@@ -2052,6 +2115,133 @@
       curYear=b.dataset.y; renderTable();
     });
     renderTable();
+  }
+
+  function sec_tradecalc(){
+    var lg = DATA.league || {};
+    if (lg.type !== 'dynasty') return;   /* tab hidden by applyTabAvailability */
+    var slug = lg.slug;
+    var note = document.getElementById('tcNote');
+    var selA = document.getElementById('tcA'), selB = document.getElementById('tcB');
+    var listA = document.getElementById('tcListA'), listB = document.getElementById('tcListB');
+    var verdict = document.getElementById('tcVerdict');
+    note.textContent = 'Loading trade values…';
+
+    loadValues(slug).then(function(V){
+      var teams = V.teams || {}, fmt = V.format || {};
+      note.innerHTML = 'Player &amp; pick values from <b>FantasyCalc</b> (' +
+        (fmt.numQbs === 2 ? 'Superflex' : '1QB') + ' · ' +
+        (fmt.ppr === 1 ? 'PPR' : fmt.ppr === 0.5 ? 'Half-PPR' : 'Standard') + ' · ' +
+        (fmt.teams || 12) + '-team) · ' + esc(V.generated || '') +
+        '. Check what each side sends.';
+
+      var pids = Object.keys(teams).filter(function(id){
+        return (teams[id].players || []).length || (teams[id].picks || []).length;
+      }).sort(function(a, b){ return pName(a).localeCompare(pName(b)); });
+      if (pids.length < 2){ verdict.innerHTML = '<div class="rv-empty">Not enough roster data for a trade.</div>'; return; }
+
+      var opt = pids.map(function(id){ return '<option value="' + esc(id) + '">' + esc(pName(id)) + '</option>'; }).join('');
+      selA.innerHTML = opt; selB.innerHTML = opt;
+
+      var sel = { a:{}, b:{} };
+      var curA, curB;
+      try { var sv = (localStorage.getItem('fm-tc-' + slug) || '').split('|'); if (sv.length === 2){ curA = sv[0]; curB = sv[1]; } } catch(e){}
+      if (pids.indexOf(curA) < 0) curA = pids[0];
+      if (pids.indexOf(curB) < 0 || curB === curA) curB = pids.filter(function(x){ return x !== curA; })[0];
+      selA.value = curA; selB.value = curB;
+
+      function aidP(pl){ return 'p:' + pl.key; }
+      function aidK(pk){ return 'k:' + pk.season + '.' + pk.round + '.' + (pk.via || ''); }
+      function renderList(side, pid, host){
+        var t = teams[pid] || { players:[], picks:[] };
+        function item(aid, v, posLabel, name, sub){
+          var on = sel[side][aid] != null;
+          return '<label class="tc-item' + (on ? ' on' : '') + '" data-aid="' + esc(aid) + '" data-v="' + v + '">' +
+            '<input type="checkbox"' + (on ? ' checked' : '') + '>' +
+            '<span class="tc-nm"><span class="pos-tag">' + esc(posLabel) + '</span>' + esc(name) +
+              (sub ? '<span class="tc-sub">' + sub + '</span>' : '') + '</span>' +
+            '<span class="tc-val">' + (v ? f0(v) : '—') + '</span></label>';
+        }
+        var h = '';
+        if ((t.players || []).length){
+          h += '<div class="tc-grp">Players</div>';
+          t.players.forEach(function(pl){
+            h += item(aidP(pl), pl.value, pl.pos, pl.name,
+              (pl.nfl ? esc(pl.nfl) + (pl.age ? ' · ' + pl.age.toFixed(0) : '') : ''));
+          });
+        }
+        if ((t.picks || []).length){
+          h += '<div class="tc-grp">Draft picks</div>';
+          t.picks.forEach(function(pk){
+            h += item(aidK(pk), pk.value, 'PICK', pk.label, pk.via ? 'via ' + esc(pName(pk.via)) : '');
+          });
+        }
+        host.innerHTML = h || '<div class="tc-grp">No valued assets</div>';
+      }
+      function sum(side){ var s = 0; Object.keys(sel[side]).forEach(function(k){ s += sel[side][k]; }); return s; }
+      function draw(){
+        var a = sum('a'), b = sum('b');
+        var na = pName(selA.value), nb = pName(selB.value);
+        var cA = Object.keys(sel.a).length, cB = Object.keys(sel.b).length;
+        var diff = Math.abs(a - b), pct = 100 * diff / (Math.max(a, b) || 1);
+        var fav = a > b ? na : b > a ? nb : null, word, cls = '';
+        if (!cA && !cB) word = 'Add players or picks to each side.';
+        else if (pct < 3){ word = '<b>Even trade.</b> Within ' + pct.toFixed(1) + '%.'; cls = 'even'; }
+        else if (pct < 8) word = 'Slight edge to <b>' + esc(fav) + '</b> — ' + f0(diff) + ' (' + pct.toFixed(1) + '%).';
+        else if (pct < 20) word = '<b>' + esc(fav) + '</b> comes out ahead — ' + f0(diff) + ' (' + pct.toFixed(0) + '%).';
+        else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f0(diff) + ' (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
+        var wa = 100 * a / ((a + b) || 1);
+        verdict.innerHTML =
+          '<div class="tc-vtot">' +
+            '<div class="tc-t"><span class="tc-lbl">' + esc(na) + ' sends</span>' + f0(a) +
+              '<span class="tc-sub"> &nbsp;' + cA + ' asset' + (cA !== 1 ? 's' : '') + '</span></div>' +
+            '<div class="tc-mid">vs</div>' +
+            '<div class="tc-t r"><span class="tc-lbl">' + esc(nb) + ' sends</span>' + f0(b) +
+              '<span class="tc-sub"> &nbsp;' + cB + ' asset' + (cB !== 1 ? 's' : '') + '</span></div>' +
+          '</div>' +
+          '<div class="tc-track"><span class="tc-fa" style="width:' + wa + '%"></span><span class="tc-fb" style="width:' + (100 - wa) + '%"></span></div>' +
+          '<div class="tc-say ' + cls + '">' + word + '</div>' +
+          '<button type="button" class="tc-clear">Clear</button>';
+      }
+
+      [['a', listA], ['b', listB]].forEach(function(p){
+        p[1].addEventListener('change', function(e){
+          var lab = e.target.closest('.tc-item'); if (!lab) return;
+          var aid = lab.dataset.aid, v = +lab.dataset.v;
+          if (e.target.checked) sel[p[0]][aid] = v; else delete sel[p[0]][aid];
+          lab.classList.toggle('on', e.target.checked);
+          draw();
+        });
+      });
+      function pickTeam(side){
+        sel[side] = {};
+        renderList(side, (side === 'a' ? selA : selB).value, side === 'a' ? listA : listB);
+        try { localStorage.setItem('fm-tc-' + slug, selA.value + '|' + selB.value); } catch(e){}
+        draw();
+      }
+      selA.addEventListener('change', function(){
+        if (selA.value === selB.value){ selB.value = pids.filter(function(x){ return x !== selA.value; })[0]; pickTeam('b'); }
+        pickTeam('a');
+      });
+      selB.addEventListener('change', function(){
+        if (selB.value === selA.value){ selA.value = pids.filter(function(x){ return x !== selB.value; })[0]; pickTeam('a'); }
+        pickTeam('b');
+      });
+      verdict.addEventListener('click', function(e){
+        if (!e.target.closest('.tc-clear')) return;
+        sel.a = {}; sel.b = {};
+        renderList('a', selA.value, listA); renderList('b', selB.value, listB);
+        draw();
+      });
+
+      renderList('a', selA.value, listA);
+      renderList('b', selB.value, listB);
+      draw();
+    }).catch(function(){
+      note.textContent = '';
+      selA.innerHTML = ''; selB.innerHTML = ''; listA.innerHTML = ''; listB.innerHTML = '';
+      verdict.innerHTML = '<div class="rv-empty">Trade values aren’t available for this league yet.</div>';
+    });
   }
 
   /* ---- boot ---- */
