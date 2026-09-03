@@ -116,37 +116,43 @@ for my $y (@ESPN_Y) {
     push @games, { week=>$wk, type=>$type, a=>$hpid, ap=>$hp, b=>$apid, bp=>$ap };
   }
 
+  # a season ESPN has scheduled but not yet played: fixtures exist, every score is 0.
+  # Keep its teams + draft, but emit no games / records / standings.
+  my $espnPlayed = grep { $_->{type} eq 'reg' && (($_->{ap}||0) > 0 || ($_->{bp}||0) > 0) } @games;
+
   # entries: per person, reg-season record computed from games + final placement from teams[]
   my %entry;
   for my $t (@{$d->{teams}||[]}) {
     my $pid = $tid2pid{$t->{id}};
     my $nm = (($t->{location}//'').' '.($t->{nickname}//'')); $nm =~ s/^\s+|\s+$//g;
     $nm ||= $t->{name} // $t->{abbrev} // "Team $t->{id}";
-    my $fr = $t->{rankCalculatedFinal} || $t->{rankFinal} || 0;
+    my $fr = $espnPlayed ? ($t->{rankCalculatedFinal} || $t->{rankFinal} || 0) : 0;
     my $por = $fr==1 ? 'champion' : $fr==2 ? 'runner_up' : $fr==3 ? 'third'
             : ($fr==4 && $poTeams>=4) ? 'r1_loss' : undef;
     $entry{$pid} = {
       personId=>$pid, team=>$nm, division=>$tid2div{$t->{id}},
       w=>0,l=>0,t=>0, pf=>0,pa=>0,
-      seed=>$t->{playoffSeed}||undef, finalRank=>$fr||undef,
+      seed=>($espnPlayed ? ($t->{playoffSeed}||undef) : undef), finalRank=>$fr||undef,
       poResult=>$por,
       madePlayoffs=>($fr && $fr<=$poTeams ? 1 : 0),
     };
   }
-  for my $g (@games) {
-    next unless $g->{type} eq 'reg';
-    for my $side ([$g->{a},$g->{ap},$g->{bp}], [$g->{b},$g->{bp},$g->{ap}]) {
-      my ($pid,$pf,$pa) = @$side; my $e = $entry{$pid} or next;
-      $e->{pf}+=$pf; $e->{pa}+=$pa;
-      if ($pf>$pa){$e->{w}++} elsif($pf<$pa){$e->{l}++} else {$e->{t}++}
+  if ($espnPlayed) {
+    for my $g (@games) {
+      next unless $g->{type} eq 'reg';
+      for my $side ([$g->{a},$g->{ap},$g->{bp}], [$g->{b},$g->{bp},$g->{ap}]) {
+        my ($pid,$pf,$pa) = @$side; my $e = $entry{$pid} or next;
+        $e->{pf}+=$pf; $e->{pa}+=$pa;
+        if ($pf>$pa){$e->{w}++} elsif($pf<$pa){$e->{l}++} else {$e->{t}++}
+      }
     }
   }
   $_->{pf}=r2($_->{pf}), $_->{pa}=r2($_->{pa}) for values %entry;
 
   # regular-season champ (best record, PF tiebreak) + per-division champ
   my @byRec = sort { $b->{w} <=> $a->{w} || ($b->{pf}||0) <=> ($a->{pf}||0) } values %entry;
-  my $regChamp = @byRec ? $byRec[0]{personId} : undef;
-  if ($hasDivs) {
+  my $regChamp = ($espnPlayed && @byRec) ? $byRec[0]{personId} : undef;
+  if ($hasDivs && $espnPlayed) {
     my %dbest;
     for my $e (@byRec) { my $d = $e->{division} // next; $dbest{$d} ||= $e; }
     $_->{divisionChamp} = 0 for values %entry;
@@ -161,18 +167,20 @@ for my $y (@ESPN_Y) {
   { my @pg = grep { $_->{type} eq 'playoff' } @games;
     if (@pg) { my $mx = 0; for (@pg) { $mx = $_->{week} if $_->{week} > $mx } $_->{final} = 1 for grep { $_->{week}==$mx } @pg; } }
 
-  # register people seasons/titles
-  for my $pid (keys %entry) {
-    my $p = $P{$pid}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y<$p->{firstSeason};
+  # register people seasons/titles (played seasons only)
+  if ($espnPlayed) {
+    for my $pid (keys %entry) {
+      my $p = $P{$pid}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y<$p->{firstSeason};
+    }
+    push @{$P{$champ}{titles}}, $y if $champ;
   }
-  push @{$P{$champ}{titles}}, $y if $champ;
 
   push @seasons, {
     year=>$y, platform=>'espn', teams=>scalar(keys %entry),
     regWeeks=>$regWeeks, playoffTeams=>$poTeams, hasDivisions=>($hasDivs?\1:\0),
-    played=>1, hasOptimal=>0,
+    played=>($espnPlayed ? 1 : 0), hasOptimal=>0,
     entries=>[ map { $entry{$_} } sort { $entry{$a}{personId} cmp $entry{$b}{personId} } keys %entry ],
-    games=>\@games,
+    games=>($espnPlayed ? \@games : []),
     champion=>$champ, runnerUp=>$ru, third=>$th, regSeasonChamp=>$regChamp,
   };
 }
