@@ -521,7 +521,43 @@
   .dg-method p{margin:8px 0;max-width:68ch;line-height:1.55}
   .dg-note{font-size:11.5px;color:var(--ink-faint);margin:4px 0 14px;max-width:68ch}
 
+  /* ---- research tab ---- */
+  .rn-list{display:flex;flex-direction:column;border-top:1px solid var(--border)}
+  .rn-item{display:flex;gap:16px;align-items:flex-start;padding:15px 2px;border-bottom:1px solid var(--border)}
+  .rn-body{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:5px}
+  .rn-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+  .rn-src{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .rn-time{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)}
+  a.rn-t{font-weight:600;color:var(--ink);text-decoration:none;font-size:14.5px;line-height:1.35}
+  a.rn-t:hover{color:var(--accent)}
+  .rn-x{font-size:12.5px;color:var(--ink-muted);line-height:1.5}
+  .rn-thumb{flex:none;width:104px;height:70px;object-fit:cover;border-radius:7px;
+    background:var(--surface-2);border:1px solid var(--border)}
+  .rn-empty{color:var(--ink-faint);font-size:13px;padding:16px 0}
+  .rn-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px 30px}
+  .rn-cols h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:.09em;font-size:12px;
+    color:var(--ink-muted);margin:0 0 6px}
+  .rn-mv{display:flex;flex-direction:column;border-top:1px solid var(--border)}
+  .rn-mv .row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+    padding:11px 2px;border-bottom:1px solid var(--border)}
+  .rn-mv .pn{font-weight:600}
+  .rn-mv .pp{font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--ink-faint);margin-left:7px}
+  .rn-mv .mv{font-family:var(--mono);font-variant-numeric:tabular-nums;font-weight:600;font-size:12.5px;white-space:nowrap}
+  .rn-mv .mv.up{color:var(--win)} .rn-mv .mv.down{color:var(--loss)}
+  .rn-mv .mv .pct{color:var(--ink-faint);font-weight:400;margin-left:6px}
+  .rn-tools h3{font-family:var(--disp);text-transform:uppercase;letter-spacing:.09em;font-size:12.5px;
+    color:var(--ink-muted);margin:24px 0 6px}
+  .rn-tools h3:first-child{margin-top:6px}
+  a.rn-tool{display:block;padding:12px 2px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit}
+  a.rn-tool .tt{font-weight:600;color:var(--accent)}
+  a.rn-tool .tt::after{content:" \2197";font-weight:400;color:var(--ink-faint)}
+  a.rn-tool .td{font-size:12.5px;color:var(--ink-muted);margin-top:1px}
+  a.rn-tool:hover .tt{text-decoration:underline}
+
   @media (max-width:620px){
+    .rn-cols{grid-template-columns:1fr}
+    .rn-thumb{display:none}
+    .rn-item{grid-template-columns:1fr}
     .trade-body{grid-template-columns:1fr}
     .side+.side{border-left:0;border-top:1px solid var(--border)}
     .rec .rv{font-size:18px}
@@ -615,7 +651,13 @@
       <button type="button" class="nav-sec-h" disabled>Trade Block <span class="soon">soon</span></button>
     </div>
     <div class="nav-sec">
-      <button type="button" class="nav-sec-h" disabled>Research <span class="soon">soon</span></button>
+      <button type="button" class="nav-sec-h" data-sec="research" aria-expanded="true">Research</button>
+      <div class="nav-sub" role="tablist" aria-label="Research">
+        <button role="tab" aria-selected="false" data-p="research">Recent&nbsp;Articles</button>
+        <button role="tab" aria-selected="false" data-p="rfmovers">Risers&nbsp;&amp;&nbsp;Fallers</button>
+        <button role="tab" aria-selected="false" data-p="rfreddit">r/DynastyFF</button>
+        <button role="tab" aria-selected="false" data-p="rftools">Tools&nbsp;&amp;&nbsp;Rankings</button>
+      </div>
     </div>
   </nav>
   <div class="side-foot">
@@ -865,6 +907,36 @@
     <div class="tc-verdict" id="tcVerdict"></div>
   </div>
 
+  <div class="panel" id="p-research" hidden>
+    <div class="h-kicker">Feeds</div>
+    <h2 class="sec">Recent Articles</h2>
+    <p class="sec-note" id="artNote">Newest items from a handful of NFL and fantasy sites, refreshed a few times a day.</p>
+    <div class="rec-controls" id="artSrc" role="group" aria-label="Source"></div>
+    <div id="artList"></div>
+  </div>
+
+  <div class="panel" id="p-rfmovers" hidden>
+    <div class="h-kicker">Market</div>
+    <h2 class="sec">Risers &amp; Fallers</h2>
+    <p class="sec-note">Biggest 30-day moves in trade value, from FantasyCalc.</p>
+    <div class="rec-controls" id="rfFmt" role="group" aria-label="Format"></div>
+    <div id="rfBody"></div>
+  </div>
+
+  <div class="panel" id="p-rfreddit" hidden>
+    <div class="h-kicker">Community</div>
+    <h2 class="sec">r/DynastyFF</h2>
+    <p class="sec-note" id="rdNote">What the dynasty subreddit is talking about right now.</p>
+    <div id="rdList"></div>
+  </div>
+
+  <div class="panel" id="p-rftools" hidden>
+    <div class="h-kicker">Bookmarks</div>
+    <h2 class="sec">Tools &amp; Rankings</h2>
+    <p class="sec-note">External resources — each opens in a new tab.</p>
+    <div class="rn-tools" id="toolsList"></div>
+  </div>
+
   <div class="foot-brand" aria-hidden="true">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="FantasyMags — a Great Dane reading her fantasy magazine">
     <g transform="translate(200,204) scale(0.74) translate(-200,-204)">
@@ -975,7 +1047,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"seasons":11,"slug":"dischnasty","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"seasons":22,"slug":"cdiddy","type":"redraft"}]},"version":"20260903203532"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"seasons":11,"slug":"dischnasty","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"seasons":22,"slug":"cdiddy","type":"redraft"}]},"version":"20260903210843"}</script>
 <script>
 "use strict";
 (function(){
@@ -1129,7 +1201,8 @@
   }
 
   /* ---- init once (theme, tabs, league picker) ---- */
-  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs','tradecalc'];
+  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs','tradecalc',
+              'research','rfmovers','rfreddit','rftools'];
   var root = document.documentElement, TKEY='dischnasty-theme';
   try { var sv = localStorage.getItem(TKEY); if (sv) root.setAttribute('data-theme', sv); } catch(e){}
   function toggleTheme(){
@@ -1203,6 +1276,7 @@
     TABS.forEach(function(x){ document.getElementById('p-'+x).hidden = (x !== p); });
     var cur = tabs.querySelector('button[data-p="'+p+'"]');
     document.getElementById('topbarTitle').textContent = cur ? cur.textContent : '';
+    if (p === 'research' && FM._drawArticles) FM._drawArticles();
   }
   function applyTabAvailability(){
     var lg = DATA.league || {};
@@ -1257,6 +1331,7 @@
     renderHeader();
     sec_overview(); sec_standings(); sec_records(); sec_legacy(); sec_h2h();
     sec_names(); sec_players(); sec_drafts(); sec_draftGrades(); sec_trades(); sec_playoffs(); sec_tradecalc();
+    sec_research();
     applyTabAvailability();
   }
 
@@ -2964,6 +3039,191 @@
       selA.innerHTML = ''; selB.innerHTML = ''; listA.innerHTML = ''; listB.innerHTML = '';
       verdict.innerHTML = '<div class="rv-empty">Trade values aren’t available for this league yet.</div>';
     });
+  }
+
+  /* ================================================================
+     Research tab — league-independent. Feeds live in bundles/research.json,
+     refreshed by a scheduled GitHub Action; fetched once, cached on FM.
+     ================================================================ */
+  function researchAgo(epoch){
+    if (!epoch) return '';
+    var s = Date.now()/1000 - epoch;
+    if (s < 0) s = 0;
+    if (s < 90) return 'just now';
+    if (s < 3600) return Math.round(s/60) + 'm ago';
+    if (s < 86400) return Math.round(s/3600) + 'h ago';
+    if (s < 172800) return 'yesterday';
+    if (s < 604800) return Math.round(s/86400) + 'd ago';
+    return new Date(epoch*1000).toLocaleDateString(undefined, { month:'short', day:'numeric' });
+  }
+  var RTOOLS = [
+    ['Rankings & values', [
+      ['KeepTradeCut', 'Crowdsourced dynasty & redraft player and pick rankings.', 'https://keeptradecut.com/'],
+      ['FantasyCalc', 'Trade values from real completed trades — powers our calculator.', 'https://fantasycalc.com/'],
+      ['DynastyProcess', 'Open-source dynasty values and expected-points tools.', 'https://dynastyprocess.com/'],
+      ['Justin Boone — Trade Value Chart', 'Weekly redraft trade values, at Yahoo Sports.', 'https://sports.yahoo.com/author/justin-boone/']
+    ]],
+    ['Research & stats', [
+      ['Pro Football Reference', 'The NFL stats reference — game logs, splits, history.', 'https://www.pro-football-reference.com/'],
+      ['FantasyPros', 'Consensus rankings, start/sit, waiver and draft tools.', 'https://www.fantasypros.com/nfl/'],
+      ['4for4', 'Projections, strength-of-schedule and DFS tools.', 'https://www.4for4.com/'],
+      ['Draft Sharks', 'Projections, injury predictor and draft software.', 'https://www.draftsharks.com/']
+    ]],
+    ['Communities', [
+      ['r/DynastyFF', 'The dynasty-format subreddit.', 'https://www.reddit.com/r/DynastyFF/'],
+      ['r/fantasyfootball', 'The main fantasy football subreddit.', 'https://www.reddit.com/r/fantasyfootball/']
+    ]]
+  ];
+
+  function sec_research(){
+    if (!document.getElementById('p-research')) return;
+    if (!FM._research){
+      var cb = Math.floor(Date.now() / 21600000);   // 6-hour cache bucket
+      FM._research = fetch('bundles/research.json?cb=' + cb)
+        .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+        .catch(function(){ return null; });
+    }
+    FM._research.then(renderResearch);
+  }
+
+  function renderResearch(R){
+    var artList = document.getElementById('artList');
+    var artSrc  = document.getElementById('artSrc');
+    var rfBody  = document.getElementById('rfBody');
+    var rfFmt   = document.getElementById('rfFmt');
+    var rdList  = document.getElementById('rdList');
+    var tools   = document.getElementById('toolsList');
+    if (!artList) return;   /* panel not in DOM (shouldn't happen) */
+
+    /* ---- Tools (static, always) ---- */
+    tools.innerHTML = RTOOLS.map(function(grp){
+      return '<h3>' + esc(grp[0]) + '</h3>' + grp[1].map(function(t){
+        return '<a class="rn-tool" href="' + esc(t[2]) + '" target="_blank" rel="noopener">' +
+          '<span class="tt">' + esc(t[0]) + '</span><span class="td">' + esc(t[1]) + '</span></a>';
+      }).join('');
+    }).join('');
+
+    if (!R){
+      var msg = '<div class="rn-empty">Couldn’t load the feeds right now — try again shortly.</div>';
+      artList.innerHTML = msg; rfBody.innerHTML = msg; rdList.innerHTML = msg;
+      return;
+    }
+
+    var stamp = R.generated ? new Date(R.generated) : null;
+    document.getElementById('artNote').textContent =
+      'Newest items from a few NFL and fantasy sites' +
+      (stamp ? ' · updated ' + researchAgo(stamp.getTime()/1000) : '') + '.';
+
+    /* ---- Recent Articles ---- */
+    var srcs = R.sources || [];
+    var nameByKey = {}; srcs.forEach(function(s){ nameByKey[s.key] = s.name; });
+
+    function artItem(it, srcName){
+      var img = it.image
+        ? '<img class="rn-thumb" loading="lazy" decoding="async" alt="" src="' +
+          esc(it.image) + '" onerror="this.remove()">'
+        : '';
+      return '<div class="rn-item">' +
+        '<div class="rn-body">' +
+          '<div class="rn-head"><span class="rn-src">' + esc(srcName) + '</span>' +
+            (it.epoch ? '<span class="rn-time">' + researchAgo(it.epoch) + '</span>' : '') + '</div>' +
+          '<a class="rn-t" href="' + esc(it.link) + '" target="_blank" rel="noopener">' + esc(it.title) + '</a>' +
+          (it.excerpt ? '<div class="rn-x">' + esc(it.excerpt) + '</div>' : '') +
+        '</div>' + img + '</div>';
+    }
+    function drawArticles(key){
+      var items;
+      if (key === 'all'){
+        var seen = {};
+        items = [];
+        srcs.forEach(function(s){
+          (s.items || []).forEach(function(it){
+            var k = it.title.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 60);
+            if (seen[k]) return; seen[k] = 1;
+            items.push({ it:it, src:s.name });
+          });
+        });
+        items.sort(function(a, b){
+          return (b.it.epoch || (Date.now()/1000 - 1800)) - (a.it.epoch || (Date.now()/1000 - 1800));
+        });
+        artList.innerHTML = '<div class="rn-list">' +
+          items.map(function(r){ return artItem(r.it, r.src); }).join('') + '</div>';
+      } else {
+        var s = srcs.filter(function(x){ return x.key === key; })[0];
+        var list = s ? (s.items || []) : [];
+        artList.innerHTML = list.length
+          ? '<div class="rn-list">' + list.map(function(it){ return artItem(it, s.name); }).join('') + '</div>'
+          : '<div class="rn-empty">Nothing from this source right now.</div>';
+      }
+    }
+    var savedSrc; try { savedSrc = localStorage.getItem('fm-art-src'); } catch(e){}
+    var srcKeys = ['all'].concat(srcs.map(function(s){ return s.key; }));
+    if (srcKeys.indexOf(savedSrc) < 0) savedSrc = 'all';
+    artSrc.innerHTML = '<button data-k="all" aria-pressed="' + (savedSrc === 'all') + '">All</button>' +
+      srcs.map(function(s){
+        return '<button data-k="' + esc(s.key) + '" aria-pressed="' + (savedSrc === s.key) + '">' + esc(s.name) + '</button>';
+      }).join('');
+    artSrc.onclick = function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      Array.prototype.forEach.call(artSrc.children, function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      try { localStorage.setItem('fm-art-src', b.dataset.k); } catch(e){}
+      drawArticles(b.dataset.k);
+    };
+    /* the article list carries images — only build it once its panel is on screen,
+       otherwise lazy <img> parsed inside a hidden panel never fire, and eager ones
+       would fetch ~20 news photos on every page load. */
+    FM._drawArticles = function(){
+      var k; try { k = localStorage.getItem('fm-art-src'); } catch(e){}
+      if (srcKeys.indexOf(k) < 0) k = 'all';
+      drawArticles(k);
+    };
+    if (!document.getElementById('p-research').hidden) FM._drawArticles();
+
+    /* ---- Risers & Fallers ---- */
+    function moverRow(m, up){
+      var a = Math.abs(m.trend || 0).toLocaleString();
+      var pct = m.pct ? ' <span class="pct">' + (m.pct >= 0 ? '+' : '−') + Math.abs(m.pct) + '%</span>' : '';
+      return '<div class="row"><div><span class="pn">' + esc(m.name) + '</span>' +
+        '<span class="pp">' + esc(m.pos || '') + (m.team ? ' · ' + esc(m.team) : '') + '</span></div>' +
+        '<div class="mv ' + (up ? 'up' : 'down') + '">' + (up ? '+' : '−') + a + pct + '</div></div>';
+    }
+    function drawMovers(fmt){
+      var mv = (R.movers || {})[fmt] || { risers:[], fallers:[] };
+      var col = function(title, arr, up){
+        return '<div><h3>' + title + '</h3>' + (arr.length
+          ? '<div class="rn-mv">' + arr.map(function(m){ return moverRow(m, up); }).join('') + '</div>'
+          : '<div class="rn-empty">No movers.</div>') + '</div>';
+      };
+      rfBody.innerHTML = '<div class="rn-cols">' +
+        col('Rising', mv.risers || [], true) + col('Falling', mv.fallers || [], false) + '</div>';
+    }
+    var savedFmt; try { savedFmt = localStorage.getItem('fm-rf-fmt'); } catch(e){}
+    if (savedFmt !== 'redraft') savedFmt = 'dynasty';
+    rfFmt.innerHTML =
+      '<button data-k="dynasty" aria-pressed="' + (savedFmt === 'dynasty') + '">Dynasty</button>' +
+      '<button data-k="redraft" aria-pressed="' + (savedFmt === 'redraft') + '">Redraft</button>';
+    rfFmt.onclick = function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      Array.prototype.forEach.call(rfFmt.children, function(x){ x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      try { localStorage.setItem('fm-rf-fmt', b.dataset.k); } catch(e){}
+      drawMovers(b.dataset.k);
+    };
+    drawMovers(savedFmt);
+
+    /* ---- r/DynastyFF ---- */
+    var rd = (R.reddit && R.reddit.items) || [];
+    document.getElementById('rdNote').textContent =
+      'What the dynasty subreddit is talking about' + (stamp ? ' · updated ' + researchAgo(stamp.getTime()/1000) : '') + '.';
+    rdList.innerHTML = rd.length
+      ? '<div class="rn-list">' + rd.map(function(it){
+          return '<div class="rn-item"><div class="rn-body">' +
+            '<a class="rn-t" href="' + esc(it.link) + '" target="_blank" rel="noopener">' + esc(it.title) + '</a>' +
+            '<div class="rn-x">' + (it.author ? esc(it.author) + ' · ' : '') + researchAgo(it.epoch) + '</div>' +
+          '</div></div>';
+        }).join('') + '</div>' +
+        '<a class="rn-tool" style="margin-top:6px" href="https://www.reddit.com/r/DynastyFF/" target="_blank" rel="noopener">' +
+        '<span class="tt">Open r/DynastyFF</span></a>'
+      : '<div class="rn-empty">Couldn’t reach Reddit this cycle.</div>';
   }
 
   /* ---- boot ---- */

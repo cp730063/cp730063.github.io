@@ -15,3 +15,5 @@ _out/
 _b64/
 _mkico.pl
 _serve.pl
+
+.research_*.tmp
