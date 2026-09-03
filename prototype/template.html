@@ -2205,7 +2205,7 @@
         else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f0(diff) + ' (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
         var wa = 100 * a / ((a + b) || 1);
         var uneven = (cA && cB && cA !== cB)
-          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost. That’s cleaner than guessing a “consolidation” bonus.</div>'
+          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost.</div>'
           : '';
         verdict.innerHTML =
           '<div class="tc-vtot">' +

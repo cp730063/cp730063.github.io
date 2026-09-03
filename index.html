@@ -675,7 +675,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903154421","manifest":{"leagues":[{"lastSeason":2025,"primary":1,"hasTrades":true,"firstSeason":2015,"type":"dynasty","slug":"dischnasty","hasDrafts":true,"seasons":11,"label":"The Eternal Dischnasty","hasPlayers":true},{"type":"redraft","slug":"cdiddy","seasons":22,"hasDrafts":true,"hasPlayers":true,"label":"C Diddy's Annual FFL","primary":0,"lastSeason":2025,"hasTrades":false,"firstSeason":2003}]}}</script>
+<script id="fmdata" type="application/json">{"version":"20260903155007","manifest":{"leagues":[{"primary":1,"label":"The Eternal Dischnasty","seasons":11,"hasDrafts":true,"lastSeason":2025,"hasTrades":true,"firstSeason":2015,"slug":"dischnasty","type":"dynasty","hasPlayers":true},{"seasons":22,"hasDrafts":true,"lastSeason":2025,"primary":0,"label":"C Diddy's Annual FFL","type":"redraft","hasPlayers":true,"hasTrades":false,"slug":"cdiddy","firstSeason":2003}]}}</script>
 <script>
 "use strict";
 (function(){
@@ -2205,7 +2205,7 @@
         else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f0(diff) + ' (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
         var wa = 100 * a / ((a + b) || 1);
         var uneven = (cA && cB && cA !== cB)
-          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost. That’s cleaner than guessing a “consolidation” bonus.</div>'
+          ? '<div class="tc-tip">Uneven trade (' + cA + '&nbsp;for&nbsp;' + cB + '). Whichever side takes on more players may have to cut someone to fit them — add those players to that side to see the real cost.</div>'
           : '';
         verdict.innerHTML =
           '<div class="tc-vtot">' +
