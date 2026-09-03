@@ -455,15 +455,36 @@
   </div>
 
   <div class="panel" id="p-records" hidden>
-    <div class="h-kicker">The book</div>
-    <h2 class="sec">Record book</h2>
-    <p class="sec-note">Single-game and single-season marks across all 11 played seasons. Choose which games count.</p>
-    <div class="rec-controls" id="scopePick" role="group" aria-label="Record scope">
-      <button aria-pressed="true" data-s="reg">Regular season</button>
-      <button aria-pressed="false" data-s="all">Incl. playoffs</button>
-      <button aria-pressed="false" data-s="po">Playoffs only</button>
+    <div class="h-kicker">Where everyone stands</div>
+    <h2 class="sec">All&#8209;time rankings</h2>
+    <p class="sec-note">Every manager ranked by the metric you choose. Click a column header to re-sort.</p>
+    <div class="rec-controls" id="rankMetric" role="group" aria-label="Metric">
+      <button aria-pressed="true"  data-m="wins">Wins</button>
+      <button aria-pressed="false" data-m="winpct">Win&nbsp;%</button>
+      <button aria-pressed="false" data-m="pf">Points&nbsp;for</button>
+      <button aria-pressed="false" data-m="pa">Points&nbsp;against</button>
+      <button aria-pressed="false" data-m="ppg">Points&nbsp;/&nbsp;game</button>
+      <button aria-pressed="false" data-m="trades">Trades</button>
     </div>
-    <div class="rec-list" id="recList"></div>
+    <div class="rec-controls" id="rankScope" role="group" aria-label="Scope">
+      <button aria-pressed="true"  data-s="reg">Regular season</button>
+      <button aria-pressed="false" data-s="playoff">Playoffs</button>
+      <button aria-pressed="false" data-s="both">Combined</button>
+    </div>
+    <p class="sec-note" id="rankNote"></p>
+    <div class="tbl-wrap"><table id="rankTbl"></table></div>
+
+    <section style="margin-top:44px">
+      <div class="h-kicker">The book</div>
+      <h2 class="sec">Record book</h2>
+      <p class="sec-note" id="recBookNote">Single-game and single-season marks. Choose which games count.</p>
+      <div class="rec-controls" id="scopePick" role="group" aria-label="Record scope">
+        <button aria-pressed="true" data-s="reg">Regular season</button>
+        <button aria-pressed="false" data-s="all">Incl. playoffs</button>
+        <button aria-pressed="false" data-s="po">Playoffs only</button>
+      </div>
+      <div class="rec-list" id="recList"></div>
+    </section>
   </div>
 
   <div class="panel" id="p-legacy" hidden>
@@ -592,7 +613,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"version":"20260903144929","manifest":{"leagues":[{"hasTrades":true,"primary":1,"slug":"dischnasty","label":"The Eternal Dischnasty","hasDrafts":true,"hasPlayers":true,"type":"dynasty","firstSeason":2015,"lastSeason":2025,"seasons":11},{"hasPlayers":true,"type":"redraft","firstSeason":2003,"lastSeason":2025,"seasons":22,"hasTrades":false,"primary":0,"label":"C Diddy's Annual FFL","slug":"cdiddy","hasDrafts":true}]}}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"lastSeason":2025,"hasTrades":true,"seasons":11,"slug":"dischnasty","primary":1,"hasDrafts":true,"firstSeason":2015,"hasPlayers":true,"type":"dynasty","label":"The Eternal Dischnasty"},{"type":"redraft","hasPlayers":true,"firstSeason":2003,"label":"C Diddy's Annual FFL","seasons":22,"lastSeason":2025,"hasTrades":false,"hasDrafts":true,"primary":0,"slug":"cdiddy"}]},"version":"20260903150551"}</script>
 <script>
 "use strict";
 (function(){
@@ -1128,6 +1149,88 @@
       render(b.dataset.s);
     });
     render('reg');
+
+    /* ---- all-time rankings widget ---- */
+    function rankAgg(scope){
+      var m = {};
+      function rr(pid){ return m[pid] || (m[pid] = { pid:pid, w:0, l:0, t:0, pf:0, pa:0, gp:0 }); }
+      played.forEach(function(s){
+        (s.games||[]).forEach(function(g){
+          if (scope==='reg' && g.type!=='reg') return;
+          if (scope==='playoff' && g.type!=='playoff') return;
+          if (scope==='both' && !(g.type==='reg'||g.type==='playoff')) return;
+          if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+          [[g.a,g.ap,g.bp],[g.b,g.bp,g.ap]].forEach(function(x){
+            var e = rr(x[0]); e.gp++; e.pf += x[1]; e.pa += x[2];
+            if (x[1]>x[2]) e.w++; else if (x[1]<x[2]) e.l++; else e.t++;
+          });
+        });
+      });
+      return m;
+    }
+    function tradeCount(pid){
+      return (DATA.trades||[]).filter(function(tr){
+        return (tr.sides||[]).some(function(sd){ return sd.personId===pid; });
+      }).length;
+    }
+    var RMET = {
+      wins:   { label:'Wins',           rate:false, fmt:f0,
+                val:function(e){ return e.w; },
+                extra:[ ['W–L–T','left', function(e){ return e.w+'–'+e.l+(e.t?'–'+e.t:''); }] ] },
+      winpct: { label:'Win %',          rate:true,  fmt:function(v){ return (100*v).toFixed(1)+'%'; },
+                val:function(e){ return e.gp ? e.w/e.gp : 0; },
+                extra:[ ['W–L–T','left', function(e){ return e.w+'–'+e.l+(e.t?'–'+e.t:''); }], ['Games',null,function(e){return e.gp;}] ] },
+      pf:     { label:'Points for',      rate:false, fmt:f0,
+                val:function(e){ return e.pf; }, extra:[ ['Games',null,function(e){return e.gp;}] ] },
+      pa:     { label:'Points against',  rate:false, fmt:f0,
+                val:function(e){ return e.pa; }, extra:[ ['Games',null,function(e){return e.gp;}] ] },
+      ppg:    { label:'Points / game',   rate:true,  fmt:f2,
+                val:function(e){ return e.gp ? e.pf/e.gp : 0; },
+                extra:[ ['Points',null,function(e){return f0(e.pf);}], ['Games',null,function(e){return e.gp;}] ] },
+      trades: { label:'Trades',          rate:false, fmt:f0, noScope:true,
+                val:function(e){ return tradeCount(e.pid); }, extra:[] }
+    };
+    var rMet = 'wins', rScope = 'reg';
+    var rmBar = document.getElementById('rankMetric'), rsBar = document.getElementById('rankScope');
+
+    function drawRank(){
+      var M = RMET[rMet];
+      rsBar.style.opacity = M.noScope ? '.4' : '';
+      rsBar.style.pointerEvents = M.noScope ? 'none' : '';
+      var agg = rankAgg(rScope);
+      var minG = rScope==='playoff' ? 4 : rScope==='both' ? 24 : 20;
+      var rows = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length; })
+        .map(function(p){ return agg[p.id] || { pid:p.id, w:0,l:0,t:0,pf:0,pa:0,gp:0 }; });
+      if (M.rate) rows = rows.filter(function(e){ return e.gp >= minG; });
+      else if (rMet !== 'trades') rows = rows.filter(function(e){ return e.gp > 0; });
+
+      var cols = [
+        { key:'name', label:'Manager', align:'left', val:function(e){ return pName(e.pid); },
+          cell:function(e){ return '<b>'+esc(pName(e.pid))+'</b>'; } },
+        { key:'val', label:M.label, num:true, val:M.val, cell:function(e){ return '<b>'+M.fmt(M.val(e))+'</b>'; } }
+      ];
+      (M.extra||[]).forEach(function(x, i){
+        cols.push({ key:'x'+i, label:x[0], align:(x[1]||'right'), num:(x[1]!=='left'),
+                    val:x[2], cell:function(e){ return x[2](e); } });
+      });
+      sortableTable(document.getElementById('rankTbl'), cols, rows, { sortKey:'val', sortDir:-1, rownum:true });
+      document.getElementById('rankNote').textContent =
+        M.noScope ? 'Trades a manager has been part of, across league history.'
+        : (rScope==='reg' ? 'Regular-season games only.' : rScope==='playoff' ? 'Playoff games only.' : 'Regular season + playoffs.') +
+          (M.rate ? ' Managers with ' + minG + '+ games.' : '') +
+          (played.some(function(s){ return s.manual; }) ? ' Hand-entered early seasons have no game scores, so they’re not counted.' : '');
+    }
+    rmBar.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      Array.prototype.forEach.call(rmBar.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      rMet = b.dataset.m; drawRank();
+    });
+    rsBar.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if (!b) return;
+      Array.prototype.forEach.call(rsBar.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+      rScope = b.dataset.s; drawRank();
+    });
+    drawRank();
   }
 
   function sec_h2h(){
