@@ -15,12 +15,9 @@ my $UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, l
 
 # ---- article sources (RSS/Atom) ------------------------------------------------
 my @SOURCES = (
+  # one NFL news wire (PFT is the fullest/fastest); the rest is fantasy analysis.
   { key=>'pft',          name=>'Pro Football Talk', home=>'https://www.nbcsports.com/nfl/profootballtalk',
     feed=>'https://www.nbcsports.com/profootballtalk.rss' },
-  { key=>'cbs',          name=>'CBS Sports',        home=>'https://www.cbssports.com/nfl/',
-    feed=>'https://www.cbssports.com/rss/headlines/nfl/' },
-  { key=>'yahoo',        name=>'Yahoo Sports',      home=>'https://sports.yahoo.com/nfl/',
-    feed=>'https://sports.yahoo.com/nfl/rss.xml' },
   { key=>'fantasypros',  name=>'FantasyPros',       home=>'https://www.fantasypros.com/nfl/',
     feed=>'https://www.fantasypros.com/rss/' },
   { key=>'dynastynerds', name=>'Dynasty Nerds',     home=>'https://www.dynastynerds.com/',
