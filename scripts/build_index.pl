@@ -2,7 +2,7 @@
 # Injects only the league MANIFEST into prototype/template.html -> ./index.html.
 # Per-league bundle data lives in bundles/<slug>.json and is fetched on demand by the page.
 use strict; use warnings; use JSON::PP;
-my $J = JSON::PP->new;
+my $J = JSON::PP->new->canonical(1);
 use FindBin qw($RealBin);
 my $ROOT = "$RealBin/..";
 
