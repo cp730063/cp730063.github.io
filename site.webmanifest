@@ -1,7 +1,7 @@
 {
   "name": "FantasyMags",
   "short_name": "FantasyMags",
-  "description": "Your personal fantasy magazine — league history, records and a trade calculator for ESPN and Sleeper leagues.",
+  "description": "Your personalized fantasy sports magazine — league history, records and a trade calculator for ESPN and Sleeper leagues.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f4f1e8",

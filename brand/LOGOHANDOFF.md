@@ -94,7 +94,7 @@ Mark plus wordmark, baseline-aligned:
   <!-- paste the contents of fm-mark.svg here -->
   <span class="fm-wordmark">
     <span class="fm-name">Fantasy<i>Mags</i></span>
-    <span class="fm-tag">Your personal fantasy magazine</span>
+    <span class="fm-tag">Your Personalized Fantasy Sports Magazine</span>
   </span>
 </a>
 ```
