@@ -479,16 +479,21 @@ if ($OVERLAY && -e "$ROOT/$OVERLAY") {
 # ---------------------------------------------------------------------------
 my $sle2025 = $SLE_PW ? "$SLE/$SLE_PW" : undef;
 my %wkpts;  # week -> {plid: pts}
+my %need = %playersOut;
 if ($sle2025) {
   for my $w (1..18) {
     my $mw = jload("$sle2025/matchups/week_$w.json"); next unless ref $mw eq 'ARRAY';
     my %acc;
-    for my $e (@$mw) { my $pp = $e->{players_points} || {}; $acc{$_} += $pp->{$_} for keys %$pp; }
+    for my $e (@$mw) {
+      my $pp = $e->{players_points} || {};
+      $acc{$_} += $pp->{$_} for keys %$pp;
+      $need{$_} = 1 for keys %$pp;                                  # every scored player -> name lookup
+      $need{$_} = 1 for grep { defined && $_ ne '0' } @{ $e->{starters} || [] };
+    }
     $wkpts{$w} = \%acc;
   }
 }
 # player name map: slim map from the big catalog for referenced ids
-my %need = %playersOut;
 if ($sle2025) {
   my $ros = jload("$sle2025/rosters.json") || [];
   for my $r (@$ros) { $need{$_}=1 for @{$r->{players}||[]} }
@@ -567,6 +572,96 @@ sub headshot {
   if (my $e = $KEY_ESPN_ID{$key}) { return "https://a.espncdn.com/i/headshots/nfl/players/full/$e.png"; }
   if (my $s = $KEY_SLE_ID{$key})  { return "https://sleepercdn.com/content/nfl/players/thumb/$s.jpg"; }
   return undef;
+}
+
+# --- box-score lineups -> bundles/<slug>.lineups.json (fetched on demand) ----
+#     row = [ name, pos, slot, nflTeam, points, headshotUrl ]
+{
+  my %LG;                     # "year|week|personId" -> { tot, st:[ rows ] }
+  my (%covFull, %covStart);   # year -> 1
+
+  # ESPN: starter flag only (no slot labels, no NFL team); 2015-17 = starters-only source
+  my %POS_ORD = (QB=>1, RB=>2, WR=>3, TE=>4, K=>8, DST=>9);
+  for my $y (@ESPN_Y) {
+    my $t2p = $ESPN_T2P{$y} || {};
+    my $wks = $epw_seasons->{$y} || {};
+    next unless %$wks;
+    my $sawBench = 0;
+    for my $wk (keys %$wks) {
+      my %byteam;
+      for my $ep (keys %{$wks->{$wk}}) {
+        my ($pts,$st,$tid) = @{$wks->{$wk}{$ep}};
+        my $pid = $t2p->{$tid} or next;
+        $sawBench = 1 if !$st;
+        next unless $st;                                   # starters only
+        push @{$byteam{$pid}}, [$ep, $pts];
+      }
+      for my $pid (keys %byteam) {
+        my @rows = sort {
+          my $pa = uc($KEY_META{ $ESPN_PID2KEY{$a->[0]} // '' }[1] // '');
+          my $pb = uc($KEY_META{ $ESPN_PID2KEY{$b->[0]} // '' }[1] // '');
+          ($POS_ORD{$pa} // 5) <=> ($POS_ORD{$pb} // 5) || $b->[1] <=> $a->[1]
+        } @{$byteam{$pid}};
+        my $tot = 0; my @st;
+        for my $r (@rows) {
+          my ($ep,$pts) = @$r;
+          my $key = $ESPN_PID2KEY{$ep};
+          my $nm  = $key ? $KEY_META{$key}[0] : "Player $ep";
+          my $pos = $key ? uc($KEY_META{$key}[1] // '') : '';
+          $tot += $pts;
+          push @st, [ $nm, $pos, $pos, undef, r2($pts), ($key ? headshot($key) : undef) ];
+        }
+        $LG{"$y|$wk|$pid"} = { tot => r2($tot), st => \@st };
+      }
+    }
+    ($sawBench ? $covFull{$y} : $covStart{$y}) = 1;
+  }
+
+  # Sleeper: real slot labels from roster_positions, ordered starters
+  for my $y (sort keys %SLE_LEAGUES) {
+    my $dir = "$SLE/$SLE_LEAGUES{$y}";
+    my $lg  = jload("$dir/league.json") or next;
+    my @slots = grep { !/^(BN|IR|TAXI)$/ } @{ $lg->{roster_positions} || [] };
+    my $r2p = $SLE_R2P{$y} || {};
+    my $any = 0;
+    for my $w (1..18) {
+      my $mw = jload("$dir/matchups/week_$w.json"); next unless ref $mw eq 'ARRAY' && @$mw;
+      next unless grep { ($_->{points} || 0) > 0 } @$mw;
+      $any = 1;
+      for my $e (@$mw) {
+        my $pid = $r2p->{ $e->{roster_id} } or next;
+        my @starters = @{ $e->{starters} || [] };
+        my $sp = $e->{starters_points} || [];
+        my $pp = $e->{players_points} || {};
+        my $tot = 0; my @st;
+        for my $i (0 .. $#starters) {
+          my $plid = $starters[$i];
+          next if !defined $plid || $plid eq '0';
+          my $pts  = defined $sp->[$i] ? $sp->[$i] : ($pp->{$plid} // 0);
+          my $key  = $SLE_PID2KEY{$plid};
+          my $meta = $pmap{$plid} || ($key ? [ @{ $KEY_META{$key} }[0,1], '' ] : ["Player $plid", '', '']);
+          my $pos  = uc($meta->[1] // ''); $pos = 'DST' if $pos eq 'DEF';
+          $tot += $pts;
+          push @st, [ $meta->[0], $pos, ($slots[$i] // $pos), ($meta->[2] || undef), r2($pts),
+                      ($key ? headshot($key) : undef) ];
+        }
+        $LG{"$y|$w|$pid"} = { tot => r2($tot), st => \@st };
+      }
+    }
+    $covFull{$y} = 1 if $any;
+  }
+
+  my @f = sort { $a <=> $b } keys %covFull;
+  my @s = sort { $a <=> $b } grep { !$covFull{$_} } keys %covStart;
+  open my $lf, ">:raw", "$ROOT/bundles/$SLUG.lineups.json" or die "write lineups: $!";
+  print $lf $j->encode({
+    coverage => { full     => (@f ? [ $f[0]+0, $f[-1]+0 ] : undef),
+                  starters => (@s ? [ $s[0]+0, $s[-1]+0 ] : undef) },
+    g => \%LG,
+  });
+  close $lf;
+  printf STDERR "  lineups: %d game-sides -> %s.lineups.json (%d bytes)\n",
+    scalar(keys %LG), $SLUG, (-s "$ROOT/bundles/$SLUG.lineups.json");
 }
 
 # --- 4b.1 player-season aggregates -------------------------------------------
