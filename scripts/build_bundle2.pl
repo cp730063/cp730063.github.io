@@ -260,7 +260,7 @@ for my $y (sort keys %SLE_LEAGUES) {
     next unless $any; $played = 1;
     my %bym;
     for my $e (@$mw) { next unless defined $e->{matchup_id}; push @{$bym{$e->{matchup_id}}}, $e; }
-    for my $mid (keys %bym) {
+    for my $mid (sort { $a <=> $b } keys %bym) {
       my $g = $bym{$mid}; next unless @$g == 2;
       my $pa = $rid2pid{$g->[0]{roster_id}}; my $pb = $rid2pid{$g->[1]{roster_id}};
       next unless $pa && $pb;
@@ -284,7 +284,7 @@ for my $y (sort keys %SLE_LEAGUES) {
   $poRes{$ru}='runner_up'   if $ru;
   $poRes{$th}='third'       if $th;
   if ($tm && defined $tm->{l}) { my $p4 = $rid2pid{$tm->{l}}; $poRes{$p4} ||= 'fourth' if $p4; }
-  for my $rid (keys %poRid) {
+  for my $rid (sort { $a <=> $b } keys %poRid) {
     my $pid = $rid2pid{$rid} or next; next if $poRes{$pid};
     my ($lm) = grep { defined $_->{l} && "$_->{l}" eq "$rid" } @$wb;
     my $rnd = $lm ? ($lm->{r}||1) : 1;
@@ -549,7 +549,7 @@ my (%KEY_ESPN_ID, %KEY_SLE_ID);   # key -> a representative platform id (for hea
 my $epw = ($PW_FILE && -e "$ROOT/$PW_FILE") ? (jload("$ROOT/$PW_FILE") || {}) : {};
 my $epw_players = $epw->{players} || {};
 my $epw_seasons = $epw->{seasons} || {};
-for my $pid (keys %$epw_players) {
+for my $pid (sort keys %$epw_players) {
   my ($nm, $pos) = @{$epw_players->{$pid}};
   $pos = uc($pos // '');
   my $key = norm_name($nm) . '|' . lc($pos);
@@ -557,7 +557,7 @@ for my $pid (keys %$epw_players) {
   $KEY_META{$key} ||= [ $nm, $pos ];
   $KEY_ESPN_ID{$key} ||= $pid if $pid =~ /^\d+$/;
 }
-for my $pid (keys %pmap) {
+for my $pid (sort keys %pmap) {
   my ($nm, $pos) = @{$pmap{$pid}};
   $pos = uc($pos // ''); $pos = 'DST' if $pos eq 'DEF';
   my $key = norm_name($nm) . '|' . lc($pos);
@@ -601,6 +601,7 @@ sub headshot {
           my $pa = uc($KEY_META{ $ESPN_PID2KEY{$a->[0]} // '' }[1] // '');
           my $pb = uc($KEY_META{ $ESPN_PID2KEY{$b->[0]} // '' }[1] // '');
           ($POS_ORD{$pa} // 5) <=> ($POS_ORD{$pb} // 5) || $b->[1] <=> $a->[1]
+            || ($a->[0] <=> $b->[0])   # stable tiebreak: equal pos+points -> by player id
         } @{$byteam{$pid}};
         my $tot = 0; my @st;
         for my $r (@rows) {
@@ -671,8 +672,8 @@ sub ps_row { my ($y,$pid,$key)=@_; $PS{"$y|$pid|$key"} ||= { y=>$y+0, personId=>
 for my $y (@ESPN_Y) {
   my $t2p = $ESPN_T2P{$y} || {};
   my $wks = $epw_seasons->{$y} || {};
-  for my $wk (keys %$wks) {
-    for my $ep (keys %{$wks->{$wk}}) {
+  for my $wk (sort { $a <=> $b } keys %$wks) {
+    for my $ep (sort keys %{$wks->{$wk}}) {
       my ($pts,$starter,$tid) = @{$wks->{$wk}{$ep}};
       my $pid = $t2p->{$tid} or next;
       my $key = $ESPN_PID2KEY{$ep} or next;
@@ -690,7 +691,7 @@ if ($SLE_PW) {
       my $pid = $SLE_R2P{2025}{ $e->{roster_id} } or next;
       my $pp = $e->{players_points} || {};
       my %starter = map { $_ => 1 } @{ $e->{starters} || [] };
-      for my $plid (keys %$pp) {
+      for my $plid (sort keys %$pp) {
         my $pts = $pp->{$plid}; next unless defined $pts;
         my $key = $SLE_PID2KEY{$plid} or next;
         my $r = ps_row(2025,$pid,$key);
@@ -701,7 +702,7 @@ if ($SLE_PW) {
   }
 }
 my @playerSeasons;
-for my $k (keys %PS) {
+for my $k (sort keys %PS) {
   my $r = $PS{$k};
   my $wc = scalar keys %{$r->{weeks}};
   next unless $wc;
@@ -722,8 +723,8 @@ for my $y (@ESPN_Y) {
   my $t2p = $ESPN_T2P{$y} || {};
   my $wks = $epw_seasons->{$y} || {};
   my %byKey;   # key -> wk -> [pts, pid]
-  for my $wk (keys %$wks) {
-    for my $ep (keys %{$wks->{$wk}}) {
+  for my $wk (sort { $a <=> $b } keys %$wks) {
+    for my $ep (sort keys %{$wks->{$wk}}) {
       my ($pts,$st,$tid) = @{$wks->{$wk}{$ep}};
       my $pid = $t2p->{$tid} or next;
       my $key = $ESPN_PID2KEY{$ep} or next;
@@ -747,7 +748,7 @@ for my $y (@ESPN_Y) {
 # ESPN draft cross-reference for acquisition on a wk<=2 opening stint
 for my $y (@ESPN_Y) {
   my $dr = $ESPN_DRAFT{$y} || {}; my $t2p = $ESPN_T2P{$y} || {};
-  for my $ep (keys %$dr) {
+  for my $ep (sort keys %$dr) {
     my ($rnd,$ov,$tid,$kept,$rpn) = @{$dr->{$ep}};
     $rpn ||= (($ov - 1) % 10) + 1;   # fall back to position within a 10-team round
     my $pid = $t2p->{$tid} or next;
@@ -786,13 +787,14 @@ if ($SLE_PW) {
     for my $t (@{ jload("$dir/transactions/week_$w.json") || [] }) {
       next unless ($t->{status}//'') eq 'complete';
       my $adds = $t->{adds} || {}; my $drops = $t->{drops} || {};
-      for my $plid (keys %$adds) {
+      for my $plid (sort keys %$adds) {
         push @events, { plid=>$plid, created=>($t->{created}//0), week=>$w+0,
                         type=>($t->{type}//''), add_rid=>$adds->{$plid}, from_rid=>$drops->{$plid} };
       }
     }
   }
-  @events = sort { $a->{created} <=> $b->{created} } @events;
+  @events = sort { $a->{created} <=> $b->{created}
+                   || $a->{week} <=> $b->{week} || $a->{plid} cmp $b->{plid} } @events;
 
   my (%onRoster, %wp);   # plid -> wk -> rid ;  plid -> wk -> pts
   for my $w (1..18) {
@@ -802,7 +804,7 @@ if ($SLE_PW) {
       for my $plid (keys %$pp) { $onRoster{$plid}{$w} = $e->{roster_id}; $wp{$plid}{$w} = $pp->{$plid}; }
     }
   }
-  for my $plid (keys %onRoster) {
+  for my $plid (sort keys %onRoster) {
     my $key = $SLE_PID2KEY{$plid} or next;
     my @stints; my $cur;
     for my $w (sort { $a <=> $b } keys %{$onRoster{$plid}}) {
@@ -855,7 +857,9 @@ if ($SLE_PW) {
 
 my %ownershipOut;
 for my $key (keys %OWN) {
-  my @s = sort { $a->{season} <=> $b->{season} || $a->{startWk} <=> $b->{startWk} } @{ $OWN{$key} };
+  my @s = sort { $a->{season} <=> $b->{season} || $a->{startWk} <=> $b->{startWk}
+                 || $a->{endWk} <=> $b->{endWk}
+                 || ($a->{personId} // '') cmp ($b->{personId} // '') } @{ $OWN{$key} };
   next unless @s;
   # collapse repeated same-owner stints: only the first of a run keeps a real acquisition
   for my $i (1 .. $#s) {
@@ -1050,7 +1054,8 @@ for my $d (@draftsOut) {
 $draftPid{ $_->{originalPersonId} } = 1 for grep { $_->{originalPersonId} } @futurePicks;
 $draftPid{ $_->{ownerPersonId} }    = 1 for grep { $_->{ownerPersonId} }    @futurePicks;
 my @peopleOut;
-for my $pid (sort { scalar(keys %{$P{$b}{seasons}}) <=> scalar(keys %{$P{$a}{seasons}}) } keys %P) {
+for my $pid (sort { scalar(keys %{$P{$b}{seasons}}) <=> scalar(keys %{$P{$a}{seasons}})
+                    || $a cmp $b } keys %P) {
   my $p = $P{$pid};
   next unless %{$p->{seasons}} || $draftPid{$pid};
   push @peopleOut, {
@@ -1062,6 +1067,18 @@ for my $pid (sort { scalar(keys %{$P{$b}{seasons}}) <=> scalar(keys %{$P{$a}{sea
 }
 
 my @playedYears = sort { $a <=> $b } map { $_->{year} } grep { $_->{played} } @seasons;
+
+# Build stamp: the data snapshot's own commit date (YYYY-MM-DD), not wall-clock,
+# so rebuilding without new commits leaves bundles byte-identical.
+my $generated;
+if (open my $gh, '-|', 'git', '-C', $ROOT, 'log', '-1', '--format=%cs') {
+  local $/; $generated = <$gh>; close $gh;
+  $generated =~ s/\s+//g if defined $generated;
+}
+unless (defined $generated && $generated =~ /^\d{4}-\d{2}-\d{2}$/) {
+  my @t = gmtime(); $generated = sprintf("%04d-%02d-%02d", $t[5]+1900, $t[4]+1, $t[3]);
+}
+
 my $out = {
   league => {
     slug => $CFG->{slug}, name => $CFG->{label}, type => $CFG->{type},
@@ -1072,7 +1089,7 @@ my $out = {
     hasDivisions => ((grep { $_->{hasDivisions} } @seasons) ? \1 : \0),
     prestige => ($CFG->{prestige} || { championship=>10, regularSeasonTitle=>4, runnerUp=>3, divisionTitle=>2, thirdPlace=>0, lastPlace=>0, playoffBerth=>0 }),
   },
-  generated_at => scalar(gmtime())." UTC",
+  generated_at => $generated,
   people => \@peopleOut,
   seasons => \@seasons,
   trades => [ sort { $b->{created} <=> $a->{created} } @tradesOut ],
