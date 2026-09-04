@@ -1104,7 +1104,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904180404"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904181621"}</script>
 <script>
 "use strict";
 (function(){
@@ -3959,6 +3959,16 @@
         }
         var thead = wrap.querySelector('thead'), realRow = thead && thead.querySelector('tr');
         if (!realRow || !realRow.children.length) return hide('wrap found but no header row');
+        /* column widths come from the first BODY row, not the header -- on at
+           least one real device the header cells' own measured width didn't
+           match the column width the body actually rendered at (multi-line
+           cells, e.g. team name + manager, can force a column wider than its
+           label alone needs), so mirroring the header's own width misaligned
+           every column after the first. The body row is what's directly
+           below the frozen header, so matching IT is also the more useful
+           target regardless. */
+        var bodyRow = wrap.querySelector('tbody tr');
+        var widthSrc = (bodyRow && bodyRow.children.length === realRow.children.length) ? bodyRow : realRow;
 
         if (wrap !== active || inner.dataset.n !== String(realRow.children.length)){
           inner.innerHTML = '<tr>' + Array.prototype.map.call(realRow.children, function(c){
@@ -3971,11 +3981,12 @@
         Array.prototype.forEach.call(realRow.children, function(c, i){
           var cc = cloneCells[i]; if (!cc) return;
           var cs = getComputedStyle(c);
+          var wSrc = widthSrc.children[i] || c;
           cc.innerHTML = c.innerHTML;
-          cc.style.cssText = 'width:' + c.getBoundingClientRect().width + 'px;' +
+          cc.style.cssText = 'width:' + wSrc.offsetWidth + 'px;box-sizing:border-box;' +
             'text-align:' + cs.textAlign + ';padding:' + cs.padding + ';font:' + cs.font + ';' +
             'color:' + cs.color + ';text-transform:' + cs.textTransform + ';' +
-            'letter-spacing:' + cs.letterSpacing + ';white-space:nowrap';
+            'letter-spacing:' + cs.letterSpacing + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         });
         var wrapRect = wrap.getBoundingClientRect();
         overlay.style.left = wrapRect.left + 'px';
