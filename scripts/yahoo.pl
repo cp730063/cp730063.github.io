@@ -17,10 +17,13 @@ use FindBin qw($RealBin);
 use JSON::PP;
 use MIME::Base64 qw(encode_base64);
 
-my $ROOT    = "$RealBin/..";
-my $CREDS   = "C:/Users/cp730/Downloads/Yahoo creds.txt";
-my $TOKFILE = "$ROOT/data/yahoo_tokens.json";
-my $j       = JSON::PP->new->pretty->canonical;
+my $ROOT     = "$RealBin/..";
+my $CREDS    = "C:/Users/cp730/Downloads/Yahoo creds.txt";
+my $TOKFILE  = "$ROOT/data/yahoo_tokens.json";
+my $REDIRECT = "https://cp730063.github.io/oauth-callback.html";  # must match the Yahoo app's Redirect URI exactly
+my $j        = JSON::PP->new->pretty->canonical;
+
+sub uri_escape { my ($s) = @_; $s =~ s/([^A-Za-z0-9\-._~])/sprintf("%%%02X", ord($1))/ge; $s }
 
 sub read_creds {
   open my $fh, '<', $CREDS
@@ -56,7 +59,7 @@ sub do_token_request {
   my (%form) = @_;
   my ($cid, $csecret) = read_creds();
   my $auth = encode_base64("$cid:$csecret", '');
-  my $body = join('&', map { "$_=$form{$_}" } keys %form);
+  my $body = join('&', map { "$_=" . uri_escape($form{$_}) } keys %form);
   my @cmd = ('curl', '-s', '-X', 'POST', 'https://api.login.yahoo.com/oauth2/get_token',
              '-H', "Authorization: Basic $auth",
              '-H', 'Content-Type: application/x-www-form-urlencoded',
@@ -72,24 +75,24 @@ $mode //= '';
 if ($mode eq 'authurl') {
   my ($cid) = read_creds();
   print "Open this URL in a browser signed into the Yahoo account that owned the old FBL league:\n\n";
-  print "https://api.login.yahoo.com/oauth2/request_auth?client_id=$cid&redirect_uri=oob&response_type=code&language=en-us\n\n";
+  print "https://api.login.yahoo.com/oauth2/request_auth?client_id=$cid&redirect_uri=" . uri_escape($REDIRECT) . "&response_type=code&language=en-us\n\n";
   print "Approve access, copy the code Yahoo shows you, then run:\n";
   print "  perl scripts/yahoo.pl exchange <code>\n";
 }
 elsif ($mode eq 'exchange') {
   my $code = $args[0] or die "usage: yahoo.pl exchange <code>\n";
-  save_tokens(do_token_request(grant_type => 'authorization_code', redirect_uri => 'oob', code => $code));
+  save_tokens(do_token_request(grant_type => 'authorization_code', redirect_uri => $REDIRECT, code => $code));
 }
 elsif ($mode eq 'refresh') {
   my $tok = load_tokens();
-  save_tokens(do_token_request(grant_type => 'refresh_token', redirect_uri => 'oob', refresh_token => $tok->{refresh_token}));
+  save_tokens(do_token_request(grant_type => 'refresh_token', redirect_uri => $REDIRECT, refresh_token => $tok->{refresh_token}));
 }
 elsif ($mode eq 'get') {
   my $path = $args[0] or die "usage: yahoo.pl get <api-path>\n";
   my $tok = load_tokens();
   # refresh proactively if the access token is more than ~55 minutes old
   if (time() - ($tok->{obtained_at} // 0) > 55 * 60) {
-    save_tokens(do_token_request(grant_type => 'refresh_token', redirect_uri => 'oob', refresh_token => $tok->{refresh_token}));
+    save_tokens(do_token_request(grant_type => 'refresh_token', redirect_uri => $REDIRECT, refresh_token => $tok->{refresh_token}));
     $tok = load_tokens();
   }
   my $url = "https://fantasysports.yahooapis.com/fantasy/v2/$path";
