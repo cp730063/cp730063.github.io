@@ -66,7 +66,7 @@ my %MLB_STAT = (
   1=>['H',0], 3=>['2B',0], 4=>['3B',0], 0=>['AB',0], 27=>['SO',1], 25=>['GIDP',1],
   53=>['W',0], 54=>['L',1], 57=>['SV',0], 58=>['BS',1], 83=>['HLD',0],
   48=>['K',0], 47=>['ERA',1], 41=>['WHIP',1], 49=>['K/9',0], 42=>['K/BB',0],
-  44=>['BB',1], 45=>['H',1], 46=>['ER',1], 34=>['OUTS',0], 32=>['GS',0],
+  44=>['BB',1], 45=>['H',1], 46=>['ER',1], 34=>['IP',0], 32=>['GS',0],
   37=>['QS',0], 39=>['CG',0], 13=>['SHO',0],
 );
 sub r3 { my ($n)=@_; defined $n ? 0+sprintf("%.3f",$n) : undef }
@@ -328,20 +328,39 @@ for my $y (@ESPN_Y) {
   }
 
   # mlb: attach each team's regular-season category totals (counting stats
-  # summed, rate stats averaged across regular-season weeks — see catAcc note above)
+  # summed, rate stats averaged across regular-season weeks — see catAcc note
+  # above). A roto season has no weekly matchups at all (catAcc stays empty),
+  # but ESPN's team.valuesByStat IS the real season-long total in that case
+  # (no playoff-week contamination to worry about — roto has no separate
+  # playoff period), so use it directly instead of leaving the season blank.
   if ($SPORT eq 'mlb' && @catIds) {
-    for my $pid (keys %entry) {
-      my $acc = $catAcc{$pid} or next;
-      my @ct;
-      for my $sid (@catIds) {
-        my $a3 = $acc->{$sid} or next;
-        my ($lbl,$lo) = @{ $MLB_STAT{$sid} || ["S$sid",0] };
-        my $rate = $RATE_ID{$sid} ? 1 : 0;
-        my $val = $rate ? ($a3->{n} ? $a3->{sum}/$a3->{n} : undef) : $a3->{sum};
-        next unless defined $val;
-        push @ct, { k=>$lbl, v=>($rate ? r3($val) : r2($val)), lo=>$lo, rate=>$rate };
+    if ($isRoto) {
+      for my $t (@{ $d->{teams} || [] }) {
+        my $pid = $tid2pid{$t->{id}} or next;
+        my $vbs = $t->{valuesByStat} || {};
+        my @ct;
+        for my $sid (@catIds) {
+          my $v = $vbs->{$sid}; next unless defined $v;
+          my ($lbl,$lo) = @{ $MLB_STAT{$sid} || ["S$sid",0] };
+          my $rate = $RATE_ID{$sid} ? 1 : 0;
+          push @ct, { k=>$lbl, v=>($rate ? r3($v) : r2($v)), lo=>$lo, rate=>$rate };
+        }
+        $entry{$pid}{catTotals} = \@ct if @ct;
       }
-      $entry{$pid}{catTotals} = \@ct if @ct;
+    } else {
+      for my $pid (keys %entry) {
+        my $acc = $catAcc{$pid} or next;
+        my @ct;
+        for my $sid (@catIds) {
+          my $a3 = $acc->{$sid} or next;
+          my ($lbl,$lo) = @{ $MLB_STAT{$sid} || ["S$sid",0] };
+          my $rate = $RATE_ID{$sid} ? 1 : 0;
+          my $val = $rate ? ($a3->{n} ? $a3->{sum}/$a3->{n} : undef) : $a3->{sum};
+          next unless defined $val;
+          push @ct, { k=>$lbl, v=>($rate ? r3($val) : r2($val)), lo=>$lo, rate=>$rate };
+        }
+        $entry{$pid}{catTotals} = \@ct if @ct;
+      }
     }
   }
 

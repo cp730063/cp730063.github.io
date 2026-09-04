@@ -1174,6 +1174,13 @@
     if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 3000 }); else setTimeout(go, 1200);
   }
 
+  /* canonical display order for baseball scoring categories (hitting, then
+     pitching, in roughly the order a scorecard lists them) -- anything not
+     in this list (a category a league used that isn't here) sorts after it,
+     in whatever order it was first seen, so nothing silently disappears. */
+  var CAT_ORDER = ['R','HR','RBI','SB','AVG','OBP','SLG','OPS','IP','W','K','K/9','SV','ERA','WHIP'];
+  function catRank(k){ var i = CAT_ORDER.indexOf(k); return i < 0 ? CAT_ORDER.length : i; }
+  function outsToIP(outs){ if (outs==null) return '—'; outs = Math.round(outs); return Math.floor(outs/3) + '.' + (outs%3); }
   var f2 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
   var f1 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}); };
   var f0 = function(n){ return Math.round(n==null?0:n).toLocaleString(); };
@@ -1680,10 +1687,12 @@
       var withCats = (s.entries||[]).filter(function(e){ return e.catTotals && e.catTotals.length; });
       if (!isCats || !withCats.length){ sec.hidden = true; return; }
       sec.hidden = false;
-      document.getElementById('catStatsNote').textContent =
-        s.year+' regular season — every scoring category, one row per team. Same view as ESPN’s Standings › Stats tab. Click a column to sort.';
+      document.getElementById('catStatsNote').textContent = s.scoring === 'roto'
+        ? s.year+' (roto season) — every scoring category, one row per team, straight from ESPN’s final standings. Click a column to sort.'
+        : s.year+' regular season — every scoring category, one row per team. Same view as ESPN’s Standings › Stats tab. Click a column to sort.';
       var catKeys = [];
       withCats[0].catTotals.forEach(function(c){ catKeys.push(c.k); });
+      catKeys.sort(function(a,b){ return catRank(a)-catRank(b); });
       var hasRate = withCats[0].catTotals.some(function(c){ return c.rate; });
       var cols = [
         {key:'team', label:'Team', align:'left', val:function(e){return e.team;},
@@ -1693,12 +1702,14 @@
         cols.push({ key:'c_'+k, label:k, num:true,
           val:function(e){ var c=(e.catTotals||[]).filter(function(x){return x.k===k;})[0]; return c?c.v:-Infinity; },
           cell:function(e){ var c=(e.catTotals||[]).filter(function(x){return x.k===k;})[0];
-            return c==null ? '—' : c.rate ? c.v.toFixed(3).replace(/^0\./,'.') : f0(c.v); } });
+            return c==null ? '—' : c.rate ? c.v.toFixed(3).replace(/^0\./,'.') : k==='IP' ? outsToIP(c.v) : f0(c.v); } });
       });
       sortableTable(document.getElementById('catStatsTbl'), cols, withCats, {sortKey:'team', sortDir:1});
-      document.getElementById('catStatsFoot').innerHTML = hasRate
-        ? 'Counting categories (HR, RBI, K, W, …) are true regular-season totals. Rate categories (AVG, OBP, ERA, WHIP, …) are the <b>average of that team’s weekly rate</b> across the regular season, not an official recomputed season rate — ESPN’s own season stat lines include playoff weeks and are built from full underlying box scores we don’t have access to.'
-        : 'Regular-season totals only.';
+      document.getElementById('catStatsFoot').innerHTML = s.scoring === 'roto'
+        ? 'A roto season has no weekly matchups, so these are ESPN’s own official season-end category totals — no approximation needed.'
+        : hasRate
+          ? 'Counting categories (HR, RBI, K, W, …) are true regular-season totals. Rate categories (AVG, OBP, ERA, WHIP, …) are the <b>average of that team’s weekly rate</b> across the regular season, not an official recomputed season rate — ESPN’s own season stat lines include playoff weeks and are built from full underlying box scores we don’t have access to.'
+          : 'Regular-season totals only.';
     }
 
     function renderCatStatsAllTime(){
@@ -1718,6 +1729,7 @@
       var rows = Object.keys(agg).map(function(pid){ return agg[pid]; });
       if (!rows.length || !order.length){ sec.hidden = true; return; }
       sec.hidden = false;
+      order.sort(function(a,b){ return catRank(a)-catRank(b); });
       document.getElementById('catStatsNote').textContent =
         'All-time regular season, '+yFirst+'–'+yLast+' — every scoring category, one row per manager. Click a column to sort.';
       var cols = [
@@ -1730,7 +1742,7 @@
           val:function(r){ var b=r.byK[k]; return b ? (b.rate ? b.sum/b.n : b.sum) : -Infinity; },
           cell:function(r){ var b=r.byK[k]; if (!b) return '—';
             var v = b.rate ? b.sum/b.n : b.sum;
-            return b.rate ? v.toFixed(3).replace(/^0\./,'.') : f0(v); } });
+            return b.rate ? v.toFixed(3).replace(/^0\./,'.') : k==='IP' ? outsToIP(v) : f0(v); } });
       });
       sortableTable(document.getElementById('catStatsTbl'), cols, rows, {sortKey:'mgr', sortDir:1});
       document.getElementById('catStatsFoot').innerHTML = hasRate
@@ -1840,6 +1852,12 @@
       if (!isCats){ sec.hidden = true; return; }
       var order = [], extremes = {};
       played.forEach(function(s){
+        // a roto season's totals come straight from ESPN's own season-end
+        // numbers (see build_bundle2.pl), not our weekly-average approximation
+        // used for every other season -- mixing the two into one record book
+        // would compare two different methods, so roto years sit out here
+        // (they still show normally in the Team stats table above).
+        if (s.scoring === 'roto') return;
         (s.entries||[]).forEach(function(e){
           (e.catTotals||[]).forEach(function(c){
             var m = extremes[c.k];
@@ -1852,21 +1870,23 @@
       });
       if (!order.length){ sec.hidden = true; return; }
       sec.hidden = false;
-      function fmtv(m, v){ return m.rate ? v.toFixed(3).replace(/^0\./,'.') : f0(v); }
+      function fmtv(m, k, v){ return m.rate ? v.toFixed(3).replace(/^0\./,'.') : k==='IP' ? outsToIP(v) : f0(v); }
       function who(rec){ return '<b>'+esc(rec.team)+'</b> <span class="mn">'+esc(pName(rec.personId))+' · '+rec.year+'</span>'; }
       var rows = order.map(function(k){ return { k:k, m:extremes[k] }; });
       // for a lower-is-better category (ERA, WHIP, …) Best = the lowest total, Worst = the highest
       function bestOf(m){ return m.lo ? m.least : m.most; }
       function worstOf(m){ return m.lo ? m.most : m.least; }
       sortableTable(document.getElementById('catRecTbl'), [
-        {key:'cat', label:'Category', align:'left', val:function(r){return r.k;}, cell:function(r){return '<b>'+esc(r.k)+'</b>';}},
+        {key:'cat', label:'Category', align:'left', val:function(r){return catRank(r.k);}, cell:function(r){return '<b>'+esc(r.k)+'</b>';}},
         {key:'best', label:'Best', align:'left', val:function(r){return bestOf(r.m).v * (r.m.lo?-1:1);},
-          cell:function(r){var rec=bestOf(r.m); return fmtv(r.m, rec.v)+' — '+who(rec);}},
+          cell:function(r){var rec=bestOf(r.m); return fmtv(r.m, r.k, rec.v)+' — '+who(rec);}},
         {key:'worst', label:'Worst', align:'left', val:function(r){return worstOf(r.m).v * (r.m.lo?1:-1);},
-          cell:function(r){var rec=worstOf(r.m); return fmtv(r.m, rec.v)+' — '+who(rec);}}
+          cell:function(r){var rec=worstOf(r.m); return fmtv(r.m, r.k, rec.v)+' — '+who(rec);}}
       ], rows, {sortKey:'cat', sortDir:1});
+      var hasRoto = played.some(function(s){ return s.scoring === 'roto'; });
       document.getElementById('catRecFoot').textContent =
-        'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — best/worst are still real single-season team performances, just not ESPN’s own official season rate. For ERA and WHIP, lower is better, so Best shows the lowest total.';
+        'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — best/worst are still real single-season team performances, just not ESPN’s own official season rate. For ERA and WHIP, lower is better, so Best shows the lowest total.'
+        + (hasRoto ? ' Roto seasons are excluded here (their totals come straight from ESPN, a different method than the rest, so they don’t compete for records) — they’re still shown in Team stats above.' : '');
     })();
 
     /* ---- all-time rankings widget ---- */
@@ -2186,10 +2206,11 @@
           return '<div class="bx-note">No box score on record for this matchup.</div>';
         var rows = g.cats.map(function(c){
           var aW = c.r === 1, bW = c.r === 0;
+          var fv = c.k === 'IP' ? outsToIP : fmtCat;
           return '<div class="bxc-r">' +
             '<span class="bxc-k">' + esc(c.k) + (c.lo ? ' ↓' : '') + '</span>' +
-            '<span class="bxc-v' + (aW?' bxc-w':'') + '">' + fmtCat(c.me) + (aW?' ✓':'') + '</span>' +
-            '<span class="bxc-v' + (bW?' bxc-w':'') + '">' + fmtCat(c.op) + (bW?' ✓':'') + '</span>' +
+            '<span class="bxc-v' + (aW?' bxc-w':'') + '">' + fv(c.me) + (aW?' ✓':'') + '</span>' +
+            '<span class="bxc-v' + (bW?' bxc-w':'') + '">' + fv(c.op) + (bW?' ✓':'') + '</span>' +
           '</div>';
         }).join('');
         var tie = g.t || 0;
