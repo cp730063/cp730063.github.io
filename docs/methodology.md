@@ -155,8 +155,9 @@ Last updated: 2026-09-04
 - ESPN appends the rookie draft as extra rounds after the keeper draft; we detect the rookie rounds as the trailing block of rounds in which nobody kept a player, and renumber them "Rookie R1, R2…".
 - "Via <manager>" (traded pick) is shown on Sleeper boards only. ESPN's draft data records who *made* each pick but never who originally owned it, so ESPN boards show no "via" and carry a note saying so.
 
-### Draft Grades (football)
+### Draft Grades
 **What:** A letter grade per manager per draft, from the "value surplus" of each pick versus what that draft slot usually returns.
+**Baseball:** same engine, but a pick's outcome is the drafted player's **season value** (the category z-score sum from the Players tab) instead of fantasy points — it is already era-adjusted, so the baseline step is skipped. A season still in progress (played, no champion yet) is withheld from grading and the résumé until it finishes. A pick whose player never cleared the ~20 AB / ~10 IP bar that year has no value and is skipped (neither credit nor penalty).
 **Assumptions:**
 - We grade the *pick*, not in-season management: a pick's outcome is the drafted player's full-season fantasy points that year, divided by that season's baseline (mean of the top half of drafted players) to normalize 2003 vs 2025.
 - Rookie picks in a dynasty league also get a draft-time grade from the player's *current* trade value vs the slot — only for classes with 0-1 completed seasons; older classes are judged on production.
