@@ -2062,7 +2062,7 @@
       (s.entries||[]).forEach(function(e){
         var r = row(e.personId);
         r.seas++;
-        if (e.madePlayoffs) r.berth++;
+        if (e.madePlayoffs && !(s.hasDivisions && e.divisionChamp)) r.berth++;   // wildcard = made playoffs without a division title
         if (s.hasDivisions && e.divisionChamp) r.div++;
         if (e.finalRank && teamCt && e.finalRank === teamCt) r.last++;
       });
@@ -2084,7 +2084,7 @@
     term(W.runnerUp,'runner-up');
     if (anyDiv) term(W.divisionTitle,'division title');
     term(W.thirdPlace,'3rd place');
-    term(W.playoffBerth,'playoff berth');
+    term(W.playoffBerth,'wildcard berth');
     term(W.lastPlace,'last place');
     document.getElementById('prestigeFormula').textContent = 'Prestige  =  ' + terms.join('   +   ');
 
