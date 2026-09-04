@@ -1104,7 +1104,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904170559"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904172901"}</script>
 <script>
 "use strict";
 (function(){
@@ -1347,6 +1347,7 @@
     var cur = tabs.querySelector('button[data-p="'+p+'"]');
     document.getElementById('topbarTitle').textContent = cur ? cur.textContent : '';
     if (p === 'research' && FM._drawArticles) FM._drawArticles();
+    if (window.__syncStickyHeaders){ window.__syncStickyHeaders(); setTimeout(window.__syncStickyHeaders, 150); }
   }
   function applyTabAvailability(){
     var lg = DATA.league || {};
@@ -3881,6 +3882,104 @@
         '<span class="tt">Open r/DynastyFF</span></a>'
       : '<div class="rn-empty">Couldn’t reach Reddit this cycle.</div>';
   }
+
+  /* ---- mobile: floating table-header clone -----------------------------------
+     Real Safari has a long-documented, version-inconsistent bug where
+     position:sticky on native <table> cells silently fails (sometimes taking
+     the whole table's layout down with it). Rather than fight that, this
+     never makes a table cell sticky at all: the real <thead> stays in normal
+     flow untouched, and a plain position:fixed div (fixed position is
+     universally reliable) mirrors its current header row -- same text, same
+     column widths (measured from the real header every frame), same
+     horizontal scroll offset -- only while that table's header has scrolled
+     up under the topbar and the table's bottom hasn't followed it yet. ---- */
+  (function(){
+    var MOBILE_MAX = 900;
+    var overlay = document.createElement('div');
+    overlay.id = 'stickyHeadOverlay';
+    overlay.style.cssText = 'position:fixed;left:0;top:0;overflow:hidden;z-index:25;display:none;'+
+      'background:var(--surface);border-bottom:1px solid var(--border-strong);box-shadow:var(--shadow)';
+    var inner = document.createElement('table');
+    inner.style.cssText = 'table-layout:fixed;border-collapse:collapse;width:auto';
+    overlay.appendChild(inner);
+    document.body.appendChild(overlay);
+
+    var active = null;   /* the .tbl-wrap currently mirrored, or null */
+
+    function topbarH(){
+      var tb = document.querySelector('.topbar');
+      return (tb && getComputedStyle(tb).display !== 'none') ? tb.getBoundingClientRect().height : 0;
+    }
+    function findFrozenWrap(th){
+      var wraps = document.querySelectorAll('.panel:not([hidden]) .tbl-wrap');
+      for (var i = 0; i < wraps.length; i++){
+        var w = wraps[i], thead = w.querySelector('thead');
+        if (!thead || !thead.children.length) continue;
+        var wr = w.getBoundingClientRect(), hr = thead.getBoundingClientRect();
+        var hh = hr.height || 34;
+        if (wr.top <= th && wr.bottom > th + hh) return w;
+      }
+      return null;
+    }
+    function hide(){ overlay.style.display = 'none'; active = null; }
+
+    function sync(){
+      /* never let a transient DOM state (mid tab/league-switch re-render) throw
+         out of here -- an uncaught error would otherwise skip the ticking=false
+         reset below and permanently disable every future sync on the page. */
+      try {
+        if (window.innerWidth > MOBILE_MAX) return hide();
+        var th = topbarH();
+        var wrap = findFrozenWrap(th);
+        if (!wrap) return hide();
+        var thead = wrap.querySelector('thead'), realRow = thead && thead.querySelector('tr');
+        if (!realRow || !realRow.children.length) return hide();
+
+        if (wrap !== active || inner.dataset.n !== String(realRow.children.length)){
+          inner.innerHTML = '<tr>' + Array.prototype.map.call(realRow.children, function(c){
+            var tag = c.tagName.toLowerCase();
+            return '<' + tag + '></' + tag + '>';
+          }).join('') + '</tr>';
+          inner.dataset.n = String(realRow.children.length);
+        }
+        var cloneCells = inner.querySelector('tr').children;
+        Array.prototype.forEach.call(realRow.children, function(c, i){
+          var cc = cloneCells[i]; if (!cc) return;
+          var cs = getComputedStyle(c);
+          cc.innerHTML = c.innerHTML;
+          cc.style.cssText = 'width:' + c.getBoundingClientRect().width + 'px;' +
+            'text-align:' + cs.textAlign + ';padding:' + cs.padding + ';font:' + cs.font + ';' +
+            'color:' + cs.color + ';text-transform:' + cs.textTransform + ';' +
+            'letter-spacing:' + cs.letterSpacing + ';white-space:nowrap';
+        });
+        var wrapRect = wrap.getBoundingClientRect();
+        overlay.style.left = wrapRect.left + 'px';
+        overlay.style.top = th + 'px';
+        overlay.style.width = wrapRect.width + 'px';
+        inner.style.transform = 'translateX(' + (-wrap.scrollLeft) + 'px)';
+        overlay.style.display = 'block';
+        active = wrap;
+      } catch(e){ hide(); }
+    }
+
+    var ticking = false;
+    function requestSync(){
+      if (ticking) return;
+      ticking = true;
+      /* setTimeout, not requestAnimationFrame: this only needs to feel like normal
+         scroll-following (not a 60fps animation), and plain timers keep firing
+         consistently across more edge cases (rAF can be throttled/paused in ways
+         that aren't obvious, e.g. in some embedded/automation contexts). */
+      setTimeout(function(){ try { sync(); } finally { ticking = false; } }, 16);
+    }
+    window.addEventListener('scroll', requestSync, { passive:true });
+    window.addEventListener('resize', requestSync);
+    /* .tbl-wrap's own horizontal scroll doesn't bubble to window; capture it directly */
+    document.addEventListener('scroll', function(e){
+      if (e.target && e.target.classList && e.target.classList.contains('tbl-wrap')) requestSync();
+    }, true);
+    window.__syncStickyHeaders = requestSync;
+  })();
 
   /* ---- boot ---- */
   var slugs = manifestSlugs();
