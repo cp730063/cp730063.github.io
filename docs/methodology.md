@@ -171,6 +171,9 @@ Last updated: 2026-09-04
 
 ## Trade Values
 
+### Trade Calculator
+**Baseball:** there is no external market for fantasy baseball, so the tool runs on our own **season value** (the category z-score sum). You pick a season (redraft rosters change yearly); each team's roster is its end-of-season roster that year; a player's trade value is his season value floored at 0 (a below-replacement player is worth ~0). Same fairness bar and verdict thresholds as football. No roster-crunch or intelligence report. In-progress-season values are compressed (partial data) but still rank correctly against each other — pick a completed season for full-season numbers.
+
 ### Trade Calculator (football)
 **What:** Add players/picks to each side; the tool sums market values and shows who the trade favors and by how much.
 **Assumptions:**
