@@ -3978,16 +3978,26 @@
           inner.dataset.n = String(realRow.children.length);
         }
         var cloneCells = inner.querySelector('tr').children;
+        var totalW = 0;
         Array.prototype.forEach.call(realRow.children, function(c, i){
           var cc = cloneCells[i]; if (!cc) return;
           var cs = getComputedStyle(c);
           var wSrc = widthSrc.children[i] || c;
+          var w = wSrc.offsetWidth;
+          totalW += w;
           cc.innerHTML = c.innerHTML;
-          cc.style.cssText = 'width:' + wSrc.offsetWidth + 'px;box-sizing:border-box;' +
+          cc.style.cssText = 'width:' + w + 'px;box-sizing:border-box;' +
             'text-align:' + cs.textAlign + ';padding:' + cs.padding + ';font:' + cs.font + ';' +
             'color:' + cs.color + ';text-transform:' + cs.textTransform + ';' +
             'letter-spacing:' + cs.letterSpacing + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
         });
+        /* table-layout:fixed only reliably honors per-cell widths when the
+           <table> itself has an explicit width -- left as 'auto' (or with the
+           global `table{width:100%}` rule in play) some engines instead size
+           each column to its own content, ignoring the widths just set above
+           entirely. Giving the table the exact summed width forces every
+           column to hold at the size we specified. */
+        inner.style.width = totalW + 'px';
         var wrapRect = wrap.getBoundingClientRect();
         overlay.style.left = wrapRect.left + 'px';
         overlay.style.top = th + 'px';
