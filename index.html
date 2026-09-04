@@ -822,6 +822,15 @@
       <div class="tbl-wrap"><table id="catRecTbl"></table></div>
       <p class="foot" style="border:0;margin-top:14px;padding:0" id="catRecFoot"></p>
     </section>
+
+    <section id="catTopSec" hidden style="margin-top:44px">
+      <div class="h-kicker">Leaderboard</div>
+      <h2 class="sec">Top performances</h2>
+      <p class="sec-note" id="catTopNote"></p>
+      <div class="rec-controls" id="catTopPick" role="group" aria-label="Category"></div>
+      <div class="tbl-wrap"><table id="catTopTbl"></table></div>
+      <p class="foot" style="border:0;margin-top:14px;padding:0" id="catTopFoot"></p>
+    </section>
   </div>
 
   <div class="panel" id="p-legacy" hidden>
@@ -1118,7 +1127,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904200452"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904203829"}</script>
 <script>
 "use strict";
 (function(){
@@ -1887,6 +1896,48 @@
       document.getElementById('catRecFoot').textContent =
         'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — best/worst are still real single-season team performances, just not ESPN’s own official season rate. For ERA and WHIP, lower is better, so Best shows the lowest total.'
         + (hasRoto ? ' Roto seasons are excluded here (their totals come straight from ESPN, a different method than the rest, so they don’t compete for records) — they’re still shown in Team stats above.' : '');
+    })();
+
+    /* ---- top performances (baseball): top 10 single-season team totals per category ---- */
+    (function renderCatTop(){
+      var sec = document.getElementById('catTopSec');
+      if (!isCats){ sec.hidden = true; return; }
+      var byCat = {};
+      played.forEach(function(s){
+        if (s.scoring === 'roto') return;   // same reasoning as Category records above
+        (s.entries||[]).forEach(function(e){
+          (e.catTotals||[]).forEach(function(c){
+            var b = byCat[c.k] || (byCat[c.k] = { lo:c.lo, rate:c.rate, rows:[] });
+            b.rows.push({ v:c.v, personId:e.personId, team:e.team, year:s.year });
+          });
+        });
+      });
+      var cats = Object.keys(byCat).sort(function(x,y){ return catRank(x)-catRank(y); });
+      if (!cats.length){ sec.hidden = true; return; }
+      sec.hidden = false;
+      var pick = document.getElementById('catTopPick');
+      pick.innerHTML = cats.map(function(k,i){ return '<button aria-pressed="'+(i===0)+'" data-k="'+esc(k)+'">'+esc(k)+'</button>'; }).join('');
+      function draw(k){
+        var b = byCat[k];
+        document.getElementById('catTopNote').textContent =
+          'The 10 best single-season team totals ever posted in ' + esc(k) + ', regular season' + (b.lo ? ' (lower is better here)' : '') + '. Click a column to sort.';
+        var top10 = b.rows.slice().sort(function(x,y){ return b.lo ? x.v-y.v : y.v-x.v; }).slice(0, 10);
+        sortableTable(document.getElementById('catTopTbl'), [
+          {key:'team', label:'Team', align:'left', val:function(r){return r.team;},
+            cell:function(r){return '<div class="team-cell"><span class="tn">'+esc(r.team)+'</span><span class="mn">'+esc(pName(r.personId))+'</span></div>';}},
+          {key:'v', label:k, num:true, val:function(r){return b.lo ? -r.v : r.v;},
+            cell:function(r){return b.rate ? r.v.toFixed(3).replace(/^0\./,'.') : (k==='IP' ? outsToIP(r.v) : f0(r.v));}},
+          {key:'year', label:'Year', num:true, val:function(r){return r.year;}, cell:function(r){return r.year;}}
+        ], top10, {sortKey:'v', sortDir:-1, rownum:true});
+        document.getElementById('catTopFoot').textContent =
+          'Regular season only; roto seasons excluded (see the Category records note above).';
+      }
+      pick.addEventListener('click', function(e){
+        var btn = e.target.closest('button'); if (!btn) return;
+        Array.prototype.forEach.call(pick.children, function(x){ x.setAttribute('aria-pressed', x===btn?'true':'false'); });
+        draw(btn.dataset.k);
+      });
+      draw(cats[0]);
     })();
 
     /* ---- all-time rankings widget ---- */
