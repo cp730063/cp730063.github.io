@@ -531,6 +531,21 @@
   .dpos[data-pos="TE"]{color:#b9822a;border-color:#b9822a55}
   .dpos[data-pos="K"] {color:#7d5bc8;border-color:#7d5bc855}
   .dpos[data-pos="DST"]{color:#6b7787}
+  /* baseball positions — pitchers red/orange, corners green, middle amber, OF blue, C purple, DH slate */
+  .dcell[data-pos="SP"]{background:rgba(214,69,90,.12)}
+  .dcell[data-pos="RP"]{background:rgba(230,120,70,.13)}
+  .dcell[data-pos="1B"],.dcell[data-pos="3B"]{background:rgba(31,150,92,.13)}
+  .dcell[data-pos="2B"],.dcell[data-pos="SS"]{background:rgba(214,140,40,.14)}
+  .dcell[data-pos="OF"]{background:rgba(51,120,214,.13)}
+  .dcell[data-pos="C"] {background:rgba(140,99,200,.13)}
+  .dcell[data-pos="DH"]{background:rgba(120,132,148,.15)}
+  .dpos[data-pos="SP"]{color:#c2445a;border-color:#c2445a55}
+  .dpos[data-pos="RP"]{color:#c9683c;border-color:#c9683c55}
+  .dpos[data-pos="1B"],.dpos[data-pos="3B"]{color:#1f8a56;border-color:#1f8a5655}
+  .dpos[data-pos="2B"],.dpos[data-pos="SS"]{color:#b9822a;border-color:#b9822a55}
+  .dpos[data-pos="OF"]{color:#3f6fc4;border-color:#3f6fc455}
+  .dpos[data-pos="C"] {color:#7d5bc8;border-color:#7d5bc855}
+  .dpos[data-pos="DH"]{color:#6b7787}
   .dcell.keeper,.dcell.keeper[data-pos]{background:var(--surface-2)}
   .dcell.keeper .dp{color:var(--ink-muted);font-weight:500}
   .dcell.empty,.dcell.empty[data-pos]{background:repeating-linear-gradient(45deg,transparent,transparent 6px,var(--surface-2) 6px,var(--surface-2) 12px)}
@@ -845,13 +860,13 @@
     <section style="margin-top:40px">
       <div class="h-kicker">Blood feuds</div>
       <h2 class="sec">Biggest Rivalries</h2>
-      <p class="sec-note">The most-played matchups in league history. Click a row to open it.</p>
+      <p class="sec-note" id="feudNote">The most-played matchups in league history. Click a row to open it.</p>
       <div class="tbl-wrap"><table id="feudTbl"></table></div>
     </section>
     <section>
       <div class="h-kicker">One-sided affairs</div>
       <h2 class="sec">Most Lopsided Series</h2>
-      <p class="sec-note">Most one-sided series (min. 12 games). Click a row to open it.</p>
+      <p class="sec-note" id="lopNote">Most one-sided series (min. 12 games). Click a row to open it.</p>
       <div class="tbl-wrap"><table id="lopsideTbl"></table></div>
     </section>
   </div>
@@ -1161,6 +1176,7 @@
   function pfPer(){ return isCats ? 'CW/wk' : 'PF/G'; }
   function scoreLeaderLabel(){ return isCats ? 'Most category wins' : 'Scoring leader'; }
   function seasonScoreless(s){ return (s.scoring || SCORING) === 'roto'; }   /* no weekly games */
+  function fS(n){ return isCats ? f0(n) : f2(n); }   /* score formatter: category wins are whole numbers */
   var openPlayerCard = null;   /* set by sec_players once its modal is wired */
   var _dgShow = null;          /* set by sec_draftGrades; sec_drafts calls it on board change */
   function pName(id){ return P[id] ? P[id].name : id; }
@@ -1465,13 +1481,15 @@
       .sort(function(a,b){ return b.titles.length-a.titles.length || a.titles[0]-b.titles[0]; });
     var tl = document.getElementById('titleTimeline');
     var tlTicks = document.getElementById('tlTicks');
+    var tlCut = yLast - 1;   /* active = played this season or last, same as the drought table */
     var neverWon = (DATA.people||[]).filter(function(p){
-      return !(p.titles||[]).length && Object.keys(p.seasons||{}).length;
+      var ss = p.seasons || [];
+      return !(p.titles||[]).length && ss.length && Math.max.apply(null, ss) >= tlCut;
     }).length;
     document.getElementById('tlNote').innerHTML =
       champs.length
         ? champs.length + ' manager' + (champs.length>1?'s have':' has') + ' hoisted a trophy since ' + yFirst +
-          (neverWon ? ' &middot; ' + neverWon + ' still chasing their first' : '') +
+          (neverWon ? ' &middot; ' + neverWon + ' active ' + (neverWon!==1?'managers are':'manager is') + ' still without one' : '') +
           '. <span style="color:var(--ink-faint)">Green marks a first title.</span>'
         : 'No champions on record yet.';
     if (champs.length){
@@ -1663,16 +1681,21 @@
       var sd = sides(pairs), recs=[];
       var hi = sd.slice().sort(function(a,b){return b.pf-a.pf;})[0];
       var lo = sd.slice().sort(function(a,b){return a.pf-b.pf;})[0];
-      recs.push(['Most points, game', f2(hi.pf), '<b>'+esc(pName(hi.pid))+'</b> vs '+esc(pName(hi.opp))+' — '+ctx(hi.season,hi.week)]);
-      recs.push(['Fewest points, game', f2(lo.pf), '<b>'+esc(pName(lo.pid))+'</b> vs '+esc(pName(lo.opp))+' — '+ctx(lo.season,lo.week)]);
+      recs.push([isCats?'Most categories won, week':'Most points, game', fS(hi.pf), '<b>'+esc(pName(hi.pid))+'</b> vs '+esc(pName(hi.opp))+' — '+ctx(hi.season,hi.week)]);
+      recs.push([isCats?'Fewest categories won, week':'Fewest points, game', fS(lo.pf), '<b>'+esc(pName(lo.pid))+'</b> vs '+esc(pName(lo.opp))+' — '+ctx(lo.season,lo.week)]);
       var blow = pairs.slice().sort(function(a,b){return Math.abs(b.ap-b.bp)-Math.abs(a.ap-a.bp);})[0];
       var bW = blow.ap>=blow.bp?blow.a:blow.b, bL = blow.ap>=blow.bp?blow.b:blow.a;
-      recs.push(['Biggest blowout', f2(Math.abs(blow.ap-blow.bp)), '<b>'+esc(pName(bW))+'</b> def. '+esc(pName(bL))+' '+f2(Math.max(blow.ap,blow.bp))+'–'+f2(Math.min(blow.ap,blow.bp))+' — '+ctx(blow.season,blow.week)]);
-      var close = pairs.slice().sort(function(a,b){return Math.abs(a.ap-a.bp)-Math.abs(b.ap-b.bp);})[0];
-      var cW = close.ap>=close.bp?close.a:close.b, cL = close.ap>=close.bp?close.b:close.a;
-      recs.push(['Narrowest win', f2(Math.abs(close.ap-close.bp)), '<b>'+esc(pName(cW))+'</b> edged '+esc(pName(cL))+' '+f2(Math.max(close.ap,close.bp))+'–'+f2(Math.min(close.ap,close.bp))+' — '+ctx(close.season,close.week)]);
-      var shoot = pairs.slice().sort(function(a,b){return (b.ap+b.bp)-(a.ap+a.bp);})[0];
-      recs.push(['Highest-scoring matchup', f2(shoot.ap+shoot.bp), esc(pName(shoot.a))+' '+f2(shoot.ap)+' – '+f2(shoot.bp)+' '+esc(pName(shoot.b))+' — '+ctx(shoot.season,shoot.week)]);
+      recs.push([isCats?'Most lopsided week':'Biggest blowout', fS(Math.abs(blow.ap-blow.bp)), '<b>'+esc(pName(bW))+'</b> def. '+esc(pName(bL))+' '+fS(Math.max(blow.ap,blow.bp))+'–'+fS(Math.min(blow.ap,blow.bp))+' — '+ctx(blow.season,blow.week)]);
+      var close = pairs.filter(function(g){ return Math.abs(g.ap-g.bp) > 0; })
+        .sort(function(a,b){return Math.abs(a.ap-a.bp)-Math.abs(b.ap-b.bp);})[0];
+      if (close){
+        var cW = close.ap>=close.bp?close.a:close.b, cL = close.ap>=close.bp?close.b:close.a;
+        recs.push([isCats?'Narrowest category win':'Narrowest win', fS(Math.abs(close.ap-close.bp)), '<b>'+esc(pName(cW))+'</b> edged '+esc(pName(cL))+' '+fS(Math.max(close.ap,close.bp))+'–'+fS(Math.min(close.ap,close.bp))+' — '+ctx(close.season,close.week)]);
+      }
+      if (!isCats){
+        var shoot = pairs.slice().sort(function(a,b){return (b.ap+b.bp)-(a.ap+a.bp);})[0];
+        recs.push(['Highest-scoring matchup', f2(shoot.ap+shoot.bp), esc(pName(shoot.a))+' '+f2(shoot.ap)+' – '+f2(shoot.bp)+' '+esc(pName(shoot.b))+' — '+ctx(shoot.season,shoot.week)]);
+      }
 
       if (scope==='reg'){
         var bestRec=null, worstRec=null, mostPf=null, fewPf=null, mostBench=null;
@@ -1688,8 +1711,8 @@
         });
         if (bestRec) recs.push(['Best record, season', bestRec.e.w+'–'+bestRec.e.l+(bestRec.e.t?'–'+bestRec.e.t:''), '<b>'+esc(pName(bestRec.e.personId))+'</b> — '+bestRec.s.year]);
         if (worstRec) recs.push(['Worst record, season', worstRec.e.w+'–'+worstRec.e.l+(worstRec.e.t?'–'+worstRec.e.t:''), '<b>'+esc(pName(worstRec.e.personId))+'</b> — '+worstRec.s.year]);
-        if (mostPf) recs.push(['Most points, season', f2(mostPf.e.pf), '<b>'+esc(pName(mostPf.e.personId))+'</b> — '+mostPf.s.year+' ('+mostPf.s.regWeeks+' wks)']);
-        if (fewPf) recs.push(['Fewest points, season', f2(fewPf.e.pf), '<b>'+esc(pName(fewPf.e.personId))+'</b> — '+fewPf.s.year+' ('+fewPf.s.regWeeks+' wks)']);
+        if (mostPf) recs.push([isCats?'Most category wins, season':'Most points, season', fS(mostPf.e.pf), '<b>'+esc(pName(mostPf.e.personId))+'</b> — '+mostPf.s.year+' ('+mostPf.s.regWeeks+' wks)']);
+        if (fewPf) recs.push([isCats?'Fewest category wins, season':'Fewest points, season', fS(fewPf.e.pf), '<b>'+esc(pName(fewPf.e.personId))+'</b> — '+fewPf.s.year+' ('+fewPf.s.regWeeks+' wks)']);
         if (mostBench) recs.push(['Most points left on bench, season', f2(mostBench.b), '<b>'+esc(pName(mostBench.e.personId))+'</b> — '+mostBench.s.year]);
 
         var best={n:0};
@@ -1705,8 +1728,15 @@
         });
         if (best.n) recs.push(['Longest win streak', best.n+' games', '<b>'+esc(pName(best.pid))+'</b> — '+best.y]);
 
-        var mt = (DATA.people||[]).slice().sort(function(a,b){return (b.titles||[]).length-(a.titles||[]).length;})[0];
-        if (mt && mt.titles.length) recs.push(['Most championships', mt.titles.length+'', '<b>'+esc(mt.name)+'</b> — '+mt.titles.join(', ')]);
+        var maxT = 0;
+        (DATA.people||[]).forEach(function(p){ maxT = Math.max(maxT, (p.titles||[]).length); });
+        if (maxT){
+          var champLeaders = (DATA.people||[]).filter(function(p){ return (p.titles||[]).length === maxT; })
+            .sort(function(a,b){ return a.titles[0]-b.titles[0]; });
+          recs.push(['Most championships', maxT+'',
+            champLeaders.map(function(p){ return '<b>'+esc(p.name)+'</b>'; }).join(', ') +
+            (champLeaders.length===1 ? ' — '+champLeaders[0].titles.join(', ') : '')]);
+        }
         var appt={};
         played.forEach(function(s){ (s.entries||[]).forEach(function(e){ if (e.madePlayoffs) appt[e.personId]=(appt[e.personId]||0)+1; }); });
         var topApp = Object.keys(appt).sort(function(a,b){return appt[b]-appt[a];})[0];
@@ -1754,25 +1784,34 @@
       winpct: { label:'Win %',          rate:true,  fmt:function(v){ return (100*v).toFixed(1)+'%'; },
                 val:function(e){ return e.gp ? e.w/e.gp : 0; },
                 extra:[ ['W–L–T','left', function(e){ return e.w+'–'+e.l+(e.t?'–'+e.t:''); }], ['Games',null,function(e){return e.gp;}] ] },
-      pf:     { label:'Points for',      rate:false, fmt:f0,
+      pf:     { label:isCats?'Category wins':'Points for',      rate:false, fmt:f0,
                 val:function(e){ return e.pf; }, extra:[ ['Games',null,function(e){return e.gp;}] ] },
-      pa:     { label:'Points against',  rate:false, fmt:f0,
+      pa:     { label:isCats?'Category losses':'Points against',  rate:false, fmt:f0,
                 val:function(e){ return e.pa; }, extra:[ ['Games',null,function(e){return e.gp;}] ] },
-      ppg:    { label:'Points / game',   rate:true,  fmt:f2,
+      ppg:    { label:isCats?'Category wins / week':'Points / game',   rate:true,  fmt:isCats?f1:f2,
                 val:function(e){ return e.gp ? e.pf/e.gp : 0; },
-                extra:[ ['Points',null,function(e){return f0(e.pf);}], ['Games',null,function(e){return e.gp;}] ] },
+                extra:[ [isCats?'Cat. wins':'Points',null,function(e){return f0(e.pf);}], ['Games',null,function(e){return e.gp;}] ] },
       trades: { label:'Trades',          rate:false, fmt:f0, noScope:true,
                 val:function(e){ return tradeCount(e.pid); }, extra:[] }
     };
     var rMet = 'wins', rScope = 'reg';
     var rmBar = document.getElementById('rankMetric'), rsBar = document.getElementById('rankScope');
+    /* rebuild the metric buttons so labels match the sport and Trades only shows
+       when there is trade data */
+    var METS = [ ['wins','Wins'], ['winpct','Win&nbsp;%'],
+      ['pf', isCats?'Cat.&nbsp;wins':'Points&nbsp;for'],
+      ['pa', isCats?'Cat.&nbsp;losses':'Points&nbsp;against'],
+      ['ppg', isCats?'Cat.&nbsp;wins&nbsp;/&nbsp;wk':'Points&nbsp;/&nbsp;game'] ];
+    if ((DATA.trades||[]).length) METS.push(['trades','Trades']);
+    rmBar.innerHTML = METS.map(function(x,i){ return '<button aria-pressed="'+(i===0)+'" data-m="'+x[0]+'">'+x[1]+'</button>'; }).join('');
 
     function drawRank(){
       var M = RMET[rMet];
       rsBar.style.opacity = M.noScope ? '.4' : '';
       rsBar.style.pointerEvents = M.noScope ? 'none' : '';
       var agg = rankAgg(rScope);
-      var minG = rScope==='playoff' ? 4 : rScope==='both' ? 24 : 20;
+      var minG = isCats ? (rScope==='playoff' ? 0 : 60)
+                        : (rScope==='playoff' ? 4 : rScope==='both' ? 24 : 20);
       var rows = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length; })
         .map(function(p){ return agg[p.id] || { pid:p.id, w:0,l:0,t:0,pf:0,pa:0,gp:0 }; });
       if (M.rate) rows = rows.filter(function(e){ return e.gp >= minG; });
@@ -1791,7 +1830,7 @@
       document.getElementById('rankNote').textContent =
         M.noScope ? 'Trades a manager has been part of, across league history.'
         : (rScope==='reg' ? 'Regular-season games only.' : rScope==='playoff' ? 'Playoff games only.' : 'Regular season + playoffs.') +
-          (M.rate ? ' Managers with ' + minG + '+ games.' : '') +
+          (M.rate && minG ? ' Managers with ' + minG + '+ games.' : '') +
           (played.some(function(s){ return s.manual; }) ? ' Hand-entered early seasons have no game scores, so they’re not counted.' : '');
     }
     rmBar.addEventListener('click', function(e){
@@ -1848,7 +1887,13 @@
         if (loPts > hiPts) e.loW++; else if (hiPts > loPts) e.hiW++; else e.t++;
       });
     });
-    var pairs = Object.keys(pair).map(function(k){ return pair[k]; });
+    var allPairs = Object.keys(pair).map(function(k){ return pair[k]; });
+    var minMeet = isCats ? 15 : 12;   /* a "rivalry" needs real history — more for a 20+ year league */
+    var pairs = isCats ? allPairs.filter(function(e){ return e.n >= minMeet; }) : allPairs;
+    var fn = document.getElementById('feudNote');
+    if (fn) fn.textContent = 'The most-played matchups in league history' + (isCats ? ' (min. ' + minMeet + ' meetings)' : '') + '. Click a row to open it.';
+    var ln = document.getElementById('lopNote');
+    if (ln) ln.textContent = 'Most one-sided series (min. ' + minMeet + ' games). Click a row to open it.';
     function matchupCell(e){ return '<span class="rvlink" data-a="'+esc(e.lo)+'" data-b="'+esc(e.hi)+'">'+esc(pName(e.lo))+' <span style="color:var(--ink-faint)">vs</span> '+esc(pName(e.hi))+'</span>'; }
     function seriesCell(e){
       var lead = e.loW>=e.hiW ? e.lo : e.hi;
@@ -1860,11 +1905,11 @@
       { key:'m', label:'Matchup', align:'left', val:function(e){ return pName(e.lo)+pName(e.hi); }, cell:matchupCell },
       { key:'n', label:'Meetings', num:true, val:function(e){ return e.n; }, cell:function(e){ return '<b>'+e.n+'</b>'; } },
       { key:'series', label:'Series', align:'right', val:function(e){ return Math.max(e.loW,e.hiW); }, cell:seriesCell },
-      { key:'pd', label:'Avg margin', num:true, val:function(e){ return Math.abs(e.loPts-e.hiPts)/e.n; },
-        cell:function(e){ return f2(Math.abs(e.loPts-e.hiPts)/e.n); } }
+      { key:'pd', label:isCats?'Avg cat. margin':'Avg margin', num:true, val:function(e){ return Math.abs(e.loPts-e.hiPts)/e.n; },
+        cell:function(e){ return (isCats?f1:f2)(Math.abs(e.loPts-e.hiPts)/e.n); } }
     ], pairs, { sortKey:'n', sortDir:-1, rownum:true, limit:12, limitStep:12 });
 
-    var lop = pairs.filter(function(e){ return e.n >= 12 && Math.max(e.loW,e.hiW) > Math.min(e.loW,e.hiW); })
+    var lop = allPairs.filter(function(e){ return e.n >= minMeet && Math.max(e.loW,e.hiW) > Math.min(e.loW,e.hiW); })
       .map(function(e){ return { e:e, edge:Math.max(e.loW,e.hiW)/e.n }; });
     if (lop.length) sortableTable(document.getElementById('lopsideTbl'), [
       { key:'m', label:'Matchup', align:'left', val:function(r){ return pName(r.e.lo)+pName(r.e.hi); }, cell:function(r){ return matchupCell(r.e); } },
@@ -2816,12 +2861,12 @@
     });
     if (titleGames.length) sortableTable(document.getElementById('titleGameTbl'), [
       { key:'year', label:'Year', num:true, val:function(r){ return r.year; }, cell:function(r){ return r.year; } },
-      { key:'margin', label:'Margin', num:true, val:function(r){ return r.m; },
-        cell:function(r){ return '<b>'+f2(r.m)+'</b>'; } },
+      { key:'margin', label:isCats?'Cat. margin':'Margin', num:true, val:function(r){ return r.m; },
+        cell:function(r){ return '<b>'+fS(r.m)+'</b>'; } },
       { key:'result', label:'Result', align:'left', val:function(r){ return pName(r.w); },
         cell:function(r){ return '<b>'+esc(pName(r.w))+'</b> def. '+esc(pName(r.l)); } },
       { key:'score', label:'Score', align:'right', val:function(r){ return r.ws; },
-        cell:function(r){ return f2(r.ws)+'–'+f2(r.ls); } }
+        cell:function(r){ return fS(r.ws)+'–'+fS(r.ls); } }
     ], titleGames, { sortKey:'margin', sortDir:-1, rownum:true });
 
     function render(y){
@@ -2838,7 +2883,7 @@
             var aWin = g.ap>=g.bp, fin = !!g.final;
             function row(pid,sc,win){
               var gold = win && fin;
-              return '<div class="r'+(win?' win':'')+(gold?' gold':'')+'"><span>'+esc(pName(pid))+'</span><span class="sc">'+f2(sc)+'</span></div>';
+              return '<div class="r'+(win?' win':'')+(gold?' gold':'')+'"><span>'+esc(pName(pid))+'</span><span class="sc">'+fS(sc)+'</span></div>';
             }
             return '<div class="po-g'+(fin?' final':'')+'">'+(fin?'<div class="lbl">Championship</div>':'')+
               row(g.a,g.ap,aWin)+row(g.b,g.bp,!aWin)+'</div>';
