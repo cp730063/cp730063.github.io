@@ -17,3 +17,4 @@ _mkico.pl
 _serve.pl
 
 .research_*.tmp
+.xlsx_stage/
