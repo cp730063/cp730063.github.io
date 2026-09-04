@@ -1337,7 +1337,8 @@
     var football = (lg.sport || 'nfl') === 'nfl';
     var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
-                  tradecalc: football && (lg.type === 'dynasty' || lg.type === 'redraft') };
+                  tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft') &&
+                             (football || (!!lg.hasPlayers && (DATA.playerSeasons || []).length)) };
     Object.keys(avail).forEach(function(p){
       var btn = tabs.querySelector('button[data-p="'+p+'"]');
       if (btn) btn.hidden = !avail[p];
@@ -3179,6 +3180,8 @@
   function sec_tradecalc(){
     var lg = DATA.league || {};
     if (lg.type !== 'dynasty' && lg.type !== 'redraft') return;   /* tab hidden by applyTabAvailability */
+    if (isCats) return sec_tradecalcMlb();
+    var srStale = document.getElementById('tcSeasonRow'); if (srStale) srStale.remove();
     var slug = lg.slug;
     var note = document.getElementById('tcNote');
     var selA = document.getElementById('tcA'), selB = document.getElementById('tcB');
@@ -3498,6 +3501,155 @@
       selA.innerHTML = ''; selB.innerHTML = ''; listA.innerHTML = ''; listB.innerHTML = '';
       verdict.innerHTML = '<div class="rv-empty">Trade values aren’t available for this league yet.</div>';
     });
+  }
+
+  /* baseball Trade Calculator — no external market, so it runs on our own player
+     value (the category z-score sum). Redraft: rosters change yearly, so you
+     pick the season. Below-replacement players count as 0 trade value. */
+  function sec_tradecalcMlb(){
+    var ps = DATA.playerSeasons || [];
+    var note   = document.getElementById('tcNote');
+    var selA   = document.getElementById('tcA'), selB = document.getElementById('tcB');
+    var listA  = document.getElementById('tcListA'), listB = document.getElementById('tcListB');
+    var verdict = document.getElementById('tcVerdict');
+    document.getElementById('tcIntel').hidden = true;
+    if (!ps.length){ verdict.innerHTML = '<div class="rv-empty">No player values for this league yet.</div>'; return; }
+
+    var vYears = {}; ps.forEach(function(r){ vYears[r.year] = 1; });
+    var years  = Object.keys(vYears).map(Number).sort(function(a,b){ return a - b; });
+    var slug   = (DATA.league || {}).slug;
+    var saved  = {};
+    try { saved = JSON.parse(localStorage.getItem('fm-tcm-' + slug) || '{}') || {}; } catch(e){}
+    var curYr  = years.indexOf(saved.y) >= 0 ? saved.y : years[years.length - 1];
+
+    /* season picker row, injected once right after the note */
+    var srow = document.getElementById('tcSeasonRow');
+    if (!srow){
+      srow = document.createElement('div');
+      srow.className = 'rec-controls'; srow.id = 'tcSeasonRow'; srow.style.margin = '0 0 14px';
+      note.parentNode.insertBefore(srow, note.nextSibling);
+    }
+    function paintSeasons(){
+      srow.innerHTML = years.map(function(y){
+        return '<button data-y="' + y + '" aria-pressed="' + (y === curYr) + '">' + y + '</button>';
+      }).join('');
+    }
+    paintSeasons();
+    note.innerHTML = 'Values are each player’s <b>season value</b> for the chosen year — the category z-score sum from the Players tab ' +
+      '(≈ 0 is a replacement-level regular). This is a redraft league, so rosters are as of that season’s end. ' +
+      'A below-replacement player counts as 0. Check the players each side sends.';
+
+    /* a team's end-of-season roster that year, sorted by trade value */
+    function roster(pid, yr){
+      var seen = {};
+      return ps.filter(function(r){ return r.year === yr && r.endedOn === pid; })
+        .filter(function(r){ if (seen[r.key]) return false; seen[r.key] = 1; return true; })
+        .map(function(r){ return { key:r.key, name:r.name, pos:r.pos, val:r.val, tv:Math.max(r.val, 0) }; })
+        .sort(function(a, b){ return b.tv - a.tv; });
+    }
+    /* managers with a roster that year */
+    function seasonMgrs(yr){
+      var s = {};
+      ps.forEach(function(r){ if (r.year === yr && r.endedOn) s[r.endedOn] = 1; });
+      return Object.keys(s).map(function(pid){ return { id:pid, name:pName(pid) }; })
+        .sort(function(a, b){ return a.name.localeCompare(b.name); });
+    }
+
+    var sel = { a:{}, b:{} };
+    var ROS = { a:[], b:[] };
+
+    function fillTeams(){
+      var m = seasonMgrs(curYr);
+      var opts = m.map(function(x){ return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join('');
+      selA.innerHTML = opts; selB.innerHTML = opts;
+      selA.value = (m.some(function(x){ return x.id === saved.a; }) ? saved.a : (m[0] && m[0].id)) || '';
+      selB.value = (m.some(function(x){ return x.id === saved.b; }) ? saved.b : (m[1] && m[1].id) || (m[0] && m[0].id)) || '';
+      if (selB.value === selA.value && m[1]) selB.value = m[1].id;
+    }
+
+    function renderList(side){
+      var pid = (side === 'a' ? selA : selB).value;
+      ROS[side] = roster(pid, curYr);
+      var host = side === 'a' ? listA : listB;
+      if (!ROS[side].length){ host.innerHTML = '<div class="tc-grp">No roster on record</div>'; return; }
+      host.innerHTML = '<div class="tc-grp">Players</div>' + ROS[side].map(function(p){
+        var on = sel[side][p.key] != null;
+        return '<label class="tc-item' + (on ? ' on' : '') + '" data-k="' + esc(p.key) + '">' +
+          '<input type="checkbox"' + (on ? ' checked' : '') + '>' +
+          '<span class="tc-nm"><span class="pos-tag">' + esc(p.pos || '') + '</span>' + esc(p.name) + '</span>' +
+          '<span class="tc-val">' + f1(p.tv) + '</span></label>';
+      }).join('');
+    }
+
+    function sum(side){ var s = 0; Object.keys(sel[side]).forEach(function(k){ s += sel[side][k]; }); return s; }
+
+    function draw(){
+      var a = sum('a'), b = sum('b');
+      var na = pName(selA.value), nb = pName(selB.value);
+      var cA = Object.keys(sel.a).length, cB = Object.keys(sel.b).length;
+      var diff = Math.abs(a - b), pct = 100 * diff / (Math.max(a, b) || 1);
+      var fav = a < b ? na : b < a ? nb : null, word, cls = '';
+      if (!cA && !cB) word = 'Check the players each side sends.';
+      else if (pct < 3){ word = '<b>Even trade.</b> Within ' + pct.toFixed(1) + '%.'; cls = 'even'; }
+      else if (pct < 8) word = 'Slight edge to <b>' + esc(fav) + '</b> — ' + f1(diff) + ' in value (' + pct.toFixed(1) + '%).';
+      else if (pct < 20) word = '<b>' + esc(fav) + '</b> comes out ahead — ' + f1(diff) + ' in value (' + pct.toFixed(0) + '%).';
+      else { word = '<b>Lopsided.</b> ' + esc(fav) + ' wins by ' + f1(diff) + ' in value (' + pct.toFixed(0) + '%).'; cls = 'lop'; }
+      var wa = 100 * b / ((a + b) || 1);
+
+      function pieces(side){
+        var ks = Object.keys(sel[side]); if (!ks.length) return 'nothing';
+        return ks.map(function(k){
+          var p = ROS[side].filter(function(x){ return x.key === k; })[0];
+          return p ? esc(p.name) + ' ' + f1(p.tv) : '';
+        }).filter(Boolean).join(', ');
+      }
+
+      verdict.innerHTML =
+        '<div class="tc-vtot">' +
+          '<div class="tc-t"><span class="tc-lbl">' + esc(na) + ' sends</span>' + f1(a) +
+            '<span class="tc-sub"> &nbsp;' + cA + ' player' + (cA !== 1 ? 's' : '') + '</span></div>' +
+          '<div class="tc-mid">vs</div>' +
+          '<div class="tc-t r"><span class="tc-lbl">' + esc(nb) + ' sends</span>' + f1(b) +
+            '<span class="tc-sub"> &nbsp;' + cB + ' player' + (cB !== 1 ? 's' : '') + '</span></div>' +
+        '</div>' +
+        '<div class="tc-track"><span class="tc-fa" style="width:' + wa + '%"></span><span class="tc-fb" style="width:' + (100 - wa) + '%"></span></div>' +
+        '<div class="tc-say ' + cls + '">' + word + '</div>' +
+        (cA || cB ? '<div class="tc-tip">' + esc(na) + ' gives up: ' + pieces('a') + '<br>' + esc(nb) + ' gives up: ' + pieces('b') + '</div>' : '') +
+        '<div class="tc-fine">Based on ' + curYr + ' season value — a full-season sanity check, not a live market or a projection.</div>' +
+        '<button type="button" class="tc-clear">Clear</button>';
+    }
+
+    function persist(){
+      try { localStorage.setItem('fm-tcm-' + slug, JSON.stringify({ y:curYr, a:selA.value, b:selB.value })); } catch(e){}
+    }
+    function refresh(keepSel){
+      if (!keepSel){ sel.a = {}; sel.b = {}; }
+      renderList('a'); renderList('b'); draw(); persist();
+    }
+
+    if (!listA._wired){
+      listA._wired = listB._wired = 1;
+      [['a', listA], ['b', listB]].forEach(function(pair){
+        pair[1].addEventListener('change', function(e){
+          var lab = e.target.closest('.tc-item'); if (!lab) return;
+          var k = lab.getAttribute('data-k');
+          var p = ROS[pair[0]].filter(function(x){ return x.key === k; })[0];
+          if (e.target.checked && p) sel[pair[0]][k] = p.tv; else delete sel[pair[0]][k];
+          lab.classList.toggle('on', e.target.checked);
+          draw(); persist();
+        });
+      });
+      selA.addEventListener('change', function(){ if (selB.value === selA.value){ var o = seasonMgrs(curYr).filter(function(x){ return x.id !== selA.value; })[0]; if (o) selB.value = o.id; } refresh(); });
+      selB.addEventListener('change', function(){ if (selA.value === selB.value){ var o = seasonMgrs(curYr).filter(function(x){ return x.id !== selB.value; })[0]; if (o) selA.value = o.id; } refresh(); });
+      verdict.addEventListener('click', function(e){ if (e.target.closest('.tc-clear')) refresh(); });
+      srow.addEventListener('click', function(e){
+        var b = e.target.closest('button'); if (!b) return;
+        curYr = +b.dataset.y; paintSeasons(); fillTeams(); refresh();
+      });
+    }
+
+    fillTeams();
+    refresh();
   }
 
   /* ================================================================
