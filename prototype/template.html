@@ -239,7 +239,11 @@
 
   @media (max-width:720px){ .ov-top{grid-template-columns:1fr} }
 
-  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+  /* overflow-y:visible is explicit on purpose: .tbl-wrap only ever needs horizontal
+     scroll for wide tables, but leaving overflow-y unset lets the browser compute it
+     to 'auto' too — which makes Safari treat this box as its own scroll boundary and
+     silently break position:sticky table headers inside it (Chrome is unaffected). */
+  .tbl-wrap{overflow-x:auto;overflow-y:visible;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
   table{width:100%;border-collapse:collapse;font-size:14px}
   thead th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12px;font-weight:600;color:var(--ink-muted);text-align:right;padding:11px 12px;border-bottom:1px solid var(--border-strong);white-space:nowrap;user-select:none}
   thead th.sortable:hover{color:var(--ink)}
