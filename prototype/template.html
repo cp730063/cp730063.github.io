@@ -808,7 +808,7 @@
     <section>
       <div class="h-kicker">Who&rsquo;s due?</div>
       <h2 class="sec">Championship Drought</h2>
-      <p class="sec-note">Years since each manager&rsquo;s last title, longest wait first.</p>
+      <p class="sec-note">Years since each manager&rsquo;s last title, longest wait first. Active managers only.</p>
       <div class="tbl-wrap"><table id="droughtTbl"></table></div>
     </section>
     <section>
@@ -2110,12 +2110,13 @@
 
     /* ---- event counts per person ---- */
     var ST = {};
-    function row(pid){ return ST[pid] || (ST[pid] = { pid:pid, seas:0, champ:0, runner:0, third:0, reg:0, div:0, last:0, berth:0 }); }
+    function row(pid){ return ST[pid] || (ST[pid] = { pid:pid, seas:0, champ:0, runner:0, third:0, reg:0, div:0, last:0, berth:0, appear:0 }); }
     played.forEach(function(s){
       var teamCt = s.teams || (s.entries||[]).length;
       (s.entries||[]).forEach(function(e){
         var r = row(e.personId);
         r.seas++;
+        if (e.madePlayoffs) r.appear++;                                          // any playoff berth
         if (e.madePlayoffs && !(s.hasDivisions && e.divisionChamp)) r.berth++;   // wildcard = made playoffs without a division title
         if (s.hasDivisions && e.divisionChamp) r.div++;
         if (e.finalRank && teamCt && e.finalRank === teamCt) r.last++;
@@ -2151,17 +2152,23 @@
       { key:'runner', label:'2nd', num:true, val:function(r){ return r.runner; }, cell:function(r){ return r.runner||'—'; } }
     ];
     if (anyDiv) pcols.push({ key:'div', label:'Div', num:true, val:function(r){ return r.div; }, cell:function(r){ return r.div||'—'; } });
-    pcols.push({ key:'berth', label:'PO berths', num:true, val:function(r){ return r.berth; }, cell:function(r){ return r.berth||'—'; } });
+    pcols.push({ key:'berth', label:(anyDiv?'Wildcards':'PO berths'), num:true, val:function(r){ return r.berth; }, cell:function(r){ return r.berth||'—'; } });
     pcols.push({ key:'seas', label:'Seasons', num:true, val:function(r){ return r.seas; }, cell:function(r){ return r.seas; } });
     sortableTable(document.getElementById('prestigeTbl'), pcols, rows, { sortKey:'prestige', sortDir:-1, rownum:true });
 
-    /* ---- championship drought ---- */
+    /* ---- championship drought (active managers only — an inactive manager's
+       drought would just grow forever and clutter the table) ---- */
     var defend = latestPlayed && latestPlayed.champion;
-    var dr = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length; }).map(function(p){
+    var droughtCut = yLast - 1;   // played this season or last = still active
+    var dr = (DATA.people||[]).filter(function(p){
+      var ss = p.seasons || []; if (!ss.length) return false;
+      return Math.max.apply(null, ss) >= droughtCut;
+    }).map(function(p){
       var t = (p.titles||[]).slice().sort(function(a,b){ return a-b; });
       var last = t.length ? t[t.length-1] : null;
+      var joined = Math.min.apply(null, p.seasons);
       return { pid:p.id, titles:t.length, last:last, never:last==null,
-               wait: last==null ? (yLast - p.seasons[0]) : (yLast - last) };
+               wait: last==null ? (yLast - joined) : (yLast - last) };
     });
     sortableTable(document.getElementById('droughtTbl'), [
       { key:'name', label:'Manager', align:'left', val:function(r){ return pName(r.pid); },
@@ -2215,7 +2222,7 @@
 
     /* ---- playoff appearance rate ---- */
     var prr = rows.filter(function(r){ return r.seas >= 3; }).map(function(r){
-      return { pid:r.pid, made:r.berth, seas:r.seas, rate:r.seas ? r.berth/r.seas : 0 };
+      return { pid:r.pid, made:r.appear, seas:r.seas, rate:r.seas ? r.appear/r.seas : 0 };
     });
     sortableTable(document.getElementById('poRateTbl'), [
       { key:'name', label:'Manager', align:'left', val:function(r){ return pName(r.pid); },
