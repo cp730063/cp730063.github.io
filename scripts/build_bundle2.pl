@@ -54,6 +54,23 @@ my %ESPN_PLAYER_NAME;
 my %MLB_POS = (1=>'SP', 2=>'C', 3=>'1B', 4=>'2B', 5=>'3B', 6=>'SS',
                7=>'OF', 8=>'OF', 9=>'OF', 10=>'DH', 11=>'RP');
 
+# baseball H2H box scores: per-matchup category grid, keyed like the football
+# lineups file. cats[] carries both sides' totals + who won each category.
+my %MLB_BOX;   # "year|week|personId" -> { vs, cats:[{k,lo,me,op,r}], w, l, t }
+# ESPN MLB statId -> [ short label, lowerIsBetter ].  Only the ids that show up
+# in a season's scoringSettings.scoringItems ever get read; anything unmapped
+# renders as "S<id>".
+my %MLB_STAT = (
+  20=>['R',0], 5=>['HR',0], 21=>['RBI',0], 23=>['SB',0], 24=>['CS',1],
+  2=>['AVG',0], 17=>['OBP',0], 9=>['SLG',0], 18=>['OPS',0], 10=>['BB',0],
+  1=>['H',0], 3=>['2B',0], 4=>['3B',0], 0=>['AB',0], 27=>['SO',1], 25=>['GIDP',1],
+  53=>['W',0], 54=>['L',1], 57=>['SV',0], 58=>['BS',1], 83=>['HLD',0],
+  48=>['K',0], 47=>['ERA',1], 41=>['WHIP',1], 49=>['K/9',0], 42=>['K/BB',0],
+  44=>['BB',1], 45=>['H',1], 46=>['ER',1], 34=>['OUTS',0], 32=>['GS',0],
+  37=>['QS',0], 39=>['CG',0], 13=>['SHO',0],
+);
+sub r3 { my ($n)=@_; defined $n ? 0+sprintf("%.3f",$n) : undef }
+
 # ---------------------------------------------------------------------------
 # 2. ESPN seasons 2015-2024
 # ---------------------------------------------------------------------------
@@ -120,11 +137,44 @@ for my $y (@ESPN_Y) {
 
   # games from schedule
   my (@games, %rs);   # %rs: pid -> reg-season tallies
+  # mlb: the scoring categories for THIS season, in the league's chosen order
+  my @catIds = $SPORT eq 'mlb'
+    ? map { $_->{statId} } @{ ($st->{scoringSettings} || {})->{scoringItems} || [] } : ();
   for my $g (@{$d->{schedule}||[]}) {
     my $wk = $g->{matchupPeriodId};
     my $tier = $g->{playoffTierType} || 'NONE';
     my $h = $g->{home} || {}; my $a = $g->{away} || {};
     next unless defined $h->{teamId} && defined $a->{teamId};
+
+    # mlb: capture the category-by-category box for this matchup (both sides)
+    if ($SPORT eq 'mlb' && @catIds) {
+      my $hsb = ($h->{cumulativeScore} || {})->{scoreByStat} || {};
+      my $asb = ($a->{cumulativeScore} || {})->{scoreByStat} || {};
+      my $bhp = $tid2pid{$h->{teamId}}; my $bap = $tid2pid{$a->{teamId}};
+      if (%$hsb && $bhp && $bap) {
+        my (@hc, @ac); my ($hw,$hl,$ht) = (0,0,0);
+        for my $sid (@catIds) {
+          my ($lbl,$lo) = @{ $MLB_STAT{$sid} || ["S$sid",0] };
+          my $hv = $hsb->{$sid}{score}; my $av = $asb->{$sid}{score};
+          next unless defined $hv && defined $av;
+          my $hr = $hsb->{$sid}{result} // '';
+          my $res;   # from HOME perspective: 1 win / 0 loss / -1 tie
+          if    ($hr eq 'WIN')  { $res = 1 }
+          elsif ($hr eq 'LOSS') { $res = 0 }
+          elsif ($hr eq 'TIE')  { $res = -1 }
+          else { my $c = $hv <=> $av; $c = -$c if $lo; $res = $c > 0 ? 1 : $c < 0 ? 0 : -1 }
+          push @hc, { k=>$lbl, lo=>$lo, me=>r3($hv), op=>r3($av), r=>$res };
+          push @ac, { k=>$lbl, lo=>$lo, me=>r3($av), op=>r3($hv), r=>($res < 0 ? -1 : 1-$res) };
+          if    ($res == 1) { $hw++ }
+          elsif ($res == 0) { $hl++ }
+          else              { $ht++ }
+        }
+        if (@hc) {
+          $MLB_BOX{"$y|$wk|$bhp"} = { vs=>$bap, cats=>\@hc, w=>$hw, l=>$hl, t=>$ht };
+          $MLB_BOX{"$y|$wk|$bap"} = { vs=>$bhp, cats=>\@ac, w=>$hl, l=>$hw, t=>$ht };
+        }
+      }
+    }
     # nfl: totalPoints is the score. mlb (H2H categories): the weekly "score" is
     # categories won, in cumulativeScore.wins (ESPN stopped mirroring it to
     # totalPoints in 2019).
@@ -698,16 +748,27 @@ sub headshot {
     $covFull{$y} = 1 if $any;
   }
 
-  my @f = sort { $a <=> $b } keys %covFull;
-  my @s = sort { $a <=> $b } grep { !$covFull{$_} } keys %covStart;
+  my $out;
+  if ($SPORT eq 'mlb') {
+    # baseball: no lineups, a category-grid box per matchup instead
+    my %yr; for (keys %MLB_BOX) { /^(\d+)\|/ and $yr{$1} = 1 }
+    my @cy = sort { $a <=> $b } keys %yr;
+    %LG = %MLB_BOX;
+    $out = { sport => 'mlb',
+             coverage => { cats => (@cy ? [ $cy[0]+0, $cy[-1]+0 ] : undef) },
+             g => \%LG };
+  } else {
+    my @f = sort { $a <=> $b } keys %covFull;
+    my @s = sort { $a <=> $b } grep { !$covFull{$_} } keys %covStart;
+    $out = { coverage => { full     => (@f ? [ $f[0]+0, $f[-1]+0 ] : undef),
+                           starters => (@s ? [ $s[0]+0, $s[-1]+0 ] : undef) },
+             g => \%LG };
+  }
   open my $lf, ">:raw", "$ROOT/bundles/$SLUG.lineups.json" or die "write lineups: $!";
-  print $lf $j->encode({
-    coverage => { full     => (@f ? [ $f[0]+0, $f[-1]+0 ] : undef),
-                  starters => (@s ? [ $s[0]+0, $s[-1]+0 ] : undef) },
-    g => \%LG,
-  });
+  print $lf $j->encode($out);
   close $lf;
-  printf STDERR "  lineups: %d game-sides -> %s.lineups.json (%d bytes)\n",
+  printf STDERR "  %s: %d game-sides -> %s.lineups.json (%d bytes)\n",
+    ($SPORT eq 'mlb' ? 'box scores' : 'lineups'),
     scalar(keys %LG), $SLUG, (-s "$ROOT/bundles/$SLUG.lineups.json");
 }
 

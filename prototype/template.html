@@ -328,6 +328,18 @@
   .bx-pts{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
   .bx-r.zero .bx-nm,.bx-r.zero .bx-pts{color:var(--ink-faint)}
   @media (max-width:620px){ .bx-cols{grid-template-columns:1fr} }
+  /* baseball category-grid box */
+  .bxc{max-width:430px;margin:2px auto 0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface)}
+  .bxc-r{display:grid;grid-template-columns:1fr 88px 88px;gap:8px;align-items:center;padding:5px 13px;font-size:12.5px;border-top:1px solid var(--border)}
+  .bxc-r:first-child{border-top:0}
+  .bxc-hd{background:var(--surface-2);font-family:var(--disp);font-weight:600;font-size:12px}
+  .bxc-hd .bxc-v{white-space:normal;line-height:1.15;color:var(--ink)}
+  .bxc-k{font-family:var(--mono);font-size:10.5px;letter-spacing:.03em;color:var(--ink-faint);text-transform:uppercase}
+  .bxc-v{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;color:var(--ink-faint)}
+  .bxc-v.bxc-w{color:var(--accent);font-weight:600}
+  .bxc-ft{background:var(--surface-2);font-family:var(--disp);font-weight:600}
+  .bxc-ft .bxc-k{font-family:var(--disp);font-size:12px;color:var(--ink);text-transform:none}
+  .bxc-ft .bxc-v{color:var(--ink)}
 
   /* trade calculator */
   .tc-teams{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
@@ -1902,6 +1914,7 @@
         if (x.type==='playoff') poMeet++;
       });
       var na = pName(a), nb = pName(b);
+      var scF = isCats ? f0 : f2;   // category-win counts show as integers
       var lead = !m.length ? 'Never met'
                : aw>bw ? esc(na)+' leads '+aw+'–'+bw+(tt?'–'+tt:'')
                : bw>aw ? esc(nb)+' leads '+bw+'–'+aw+(tt?'–'+tt:'')
@@ -1927,9 +1940,9 @@
       var cmp = '<table class="rv-cmp"><thead><tr><th></th><th>'+esc(na)+'</th><th>'+esc(nb)+'</th></tr></thead><tbody>' +
         cmpRow('Career win %', ca.pct, cb.pct, pctF, true) +
         '<tr><td>Career record</td><td class="num">'+ca.w+'–'+ca.l+(ca.t?'–'+ca.t:'')+'</td><td class="num">'+cb.w+'–'+cb.l+(cb.t?'–'+cb.t:'')+'</td></tr>' +
-        cmpRow('Points / game', ca.ppg, cb.ppg, ppgF, true) +
-        cmpRow('Points for', ca.pf, cb.pf, ptsF, true) +
-        cmpRow('Points against', ca.pa, cb.pa, ptsF, false) +
+        cmpRow(isCats?'Category wins / wk':'Points / game', ca.ppg, cb.ppg, ppgF, true) +
+        cmpRow(isCats?'Category wins':'Points for', ca.pf, cb.pf, ptsF, true) +
+        cmpRow(isCats?'Category losses':'Points against', ca.pa, cb.pa, ptsF, false) +
         '</tbody></table>';
 
       var mtHtml = m.length ? '<div class="rv-mt">' + m.map(function(x){
@@ -1938,10 +1951,10 @@
                 : x.type==='consolation' ? ' <span style="color:var(--ink-faint)">· cons</span>' : '';
         return '<div class="rv-row" data-y="'+x.year+'" data-w="'+x.week+'" role="button" tabindex="0">' +
           '<span class="rv-when">'+x.year+' · Wk '+x.week+tag+'</span>' +
-          '<span class="rv-score"><span class="'+(aWin?'win wa':'')+'">'+f2(x.ap)+'</span> – ' +
-            '<span class="'+(bWin?'win wb':'')+'">'+f2(x.bp)+'</span> ' +
+          '<span class="rv-score"><span class="'+(aWin?'win wa':'')+'">'+scF(x.ap)+'</span> – ' +
+            '<span class="'+(bWin?'win wb':'')+'">'+scF(x.bp)+'</span> ' +
             '<span style="color:var(--ink-faint)">'+esc(aWin?na:bWin?nb:'tie')+'</span></span>' +
-          '<span class="rv-mrg">'+(x.ap===x.bp?'tie':'+'+f2(Math.abs(x.ap-x.bp)))+'</span>' +
+          '<span class="rv-mrg">'+(x.ap===x.bp?'tie':'+'+scF(Math.abs(x.ap-x.bp)))+'</span>' +
           '<button class="rv-open" type="button">▾ box score</button>' +
         '</div>' +
         '<div class="rv-box" hidden></div>';
@@ -1989,7 +2002,38 @@
         return '<div class="bx-col'+(isWin?' win':'')+'"><div class="bx-hd">'+esc(name) +
           '<span class="bx-tot">'+f2(g.tot)+'</span></div>'+rows+'</div>';
       }
+      function fmtCat(v){
+        if (v == null) return '—';
+        var a = Math.abs(v);
+        if (a > 0 && a < 1) return v.toFixed(3).replace(/^(-?)0\./, '$1.');   // .285
+        if (v % 1 !== 0) return v.toFixed(2);                                  // 3.29, 1.43
+        return String(v);                                                     // 19, 5
+      }
+      function renderMlbBox(L, yr, wk){
+        var g = L.g[yr+'|'+wk+'|'+a];   // from a's perspective: me=a, op=b
+        if (!g || !g.cats || !g.cats.length)
+          return '<div class="bx-note">No box score on record for this matchup.</div>';
+        var rows = g.cats.map(function(c){
+          var aW = c.r === 1, bW = c.r === 0;
+          return '<div class="bxc-r">' +
+            '<span class="bxc-k">' + esc(c.k) + (c.lo ? ' ↓' : '') + '</span>' +
+            '<span class="bxc-v' + (aW?' bxc-w':'') + '">' + fmtCat(c.me) + (aW?' ✓':'') + '</span>' +
+            '<span class="bxc-v' + (bW?' bxc-w':'') + '">' + fmtCat(c.op) + (bW?' ✓':'') + '</span>' +
+          '</div>';
+        }).join('');
+        var tie = g.t || 0;
+        return '<div class="bxc">' +
+          '<div class="bxc-r bxc-hd"><span class="bxc-k"></span>' +
+            '<span class="bxc-v">' + esc(na) + '</span><span class="bxc-v">' + esc(nb) + '</span></div>' +
+          rows +
+          '<div class="bxc-r bxc-ft"><span class="bxc-k">Categories won</span>' +
+            '<span class="bxc-v' + (g.w>g.l?' bxc-w':'') + '">' + g.w + '</span>' +
+            '<span class="bxc-v' + (g.l>g.w?' bxc-w':'') + '">' + g.l + '</span></div>' +
+          (tie ? '<div class="bx-note">' + tie + ' categor' + (tie>1?'ies':'y') + ' split even</div>' : '') +
+          '</div>';
+      }
       function renderBox(L, yr, wk){
+        if (L && L.sport === 'mlb') return renderMlbBox(L, yr, wk);
         var ga = L.g[yr+'|'+wk+'|'+a], gb = L.g[yr+'|'+wk+'|'+b];
         var cov = L.coverage || {};
         if (!ga && !gb){
