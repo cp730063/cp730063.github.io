@@ -775,6 +775,12 @@
     <div class="tbl-wrap"><table id="standTbl"></table></div>
     <p class="foot" style="border:0;margin-top:14px;padding:0">
       PF&nbsp;/&nbsp;PA are regular-season points for and against, computed from weekly scores. Click a column to sort. <span id="optNote"></span></p>
+    <section id="catStatsSec" hidden style="margin-top:22px">
+      <h3 class="sec" style="font-size:19px">Team stats</h3>
+      <p class="sec-note" id="catStatsNote"></p>
+      <div class="tbl-wrap"><table id="catStatsTbl"></table></div>
+      <p class="foot" style="border:0;margin-top:14px;padding:0" id="catStatsFoot"></p>
+    </section>
   </div>
 
   <div class="panel" id="p-records" hidden>
@@ -807,6 +813,14 @@
         <button aria-pressed="false" data-s="po">Playoffs only</button>
       </div>
       <div class="rec-list" id="recList"></div>
+    </section>
+
+    <section id="catRecSec" hidden style="margin-top:44px">
+      <div class="h-kicker">By the numbers</div>
+      <h2 class="sec">Category records</h2>
+      <p class="sec-note">The best and worst regular-season team total ever posted in each scoring category, one row per category.</p>
+      <div class="tbl-wrap"><table id="catRecTbl"></table></div>
+      <p class="foot" style="border:0;margin-top:14px;padding:0" id="catRecFoot"></p>
     </section>
   </div>
 
@@ -1595,6 +1609,7 @@
       document.getElementById('standNote').textContent = 'All-time regular season, '+yFirst+'–'+yLast+', aggregated by manager. Click a column to sort.';
       document.getElementById('optNote').textContent = seasons.some(function(s){return s.manual;})
         ? 'PF / PA cover only seasons with box-score data.' : '';
+      document.getElementById('catStatsSec').hidden = true;
       var agg = {};
       played.forEach(function(s){
         entryTotals(s).forEach(function(x){
@@ -1657,6 +1672,33 @@
             : e.poResult==='third' ? '<span class="badge">3rd</span>' : '';
         }});
       sortableTable(document.getElementById('standTbl'), cols, (s.entries||[]).slice(), {sortKey:'rec', rownum:true});
+      renderCatStats(s);
+    }
+
+    function renderCatStats(s){
+      var sec = document.getElementById('catStatsSec');
+      var withCats = (s.entries||[]).filter(function(e){ return e.catTotals && e.catTotals.length; });
+      if (!isCats || !withCats.length){ sec.hidden = true; return; }
+      sec.hidden = false;
+      document.getElementById('catStatsNote').textContent =
+        s.year+' regular season — every scoring category, one row per team. Same view as ESPN’s Standings › Stats tab. Click a column to sort.';
+      var catKeys = [];
+      withCats[0].catTotals.forEach(function(c){ catKeys.push(c.k); });
+      var hasRate = withCats[0].catTotals.some(function(c){ return c.rate; });
+      var cols = [
+        {key:'team', label:'Team', align:'left', val:function(e){return e.team;},
+          cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(pName(e.personId))+'</span></div>';}}
+      ];
+      catKeys.forEach(function(k){
+        cols.push({ key:'c_'+k, label:k, num:true,
+          val:function(e){ var c=(e.catTotals||[]).filter(function(x){return x.k===k;})[0]; return c?c.v:-Infinity; },
+          cell:function(e){ var c=(e.catTotals||[]).filter(function(x){return x.k===k;})[0];
+            return c==null ? '—' : c.rate ? c.v.toFixed(3).replace(/^0\./,'.') : f0(c.v); } });
+      });
+      sortableTable(document.getElementById('catStatsTbl'), cols, withCats, {sortKey:'team', sortDir:1});
+      document.getElementById('catStatsFoot').innerHTML = hasRate
+        ? 'Counting categories (HR, RBI, K, W, …) are true regular-season totals. Rate categories (AVG, OBP, ERA, WHIP, …) are the <b>average of that team’s weekly rate</b> across the regular season, not an official recomputed season rate — ESPN’s own season stat lines include playoff weeks and are built from full underlying box scores we don’t have access to.'
+        : 'Regular-season totals only.';
     }
 
     pick.addEventListener('click', function(e){
@@ -1754,6 +1796,38 @@
       render(b.dataset.s);
     });
     render('reg');
+
+    /* ---- category records (baseball): best/worst regular-season team total per category ---- */
+    (function renderCatRecords(){
+      var sec = document.getElementById('catRecSec');
+      if (!isCats){ sec.hidden = true; return; }
+      var order = [], extremes = {};
+      played.forEach(function(s){
+        (s.entries||[]).forEach(function(e){
+          (e.catTotals||[]).forEach(function(c){
+            var m = extremes[c.k];
+            if (!m){ m = extremes[c.k] = { rate:c.rate, most:null, least:null }; order.push(c.k); }
+            var rec = { v:c.v, personId:e.personId, team:e.team, year:s.year };
+            if (!m.most  || c.v > m.most.v)  m.most  = rec;
+            if (!m.least || c.v < m.least.v) m.least = rec;
+          });
+        });
+      });
+      if (!order.length){ sec.hidden = true; return; }
+      sec.hidden = false;
+      function fmtv(m, v){ return m.rate ? v.toFixed(3).replace(/^0\./,'.') : f0(v); }
+      function who(rec){ return '<b>'+esc(rec.team)+'</b> <span class="mn">'+esc(pName(rec.personId))+' · '+rec.year+'</span>'; }
+      var rows = order.map(function(k){ return { k:k, m:extremes[k] }; });
+      sortableTable(document.getElementById('catRecTbl'), [
+        {key:'cat', label:'Category', align:'left', val:function(r){return r.k;}, cell:function(r){return '<b>'+esc(r.k)+'</b>';}},
+        {key:'most', label:'Most', align:'left', val:function(r){return r.m.most.v;},
+          cell:function(r){return fmtv(r.m, r.m.most.v)+' — '+who(r.m.most);}},
+        {key:'least', label:'Least', align:'left', val:function(r){return -r.m.least.v;},
+          cell:function(r){return fmtv(r.m, r.m.least.v)+' — '+who(r.m.least);}}
+      ], rows, {sortKey:'cat', sortDir:1});
+      document.getElementById('catRecFoot').textContent =
+        'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — the most/least are still real single-season team performances, just not ESPN’s own official season rate.';
+    })();
 
     /* ---- all-time rankings widget ---- */
     function rankAgg(scope){

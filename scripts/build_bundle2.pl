@@ -71,6 +71,9 @@ my %MLB_STAT = (
 );
 sub r3 { my ($n)=@_; defined $n ? 0+sprintf("%.3f",$n) : undef }
 
+# which MLB_STAT ids are rate stats (need averaging, not summing) vs counting
+my %RATE_ID = map { $_=>1 } (2, 17, 9, 18, 47, 41, 49, 42);   # AVG OBP SLG OPS ERA WHIP K/9 K/BB
+
 # baseball player valuation: per season we need the category set, the team count,
 # the starting-slot split, and every rostered player's full season stat line.
 my (%MLB_CATS, %MLB_TEAMCT, %MLB_SLOTS, %MLB_PSTATS);
@@ -154,6 +157,7 @@ for my $y (@ESPN_Y) {
   # mlb: the scoring categories for THIS season, in the league's chosen order
   my @catIds = $SPORT eq 'mlb'
     ? map { $_->{statId} } @{ ($st->{scoringSettings} || {})->{scoringItems} || [] } : ();
+  my %catAcc;   # pid -> statId -> {sum,n} — regular-season team category totals
 
   # mlb: stash the season's category set + every rostered player's season stat line
   # (for the player-valuation pass after the loop)
@@ -197,6 +201,22 @@ for my $y (@ESPN_Y) {
     if ($SPORT eq 'mlb' && @catIds) {
       my $hsb = ($h->{cumulativeScore} || {})->{scoreByStat} || {};
       my $asb = ($a->{cumulativeScore} || {})->{scoreByStat} || {};
+      # regular-season team category totals: sum counting stats across every
+      # regular-season week; rate stats are averaged across those same weeks
+      # (ESPN's own season totals include playoff weeks and are recomputed
+      # from full underlying box scores we don't have — a plain average of
+      # weekly rates is the honest approximation; flagged as such in the UI).
+      if ($tier eq 'NONE') {
+        my $bhp0 = $tid2pid{$h->{teamId}}; my $bap0 = $tid2pid{$a->{teamId}};
+        for my $pr ([$bhp0,$hsb], [$bap0,$asb]) {
+          my ($pid,$sb) = @$pr; next unless $pid;
+          for my $sid (@catIds) {
+            my $v = $sb->{$sid}{score}; next unless defined $v;
+            my $a2 = ($catAcc{$pid}{$sid} ||= {sum=>0,n=>0});
+            $a2->{sum} += $v; $a2->{n}++;
+          }
+        }
+      }
       my $bhp = $tid2pid{$h->{teamId}}; my $bap = $tid2pid{$a->{teamId}};
       if (%$hsb && $bhp && $bap) {
         my (@hc, @ac); my ($hw,$hl,$ht) = (0,0,0);
@@ -305,6 +325,24 @@ for my $y (@ESPN_Y) {
       my $p = $P{$pid}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y<$p->{firstSeason};
     }
     push @{$P{$champ}{titles}}, $y if $champ;
+  }
+
+  # mlb: attach each team's regular-season category totals (counting stats
+  # summed, rate stats averaged across regular-season weeks — see catAcc note above)
+  if ($SPORT eq 'mlb' && @catIds) {
+    for my $pid (keys %entry) {
+      my $acc = $catAcc{$pid} or next;
+      my @ct;
+      for my $sid (@catIds) {
+        my $a3 = $acc->{$sid} or next;
+        my ($lbl,$lo) = @{ $MLB_STAT{$sid} || ["S$sid",0] };
+        my $rate = $RATE_ID{$sid} ? 1 : 0;
+        my $val = $rate ? ($a3->{n} ? $a3->{sum}/$a3->{n} : undef) : $a3->{sum};
+        next unless defined $val;
+        push @ct, { k=>$lbl, v=>($rate ? r3($val) : r2($val)), lo=>$lo, rate=>$rate };
+      }
+      $entry{$pid}{catTotals} = \@ct if @ct;
+    }
   }
 
   push @seasons, {
