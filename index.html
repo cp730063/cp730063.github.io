@@ -493,6 +493,15 @@
   tr.pl-move td{background:var(--surface-2);font-size:11.5px;color:var(--ink-muted);text-align:left;padding:6px 14px}
   tr.pl-move td b{color:var(--ink)}
   .pcard-foot{padding:12px 16px 16px;color:var(--ink-faint);font-size:11.5px}
+  /* baseball players: category z-score chips + season line */
+  .pl-line{color:var(--ink-muted);font-size:12.5px}
+  .pl-cb{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-right:10px;white-space:nowrap}
+  .pcard.pc-mlb{max-width:600px}
+  .pc-mlb table.pcard-tbl td:last-child{white-space:normal;min-width:180px;color:var(--ink-muted)}
+  .pc-mlb table.pcard-tbl tr.pl-move td{min-width:0}
+  .zc{font-variant-numeric:tabular-nums}
+  .zc.zp{color:var(--accent)}
+  .zc.zn{color:var(--neg,#c0552b)}
 
   /* draft board */
   .dboard-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:11px;background:var(--surface);box-shadow:var(--shadow)}
@@ -1080,7 +1089,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":false,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904005601"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904012258"}</script>
 <script>
 "use strict";
 (function(){
@@ -1137,6 +1146,7 @@
   }
 
   var f2 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var f1 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1}); };
   var f0 = function(n){ return Math.round(n==null?0:n).toLocaleString(); };
   function ord(n){ var s=['th','st','nd','rd'], v=n%100; return n + (s[(v-20)%10] || s[v] || s[0]); }
   var esc = function(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); };
@@ -1325,7 +1335,7 @@
   function applyTabAvailability(){
     var lg = DATA.league || {};
     var football = (lg.sport || 'nfl') === 'nfl';
-    var avail = { players: !!lg.hasPlayers && football, trades: !!lg.hasTrades,
+    var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
                   tradecalc: football && (lg.type === 'dynasty' || lg.type === 'redraft') };
     Object.keys(avail).forEach(function(p){
@@ -2828,6 +2838,7 @@
     var ps  = DATA.playerSeasons || [];
     var own = DATA.ownership || {};
     if (!ps.length) return;   /* Players tab is hidden by applyTabAvailability */
+    if (isCats) return sec_playersMlb(ps);
     var sleeperYears = {}; seasons.forEach(function(s){ if (s.platform==='sleeper' && s.played) sleeperYears[s.year]=1; });
     var espnYrs = seasons.filter(function(s){ return s.platform==='espn'; }).map(function(s){ return s.year; });
     var esFirst = espnYrs.length ? espnYrs[0] : null, esLast = espnYrs.length ? espnYrs[espnYrs.length-1] : null;
@@ -2975,6 +2986,118 @@
     document.getElementById('plSearch').addEventListener('input', function(){
       q = this.value.trim().toLowerCase(); renderTable();
     });
+    document.getElementById('plExpand').addEventListener('click', function(){
+      expand = !expand;
+      this.setAttribute('aria-pressed', expand ? 'true' : 'false');
+      this.textContent = expand ? 'Collapse' : 'Expand all';
+      renderTable();
+    });
+    mp.addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      Array.prototype.forEach.call(mp.children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      curMgr=b.dataset.m; renderTable();
+    });
+    sp.addEventListener('click', function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      Array.prototype.forEach.call(sp.children,function(x){x.setAttribute('aria-pressed',x===b?'true':'false');});
+      curYear=b.dataset.y; renderTable();
+    });
+    renderTable();
+  }
+
+  /* baseball Players tab — season "value" (category z-score sum), no points */
+  function sec_playersMlb(ps){
+    var note = document.querySelector('#p-players .sec-note');
+    if (note) note.textContent = 'Every player-season by value — the sum of its category z-scores against the rosterable player pool. ' +
+      '≈ 0 is a replacement-level regular; elite seasons reach +10 and up. Full-season totals, credited to the manager who drafted the player.';
+    var foot = document.querySelector('#p-players .foot');
+    if (foot) foot.innerHTML = 'Value is computed per season against <b>that year’s scoring categories</b>, so OPS, K/9, holds, etc. only count in the seasons the league actually used them. Rate stats (AVG/ERA/WHIP…) are playing-time weighted.';
+
+    var zc = function(z){ var s = (z>0?'+':'') + f1(z); return '<span class="zc '+(z>=0?'zp':'zn')+'">'+s+'</span>'; };
+    function catBreak(r){
+      return (r.cats||[]).map(function(c){ return '<span class="pl-cb">'+esc(c.k)+' '+zc(c.z)+'</span>'; }).join('');
+    }
+
+    function openCard(key){
+      var rows = ps.filter(function(r){ return r.key===key; })
+                   .sort(function(a,b){ return a.year-b.year; });
+      if (!rows.length) return;
+      var nm = rows[0].name, pos = rows[rows.length-1].pos;
+      var yLo = rows[0].year, yHi = rows[rows.length-1].year;
+      var best = rows.slice().sort(function(a,b){ return b.val-a.val; })[0];
+      var body = rows.map(function(r){
+        return '<tr><td class="yr">'+r.year+'</td>' +
+          '<td>'+esc(pName(r.personId))+'</td>' +
+          '<td class="num"><b>'+f1(r.val)+'</b></td>' +
+          '<td class="num">'+ord(r.vRank)+'</td>' +
+          '<td>'+esc(r.line)+'</td></tr>' +
+          '<tr class="pl-move"><td></td><td colspan="4">'+catBreak(r)+'</td></tr>';
+      }).join('');
+      var mono = esc(nm.split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join(''));
+      var m = document.createElement('div');
+      m.className = 'modal';
+      m.innerHTML =
+        '<div class="pcard pc-mlb" role="dialog" aria-label="'+esc(nm)+'">' +
+          '<div class="pcard-top">' +
+            '<div class="pcard-photo"><span>'+mono+'</span></div>' +
+            '<div class="pcard-bio"><h3>'+esc(nm)+'</h3>' +
+              '<div class="pl-sub">'+esc(pos)+' · in the league '+(yLo===yHi?yLo:yLo+'–'+yHi) +
+                ' · '+rows.length+' season'+(rows.length!==1?'s':'') +
+                ' · best '+f1(best.val)+' ('+best.year+')</div>' +
+            '</div>' +
+            '<button class="pcard-x" aria-label="Close">×</button>' +
+          '</div>' +
+          '<table class="pcard-tbl"><thead><tr><th>Yr</th><th>Drafted by</th><th>Value</th><th>Rank</th><th>Season line</th></tr></thead>' +
+          '<tbody>'+body+'</tbody></table>' +
+          '<p class="pcard-foot">Value = sum of category z-scores vs the rosterable pool that season. Rank is among all valued players that year.</p>' +
+        '</div>';
+      document.body.appendChild(m);
+      function close(){ m.remove(); document.removeEventListener('keydown', onKey); }
+      function onKey(e){ if (e.key==='Escape') close(); }
+      m.addEventListener('click', function(e){ if (e.target===m) close(); });
+      m.querySelector('.pcard-x').addEventListener('click', close);
+      document.addEventListener('keydown', onKey);
+    }
+    openPlayerCard = openCard;
+
+    var mgrs = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).length; })
+      .sort(function(a,b){ return (b.titles||[]).length-(a.titles||[]).length || b.seasons.length-a.seasons.length; });
+    var mp = document.getElementById('plMgr');
+    mp.innerHTML = '<button data-m="ALL" aria-pressed="true">Whole league</button>' +
+      mgrs.map(function(p){ return '<button data-m="'+p.id+'" aria-pressed="false">'+esc(p.name)+'</button>'; }).join('');
+    var sp = document.getElementById('plSeason');
+    sp.innerHTML = '<button data-y="ALL" aria-pressed="true">All seasons</button>' +
+      played.map(function(s){ return '<button data-y="'+s.year+'" aria-pressed="false">'+s.year+'</button>'; }).join('');
+
+    var curMgr='ALL', curYear='ALL', q='', expand=false;
+    function renderTable(){
+      var rows = ps.filter(function(r){
+        if (curMgr!=='ALL' && r.personId!==curMgr) return false;
+        if (curYear!=='ALL' && r.year!==+curYear) return false;
+        if (q && (r.name + ' ' + pName(r.personId)).toLowerCase().indexOf(q) < 0) return false;
+        return true;
+      });
+      var cols = [
+        {key:'name', label:'Player', align:'left', val:function(r){return r.name;},
+          cell:function(r){return '<a href="#" class="plink" data-k="'+esc(r.key)+'">'+esc(r.name)+'</a><span class="pos-tag">'+esc(r.pos)+'</span>';}},
+        {key:'mgr', label:'Drafted by', align:'left', val:function(r){return pName(r.personId);},
+          cell:function(r){return '<span class="mn2">'+esc(pName(r.personId))+'</span>';}},
+        {key:'year', label:'Season', num:true, val:function(r){return r.year;}, cell:function(r){return r.year;}},
+        {key:'val', label:'Value', num:true, val:function(r){return r.val;},
+          cell:function(r){return '<b>'+f1(r.val)+'</b>';}},
+        {key:'vRank', label:'Rank', num:true, val:function(r){return r.vRank;}, cell:function(r){return ord(r.vRank);}},
+        {key:'line', label:'Season line', align:'left', val:function(r){return r.val;}, sortable:false,
+          cell:function(r){return '<span class="pl-line">'+esc(r.line)+'</span>';}}
+      ];
+      if (curMgr!=='ALL') cols.splice(1,1);
+      sortableTable(document.getElementById('plTbl'), cols, rows, {sortKey:'val', sortDir:-1, rownum:true, limit: expand ? 0 : 50, limitStep:50});
+    }
+
+    document.getElementById('plTbl').addEventListener('click', function(e){
+      var a = e.target.closest('.plink');
+      if (a){ e.preventDefault(); openCard(a.getAttribute('data-k')); }
+    });
+    document.getElementById('plSearch').addEventListener('input', function(){ q = this.value.trim().toLowerCase(); renderTable(); });
     document.getElementById('plExpand').addEventListener('click', function(){
       expand = !expand;
       this.setAttribute('aria-pressed', expand ? 'true' : 'false');

@@ -31,7 +31,7 @@
       {
          "firstSeason" : 2008,
          "hasDrafts" : true,
-         "hasPlayers" : false,
+         "hasPlayers" : true,
          "hasTrades" : false,
          "label" : "24th Annual FBL",
          "lastSeason" : 2026,

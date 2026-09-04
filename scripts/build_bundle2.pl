@@ -71,6 +71,20 @@ my %MLB_STAT = (
 );
 sub r3 { my ($n)=@_; defined $n ? 0+sprintf("%.3f",$n) : undef }
 
+# baseball player valuation: per season we need the category set, the team count,
+# the starting-slot split, and every rostered player's full season stat line.
+my (%MLB_CATS, %MLB_TEAMCT, %MLB_SLOTS, %MLB_PSTATS);
+# statId -> [ label, group(h/p), kind(c=counting / r=rate), lowerBetter, weightStat ]
+#   weightStat: which raw stat to weight a rate by (0=AB, 16=PA, 34=outs)
+my %MLB_CATDEF = (
+  20=>['R',  'h','c',0,0 ], 5 =>['HR', 'h','c',0,0 ], 21=>['RBI','h','c',0,0 ],
+  23=>['SB', 'h','c',0,0 ], 2 =>['AVG','h','r',0,0 ], 17=>['OBP','h','r',0,16],
+  9 =>['SLG','h','r',0,0 ], 18=>['OPS','h','r',0,16],
+  53=>['W',  'p','c',0,0 ], 57=>['SV', 'p','c',0,0 ], 83=>['HLD','p','c',0,0 ],
+  48=>['K',  'p','c',0,0 ], 34=>['IP', 'p','c',0,0 ],
+  47=>['ERA','p','r',1,34], 41=>['WHIP','p','r',1,34], 49=>['K/9','p','r',0,34],
+);
+
 # ---------------------------------------------------------------------------
 # 2. ESPN seasons 2015-2024
 # ---------------------------------------------------------------------------
@@ -140,6 +154,35 @@ for my $y (@ESPN_Y) {
   # mlb: the scoring categories for THIS season, in the league's chosen order
   my @catIds = $SPORT eq 'mlb'
     ? map { $_->{statId} } @{ ($st->{scoringSettings} || {})->{scoringItems} || [] } : ();
+
+  # mlb: stash the season's category set + every rostered player's season stat line
+  # (for the player-valuation pass after the loop)
+  if ($SPORT eq 'mlb' && @catIds) {
+    $MLB_CATS{$y}   = [ @catIds ];
+    $MLB_TEAMCT{$y} = scalar @{ $d->{teams} || [] };
+    my $lsc = ($st->{rosterSettings} || {})->{lineupSlotCounts} || {};
+    my ($hs, $ps) = (0, 0);
+    for my $sid (keys %$lsc) {
+      next if $sid >= 16;                       # 16 bench, 17 IL, 19 NA
+      ($sid >= 13 ? $ps : $hs) += $lsc->{$sid}; # 13 P / 14 SP / 15 RP are pitching
+    }
+    $MLB_SLOTS{$y} = { hit => ($hs || 9), pit => ($ps || 8) };
+    for my $t (@{ $d->{teams} || [] }) {
+      my $own = $tid2pid{ $t->{id} };
+      for my $en (@{ ($t->{roster} || {})->{entries} || [] }) {
+        my $pl = ($en->{playerPoolEntry} || {})->{player} or next;
+        next unless defined $pl->{id};
+        my ($blk) = grep { ($_->{statSourceId}//1)==0 && ($_->{statSplitTypeId}//1)==0 }
+                    @{ $pl->{stats} || [] };
+        next unless $blk && ref $blk->{stats} eq 'HASH' && %{ $blk->{stats} };
+        $MLB_PSTATS{$y}{ $pl->{id} } ||= {
+          name => $pl->{fullName}, pos => ($MLB_POS{ $pl->{defaultPositionId} // -1 } // ''),
+          own  => $own, s => $blk->{stats},
+        };
+      }
+    }
+  }
+
   for my $g (@{$d->{schedule}||[]}) {
     my $wk = $g->{matchupPeriodId};
     my $tier = $g->{playoffTierType} || 'NONE';
@@ -822,6 +865,145 @@ for my $k (sort keys %PS) {
   };
 }
 
+# --- 4b.1b baseball player valuation ---------------------------------------
+#   season "value" = sum of category z-scores vs the rosterable player pool.
+#   ~0 = a replacement-level everyday player; elite hitter/pitcher seasons land
+#   ~+8..+15. Rate cats (AVG/OBP/OPS/ERA/WHIP/K9) are playing-time weighted so a
+#   .350 hitter in 40 AB doesn't grade like one in 600. Each season uses its own
+#   scoring categories, so OPS/K9/etc. only count in the years the league used them.
+if ($SPORT eq 'mlb') {
+  my $msd = sub {                       # mean + sample sd (sd floored at a tiny +)
+    my @v = grep { defined } @_; return (0, 1) unless @v;
+    my $m = 0; $m += $_ for @v; $m /= @v;
+    my $var = 0; $var += ($_ - $m) ** 2 for @v; $var /= (@v > 1 ? @v - 1 : 1);
+    ($m, $var > 1e-9 ? sqrt($var) : 1);
+  };
+  my $strip0 = sub { (my $s = sprintf('%.3f', $_[0])) =~ s/^(-?)0\./$1./; $s };
+
+  for my $y (sort { $a <=> $b } keys %MLB_PSTATS) {
+    my $cats  = $MLB_CATS{$y} or next;
+    my $P     = $MLB_PSTATS{$y};
+    my $teams = $MLB_TEAMCT{$y} || 12;
+    my $slots = $MLB_SLOTS{$y}  || { hit => 9, pit => 8 };
+
+    my (%isHit, %isPit);
+    for my $eid (keys %$P) {
+      my $s   = $P->{$eid}{s};
+      my $pit = ($P->{$eid}{pos} eq 'SP' || $P->{$eid}{pos} eq 'RP');
+      my $ab  = $s->{0}  // 0;
+      my $out = $s->{34} // 0;
+      if ($pit) { $isPit{$eid} = 1 if $out >= 30; $isHit{$eid} = 1 if $ab >= 60; }
+      else      { $isHit{$eid} = 1 if $ab  >= 20; $isPit{$eid} = 1 if $out >= 60; }
+    }
+    my @hit = keys %isHit;
+    my @pit = keys %isPit;
+    next unless @hit || @pit;
+
+    # crude pre-rank (each counting stat scaled to its own max) -> rosterable pool
+    my $pool_of = sub {
+      my ($ids, $keys, $want) = @_;
+      return [] unless @$ids;
+      my %mx;
+      for my $c (@$keys) { for my $e (@$ids) { my $v = $P->{$e}{s}{$c} // 0; $mx{$c} = $v if !defined $mx{$c} || $v > $mx{$c} } }
+      my %sc;
+      for my $e (@$ids) { my $t = 0; for my $c (@$keys) { $t += $mx{$c} ? ($P->{$e}{s}{$c} // 0) / $mx{$c} : 0 } $sc{$e} = $t }
+      my @r = sort { $sc{$b} <=> $sc{$a} } @$ids;
+      $want = $#r if $want > $#r;
+      [ @r[0 .. $want] ];
+    };
+    my $hPool = $pool_of->(\@hit, [20, 5, 21, 23],       int($teams * $slots->{hit} * 1.6) - 1);
+    my $pPool = $pool_of->(\@pit, [53, 48, 57, 83, 34],  int($teams * $slots->{pit} * 1.6) - 1);
+
+    my (%Z, %CV);                       # eid -> {label => z} , eid -> {label => display value}
+    for my $c (@$cats) {
+      my $def = $MLB_CATDEF{$c} or next;
+      my ($lbl, $grp, $kind, $lo, $wtc) = @$def;
+      my @ids  = $grp eq 'h' ? @hit : @pit;
+      my $pool = $grp eq 'h' ? $hPool : $pPool;
+      next unless @$pool;
+
+      if ($kind eq 'c') {
+        my ($m, $sd) = $msd->(map { $P->{$_}{s}{$c} // 0 } @$pool);
+        for my $e (@ids) {
+          my $v = $P->{$e}{s}{$c} // 0;
+          $Z{$e}{$lbl}  = ($v - $m) / $sd;
+          $CV{$e}{$lbl} = $c == 34 ? r2($v / 3) : $v + 0;   # IP shown as innings
+        }
+      } else {
+        my $wof = sub {
+          my $s = $P->{$_[0]}{s};
+          return $wtc == 34 ? (($s->{34} // 0) / 3)
+               : $wtc == 16 ? ($s->{16} // (($s->{0} // 0) + ($s->{10} // 0)))
+               :              ($s->{0} // 0);
+        };
+        my ($sw, $swr) = (0, 0);
+        for my $e (@$pool) { my $w = $wof->($e); $sw += $w; $swr += $w * ($P->{$e}{s}{$c} // 0) }
+        my $lg = $sw > 0 ? $swr / $sw : 0;
+        my ($m, $sd) = $msd->(map { $wof->($_) * (($P->{$_}{s}{$c} // 0) - $lg) } @$pool);
+        for my $e (@ids) {
+          my $z = ($wof->($e) * (($P->{$e}{s}{$c} // 0) - $lg) - $m) / $sd;
+          $Z{$e}{$lbl}  = $lo ? -$z : $z;
+          $CV{$e}{$lbl} = r3($P->{$e}{s}{$c} // 0);
+        }
+      }
+    }
+
+    my %val;
+    for my $e (keys %Z) { my $t = 0; $t += $_ for values %{ $Z{$e} }; $val{$e} = $t }
+    my @ranked = sort { $val{$b} <=> $val{$a} } keys %val;
+    my %vrank; my $i = 1; $vrank{$_} = $i++ for @ranked;
+
+    my @ordLbl = map { $MLB_CATDEF{$_} ? $MLB_CATDEF{$_}[0] : () } @$cats;
+
+    for my $e (@ranked) {
+      my $pm  = $P->{$e};
+      my $cv  = $CV{$e};
+      my $h   = $isHit{$e} ? 1 : 0;
+      my $p   = $isPit{$e} ? 1 : 0;
+      my @seg;
+      if ($h) {
+        my $rate = defined $cv->{OPS} ? $strip0->($cv->{OPS}) . ' OPS'
+                 : defined $cv->{AVG} ? $strip0->($cv->{AVG}) . ' AVG'
+                 : defined $cv->{OBP} ? $strip0->($cv->{OBP}) . ' OBP' : undef;
+        push @seg, $rate if $rate;
+        push @seg, int($cv->{HR}) . ' HR'  if defined $cv->{HR};
+        push @seg, int($cv->{R})  . ' R'   if defined $cv->{R};
+        push @seg, int($cv->{RBI}) . ' RBI' if defined $cv->{RBI};
+        push @seg, int($cv->{SB}) . ' SB'  if defined $cv->{SB};
+      }
+      if ($p) {
+        push @seg, int($cv->{W}) . ' W'              if defined $cv->{W};
+        push @seg, sprintf('%.2f ERA',  $cv->{ERA})  if defined $cv->{ERA};
+        push @seg, sprintf('%.2f WHIP', $cv->{WHIP}) if defined $cv->{WHIP};
+        push @seg, int($cv->{K}) . ' K'              if defined $cv->{K};
+        push @seg, sprintf('%.1f K/9', $cv->{'K/9'}) if defined $cv->{'K/9'} && !defined $cv->{K};
+        push @seg, int($cv->{IP}) . ' IP'            if defined $cv->{IP};
+        push @seg, int($cv->{SV}) . ' SV'            if $cv->{SV};
+        push @seg, int($cv->{HLD}) . ' HLD'          if $cv->{HLD};
+      }
+
+      my $drafter;
+      if (my $dp = $ESPN_DRAFT{$y}{$e}) { $drafter = $ESPN_T2P{$y}{ $dp->[2] }; }
+      $drafter ||= $pm->{own};
+      next unless $drafter;
+
+      my $grp = $p && !$h ? 'pit' : $h && $p ? 'both' : 'hit';
+      push @playerSeasons, {
+        year => $y + 0, personId => $drafter,
+        key  => norm_name($pm->{name}) . '|' . ($grp eq 'pit' ? 'p' : 'h'),
+        name => $pm->{name}, pos => $pm->{pos},
+        val  => r2($val{$e}), vRank => $vrank{$e} + 0, group => $grp,
+        drafted => ($ESPN_DRAFT{$y}{$e} ? { round => $ESPN_DRAFT{$y}{$e}[0] + 0, overall => $ESPN_DRAFT{$y}{$e}[1] + 0 } : undef),
+        line => join('  ·  ', @seg),
+        cats => [ map { { k => $_, v => $CV{$e}{$_}, z => r2($Z{$e}{$_}) } }
+                  grep { defined $Z{$e}{$_} } @ordLbl ],
+      };
+    }
+  }
+  printf STDERR "  mlb valuation: %d player-seasons across %d years\n",
+    scalar(@playerSeasons), scalar(keys %MLB_PSTATS);
+}
+
 # --- 4b.2 ownership timelines ----------------------------------------------
 my %OWN;  # key -> [ {season, personId, startWk, endWk, weeks, pts, acq{}} ]
 
@@ -1195,7 +1377,7 @@ my $out = {
                 : ((grep { ($_->{scoring}//'') eq 'cats' } @seasons) ? 'cats' : 'roto')),
     primary => ($CFG->{primary} ? \1 : \0),
     firstSeason => ($playedYears[0] // undef), lastSeason => ($playedYears[-1] // undef),
-    hasPlayers => ($PW_FILE ? \1 : \0), hasTrades => ($SLE_PW ? \1 : \0),
+    hasPlayers => (($PW_FILE || @playerSeasons) ? \1 : \0), hasTrades => ($SLE_PW ? \1 : \0),
     hasDrafts => (@draftsOut ? \1 : \0),
     hasDivisions => ((grep { $_->{hasDivisions} } @seasons) ? \1 : \0),
     prestige => ($CFG->{prestige} || { championship=>10, regularSeasonTitle=>4, runnerUp=>3, divisionTitle=>2, thirdPlace=>0, lastPlace=>0, playoffBerth=>0 }),
