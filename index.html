@@ -168,7 +168,8 @@
        position:sticky is scoped to .tbl-wrap (its overflow-x:auto makes it a scroll
        container), so this needs no per-table JS. 53px clears the sticky topbar
        (34px hamburger + 9px top/bottom padding + 1px border). */
-    .tbl-wrap thead th{position:sticky;top:53px;background:var(--surface);z-index:5}
+    .tbl-wrap thead tr{position:-webkit-sticky;position:sticky;top:53px;z-index:5}
+    .tbl-wrap thead th{position:-webkit-sticky;position:sticky;top:53px;background:var(--surface);z-index:5}
   }
   @media (min-width:901px){ .nav-scrim{display:none!important} }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -1117,7 +1118,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904164512"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904165501"}</script>
 <script>
 "use strict";
 (function(){
