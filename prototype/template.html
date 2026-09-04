@@ -1609,7 +1609,7 @@
       document.getElementById('standNote').textContent = 'All-time regular season, '+yFirst+'–'+yLast+', aggregated by manager. Click a column to sort.';
       document.getElementById('optNote').textContent = seasons.some(function(s){return s.manual;})
         ? 'PF / PA cover only seasons with box-score data.' : '';
-      document.getElementById('catStatsSec').hidden = true;
+      renderCatStatsAllTime();
       var agg = {};
       played.forEach(function(s){
         entryTotals(s).forEach(function(x){
@@ -1699,6 +1699,43 @@
       document.getElementById('catStatsFoot').innerHTML = hasRate
         ? 'Counting categories (HR, RBI, K, W, …) are true regular-season totals. Rate categories (AVG, OBP, ERA, WHIP, …) are the <b>average of that team’s weekly rate</b> across the regular season, not an official recomputed season rate — ESPN’s own season stat lines include playoff weeks and are built from full underlying box scores we don’t have access to.'
         : 'Regular-season totals only.';
+    }
+
+    function renderCatStatsAllTime(){
+      var sec = document.getElementById('catStatsSec');
+      if (!isCats){ sec.hidden = true; return; }
+      var agg = {}, order = [];
+      played.forEach(function(s){
+        (s.entries||[]).forEach(function(e){
+          (e.catTotals||[]).forEach(function(c){
+            var a = agg[e.personId] || (agg[e.personId] = { personId:e.personId, byK:{} });
+            var b = a.byK[c.k];
+            if (!b){ b = a.byK[c.k] = { sum:0, n:0, rate:c.rate, lo:c.lo }; if (order.indexOf(c.k)<0) order.push(c.k); }
+            b.sum += c.v; b.n++;
+          });
+        });
+      });
+      var rows = Object.keys(agg).map(function(pid){ return agg[pid]; });
+      if (!rows.length || !order.length){ sec.hidden = true; return; }
+      sec.hidden = false;
+      document.getElementById('catStatsNote').textContent =
+        'All-time regular season, '+yFirst+'–'+yLast+' — every scoring category, one row per manager. Click a column to sort.';
+      var cols = [
+        {key:'mgr', label:'Manager', align:'left', val:function(r){return pName(r.personId);},
+          cell:function(r){return '<div class="team-cell"><span class="tn">'+esc(pName(r.personId))+'</span><span class="mn">'+esc(pMgr(r.personId))+'</span></div>';}}
+      ];
+      var hasRate = order.some(function(k){ return rows.some(function(r){ return r.byK[k] && r.byK[k].rate; }); });
+      order.forEach(function(k){
+        cols.push({ key:'c_'+k, label:k, num:true,
+          val:function(r){ var b=r.byK[k]; return b ? (b.rate ? b.sum/b.n : b.sum) : -Infinity; },
+          cell:function(r){ var b=r.byK[k]; if (!b) return '—';
+            var v = b.rate ? b.sum/b.n : b.sum;
+            return b.rate ? v.toFixed(3).replace(/^0\./,'.') : f0(v); } });
+      });
+      sortableTable(document.getElementById('catStatsTbl'), cols, rows, {sortKey:'mgr', sortDir:1});
+      document.getElementById('catStatsFoot').innerHTML = hasRate
+        ? 'Career totals across every regular season played. Counting categories are summed. Rate categories are the <b>average of that manager’s season averages</b> (each of which is itself an average of weekly rates) — not an official recomputed career rate.'
+        : 'Regular-season totals only, across every season played.';
     }
 
     pick.addEventListener('click', function(e){
@@ -1806,7 +1843,7 @@
         (s.entries||[]).forEach(function(e){
           (e.catTotals||[]).forEach(function(c){
             var m = extremes[c.k];
-            if (!m){ m = extremes[c.k] = { rate:c.rate, most:null, least:null }; order.push(c.k); }
+            if (!m){ m = extremes[c.k] = { rate:c.rate, lo:c.lo, most:null, least:null }; order.push(c.k); }
             var rec = { v:c.v, personId:e.personId, team:e.team, year:s.year };
             if (!m.most  || c.v > m.most.v)  m.most  = rec;
             if (!m.least || c.v < m.least.v) m.least = rec;
@@ -1818,15 +1855,18 @@
       function fmtv(m, v){ return m.rate ? v.toFixed(3).replace(/^0\./,'.') : f0(v); }
       function who(rec){ return '<b>'+esc(rec.team)+'</b> <span class="mn">'+esc(pName(rec.personId))+' · '+rec.year+'</span>'; }
       var rows = order.map(function(k){ return { k:k, m:extremes[k] }; });
+      // for a lower-is-better category (ERA, WHIP, …) Best = the lowest total, Worst = the highest
+      function bestOf(m){ return m.lo ? m.least : m.most; }
+      function worstOf(m){ return m.lo ? m.most : m.least; }
       sortableTable(document.getElementById('catRecTbl'), [
         {key:'cat', label:'Category', align:'left', val:function(r){return r.k;}, cell:function(r){return '<b>'+esc(r.k)+'</b>';}},
-        {key:'most', label:'Most', align:'left', val:function(r){return r.m.most.v;},
-          cell:function(r){return fmtv(r.m, r.m.most.v)+' — '+who(r.m.most);}},
-        {key:'least', label:'Least', align:'left', val:function(r){return -r.m.least.v;},
-          cell:function(r){return fmtv(r.m, r.m.least.v)+' — '+who(r.m.least);}}
+        {key:'best', label:'Best', align:'left', val:function(r){return bestOf(r.m).v * (r.m.lo?-1:1);},
+          cell:function(r){var rec=bestOf(r.m); return fmtv(r.m, rec.v)+' — '+who(rec);}},
+        {key:'worst', label:'Worst', align:'left', val:function(r){return worstOf(r.m).v * (r.m.lo?1:-1);},
+          cell:function(r){var rec=worstOf(r.m); return fmtv(r.m, rec.v)+' — '+who(rec);}}
       ], rows, {sortKey:'cat', sortDir:1});
       document.getElementById('catRecFoot').textContent =
-        'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — the most/least are still real single-season team performances, just not ESPN’s own official season rate.';
+        'Regular season only. Rate categories are the average of a team’s weekly rate that season (see the Team stats note on the Standings tab) — best/worst are still real single-season team performances, just not ESPN’s own official season rate. For ERA and WHIP, lower is better, so Best shows the lowest total.';
     })();
 
     /* ---- all-time rankings widget ---- */
