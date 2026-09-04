@@ -18,3 +18,6 @@ _serve.pl
 
 .research_*.tmp
 .xlsx_stage/
+
+# stray no-hyphen duplicate (locked by Excel; delete manually)
+FantasyMagsMethodology.xlsx
