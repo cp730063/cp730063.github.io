@@ -41,7 +41,7 @@ Last updated: 2026-09-04
 
 ### Title-history timeline
 **What:** One row per manager who has ever won, a dot on each year they won, earliest title marked in green, repeats in gold.
-**Assumptions:** Year axis is evenly spaced by index; if a league skipped a year (e.g. no 2008), the labels are simply irregular.
+**Assumptions:** Year axis is evenly spaced by index; if a league skipped a year (e.g. no 2008), the labels are simply irregular. The "N still without one" count is **active managers only** (played this season or last) — same active rule as the drought table — so a long-departed manager doesn't inflate it.
 
 ### Franchises "Form" sparkline
 **What:** A 68x20px line of the manager's win% by season, baseline drawn at 50%, gold dots on title years.
@@ -71,7 +71,7 @@ Last updated: 2026-09-04
 ### All-time rankings widget
 **What:** One table, switchable metric (Wins, Win %, Points For, Points Against, Points/Game, Trades), with two toggles: Regular season / Playoffs and All-time / Season.
 **Assumptions & minimums:**
-- Rate metrics need a games floor so small samples don't top the list. Football: 20 all-time / 24 combined / 4 playoff. Baseball (target): 60 regular-season games / 60 combined / no playoff minimum.
+- Rate metrics need a games floor so small samples don't top the list. Football: 20 all-time / 24 combined / 4 playoff. Baseball: 60 regular-season games / 60 combined / no playoff minimum.
 - "Trades" ignores the scope toggle and is hidden entirely for leagues that have no trade data (all ESPN-only leagues).
 - Manual-overlay seasons are excluded from every metric here (no game scores) and a note says so.
 **Example:** A manager who played 2 seasons (26 games) is left out of the all-time Win % ranking until they clear the 20-game (football) / 60-game (baseball) floor.
@@ -89,7 +89,7 @@ Last updated: 2026-09-04
 
 ### Biggest Rivalries / Most Lopsided Series
 **What:** Ranked lists of the most-played and most one-sided pairings.
-**Assumptions:** A pairing needs a minimum number of meetings to appear — currently 12, target 15 for the baseball league so 24 years of data doesn't bury the real rivalries.
+**Assumptions:** A pairing needs a minimum number of meetings to appear — 12 for football, 15 for the baseball league so 24 years of data does not bury the real rivalries.
 
 ### Box scores (per meeting)
 **Football:** the two starting lineups with per-player points; bench shown where the data has it (2018+), starters-only for 2015-17, nothing pre-2011.
