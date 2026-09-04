@@ -1089,7 +1089,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904015235"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904023204"}</script>
 <script>
 "use strict";
 (function(){
@@ -2425,26 +2425,35 @@
     var lg = DATA.league || {};
     var GRADEABLE = { rookie:1, redraft:1, startup:1 };
     var drafts = (DATA.drafts || []);
+    var seasonByYear = {}; seasons.forEach(function(s){ seasonByYear[s.year] = s; });
+    function seasonInProgress(y){ var s = seasonByYear[y]; return !!(s && s.played && !s.champion); }
     var gradeable = drafts.map(function(d, i){ return { d:d, i:i }; })
-                          .filter(function(x){ return GRADEABLE[x.d.kind]; });
+                          .filter(function(x){
+                            if (!GRADEABLE[x.d.kind]) return false;
+                            if (isCats && seasonInProgress(x.d.year)) return false;   // half a season isn't a grade
+                            return true;
+                          });
     if (!gradeable.length || !(DATA.playerSeasons || []).length){ sec.hidden = true; return; }
     sec.hidden = false;
 
     var isDyn = lg.type === 'dynasty';
     var lastYr = latestPlayed ? latestPlayed.year : null;
 
-    /* points a drafted player actually scored — total per (key, year), summed across stints */
+    /* what a drafted player produced that season, per (key, year).
+       football = fantasy points; baseball (isCats) = our season value, which is
+       already era-normalised, so no baseline division is needed. */
     var ptsKY = {};
     (DATA.playerSeasons || []).forEach(function(r){
       if (!r.key) return;
-      ptsKY[r.key + '|' + r.year] = (ptsKY[r.key + '|' + r.year] || 0) + (r.pts || 0);
+      ptsKY[r.key + '|' + r.year] = (ptsKY[r.key + '|' + r.year] || 0) + (isCats ? (r.val || 0) : (r.pts || 0));
     });
     function seasonPts(key, yr){ return ptsKY[key + '|' + yr] || 0; }
 
     /* per-year scoring baseline (mean of the top half of that year's drafted-player points)
-       → lets seasons from different eras be compared on one scale */
+       → lets seasons from different eras be compared on one scale. Skipped for
+       category leagues (value is already comparable across years → baseline 1). */
     var yrBase = {};
-    (function(){
+    if (!isCats) (function(){
       var byYr = {};
       gradeable.forEach(function(x){
         (x.d.picks || []).forEach(function(p){
@@ -2579,7 +2588,7 @@
           '<td class="dg-delta ' + (diff >= 0 ? 'up' : 'down') + '">' + (diff >= 0 ? '+' : '') + Math.round(diff) + '</td></tr>';
       }).join('');
       detail.innerHTML = '<div class="dg-detail"><h4>' + esc(pName(row.pid)) + ' — ' + d.year + ' pick by pick ' +
-        '<span class="dg-sub">(' + (useVal ? 'current trade value' : isRookie ? 'points per season since drafted' : 'season points') +
+        '<span class="dg-sub">(' + (useVal ? 'current trade value' : isRookie ? 'points per season since drafted' : isCats ? 'season value' : 'season points') +
         ' vs. slot average)</span></h4><div class="tbl-wrap"><table><thead><tr>' +
         '<th style="text-align:left">Pick</th><th style="text-align:left">Player</th><th>Actual</th><th>Slot avg</th><th>+/–</th>' +
         '</tr></thead><tbody>' + body + '</tbody></table></div></div>';
@@ -2592,8 +2601,10 @@
       var gi = gradeable.filter(function(x){ return x.d === d; })[0];
       if (!gi){
         host.innerHTML = '';
-        head.textContent = (d ? d.year + ' ' + (d.kind || '') + ' board' : 'This board') +
-          ' isn’t graded — grades cover rookie, startup and redraft drafts.';
+        head.textContent = (d && isCats && seasonInProgress(d.year))
+          ? 'The ' + d.year + ' season is still in progress — this draft is graded once it’s complete.'
+          : (d ? d.year + ' ' + (d.kind || '') + ' board' : 'This board') +
+            ' isn’t graded — grades cover rookie, startup and redraft drafts.';
         return;
       }
       head.innerHTML = 'Grades for the <b>' + d.year + '</b> ' +
@@ -2707,6 +2718,10 @@
             'under two seasons old; after that, production is the verdict. <b>Through ’' + (lastYr ? String(lastYr).slice(2) : '—') +
             '</b> grades the same picks on the fantasy points they’ve actually scored per season since being drafted, and updates ' +
             'after every season (<b>TBD</b> until the first one is complete).</p>'
+          : isCats
+          ? '<p><b>Redraft.</b> A pick is graded on the drafted player’s <b>season value</b> that year — the sum of his category ' +
+            'z-scores versus the rosterable pool (see the Players tab). It is already comparable across eras, and it counts the ' +
+            'whole season whether or not you kept him.</p>'
           : '<p><b>Redraft.</b> A pick is graded on every fantasy point the drafted player scored that season — whether or not you ' +
             'kept them. Points are put on a common scale first so different eras compare fairly.</p>') +
         '<p><b>Letters are curved</b> against every graded manager-draft in league history. This is a results grade: it doesn’t model ' +

@@ -1174,9 +1174,12 @@ sub espn_player_meta {
   my $key  = $ESPN_PID2KEY{$ep};
   my $meta = $key ? $KEY_META{$key}
                   : ($epw_players->{$ep} || $ESPN_PLAYER_NAME{$ep} || undef);
+  # mlb has no cross-platform key; use the ESPN player id so draft picks join to
+  # playerSeasons (which is also keyed 'e'.<espnId>). NFL keeps the norm-name key.
+  my $pkey = $SPORT eq 'mlb' ? (defined $ep ? 'e' . $ep : undef) : $key;
   return ( ($meta ? $meta->[0] : "Player $ep"),
            ($meta ? uc($meta->[1] // '') : ''),
-           $key );
+           $pkey );
 }
 
 # -- ESPN drafts (one board per segment: keeper/main draft + appended rookie draft) --
