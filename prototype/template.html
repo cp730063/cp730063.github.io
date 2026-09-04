@@ -164,11 +164,6 @@
     .nav-scrim[hidden]{display:none}
     .page-head{padding:20px 18px 0}
     .wrap{padding:0 18px 60px}
-    /* freeze each table's own header while scrolling through it, release once past it —
-       position:sticky is scoped to .tbl-wrap (its overflow-x:auto makes it a scroll
-       container), so this needs no per-table JS. 53px clears the sticky topbar
-       (34px hamburger + 9px top/bottom padding + 1px border). */
-    .tbl-wrap thead th{position:-webkit-sticky;position:sticky;top:53px;background:var(--surface);z-index:5}
   }
   @media (min-width:901px){ .nav-scrim{display:none!important} }
   :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
@@ -239,16 +234,8 @@
 
   @media (max-width:720px){ .ov-top{grid-template-columns:1fr} }
 
-  /* overflow-y:visible is explicit on purpose: .tbl-wrap only ever needs horizontal
-     scroll for wide tables, but leaving overflow-y unset lets the browser compute it
-     to 'auto' too — which makes Safari treat this box as its own scroll boundary and
-     silently break position:sticky table headers inside it (Chrome is unaffected). */
-  .tbl-wrap{overflow-x:auto;overflow-y:visible;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
-  /* border-collapse:separate (not collapse) is required for Safari/WebKit to honor
-     position:sticky on th/td at all -- a well-documented WebKit-only bug. Visually
-     identical here since every border is a single border-bottom per cell (no
-     border-top anywhere), so border-spacing:0 leaves no gap or doubled line. */
-  table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
   thead th{font-family:var(--disp);text-transform:uppercase;letter-spacing:.07em;font-size:12px;font-weight:600;color:var(--ink-muted);text-align:right;padding:11px 12px;border-bottom:1px solid var(--border-strong);white-space:nowrap;user-select:none}
   thead th.sortable:hover{color:var(--ink)}
   thead th[aria-sort] .arw{color:var(--accent)}
