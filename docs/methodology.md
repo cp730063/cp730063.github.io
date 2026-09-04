@@ -232,3 +232,47 @@ Last updated: 2026-09-04
 ### Baseball "Wins" (weekly record)
 **What:** A manager's W-L-T is the count of weekly *matchups* won, not categories won.
 **Assumptions:** Winning a week 7 categories to 5 is one win. The separate "CW / CL" columns are the season's category totals and are labeled as such.
+
+---
+
+## Worked example — Aaron Judge, 2022 (value +19.9)
+
+This is the "Judge 2022 example" tab in the workbook, kept here too so the doc is self-contained. If the value engine changes, update both this section and the `@J` array in `scripts/make_methodology_xlsx.pl`.
+
+**Short version:** value = for each scoring category, how many standard deviations better than a typical rosterable hitter he was, added up. A standard deviation is just a normal amount of spread — if most rostered hitters are within ~10 HR of each other, 1 SD ≈ 10 HR.
+
+**Step 1 — categories that counted in 2022:** Runs, HR, RBI, SB, Slugging, On-Base % (6 hitting categories; pitching categories are scored separately for pitchers).
+
+**Step 2 — the pool:** every hitter that season with ~20+ at-bats = 153 hitters. "A typical rosterable hitter" = the average of this group.
+
+**Step 3 — counting categories (Runs, HR, RBI, SB):** compare his total to the pool, in standard deviations.
+
+Home runs in full: pool average 18.9, 1 SD = 9.8, Judge 62 → (62 − 18.9) ÷ 9.8 = **+4.38**.
+
+| Category | Judge | Pool avg | Score |
+|---|---|---|---|
+| Runs | 133 | ~78 | +2.90 |
+| HR | 62 | ~19 | +4.38 |
+| RBI | 131 | ~74 | +2.75 |
+| SB | 16 | ~13 | +0.97 |
+
+**Step 4 — rate categories (SLG, OBP):** weighted by playing time, so a small hot sample can't inflate them. Question: over all his plate appearances, how many extra times did he reach base vs an average hitter?
+
+On-base % in full: PT-weighted league OBP .334, Judge .425 over 696 PA → extra times on base = 696 × (.425 − .334) ≈ 63. 1 SD of that "extra times on base" number across the pool ≈ 16.6. Score = 63 ÷ 16.6 = **+3.79**. Slugging by the same method = **+5.07**.
+
+**Step 5 — add it up:** 2.90 + 4.38 + 2.75 + 0.97 + 5.07 + 3.79 = **+19.9**.
+
+**What the number means:** ~0 = replacement-level regular; +8 to +12 = a strong first-round season; +19.9 = best in league history, because he was elite (not just good) in five of six categories at once (only SB is ordinary).
+
+### How "1 standard deviation" is calculated (the 2022 HR pool)
+
+1. **Average:** 2,885 total HR ÷ 153 hitters = 18.86.
+2. **Distance from average, per hitter:** their HR − 18.86 (a 30-HR hitter is +11.1; Judge is +43.1).
+3. **Square each distance and add them up:** 14,719. Squaring makes them all positive and weights big misses more.
+4. **Divide by (hitters − 1), then square-root:** 14,719 ÷ 152 = 96.8 (variance); √96.8 = **9.84** (standard deviation). The square-root puts the answer back in home runs.
+
+Tiny version to check by hand — 5 hitters with 8, 14, 19, 24, 30 HR: mean = 19; squared distances = 121 + 25 + 0 + 25 + 121 = 292; variance = 292 ÷ 4 = 73; SD = √73 = 8.5.
+
+### The 20 at-bat minimum
+
+A judgment call, not a statistical rule. It only keeps cup-of-coffee seasons out of the list and the pool pre-rank. It is deliberately low because the rate-stat weighting and the counting-stat penalties already handle small samples on their own. Raising it (say to 50 AB) would drop marginal names but move no real player's value.

@@ -1,14 +1,17 @@
 #!/usr/bin/perl
 # Generates FantasyMags-Methodology.xlsx (a hand-rolled minimal xlsx: a zip of
-# XML parts). No CPAN modules -- the zip step is done by PowerShell .NET.
+# XML parts). No CPAN modules -- the zip step is done by scripts/make_methodology_xlsx.ps1.
 #   perl scripts/make_methodology_xlsx.pl
+#   powershell -File scripts/make_methodology_xlsx.ps1
 use strict; use warnings;
 use FindBin qw($RealBin);
-my $ROOT = "$RealBin/..";
+use File::Path qw(make_path remove_tree);
+my $ROOT  = "$RealBin/..";
 my $STAGE = "$ROOT/.xlsx_stage";
-my $OUT   = "$ROOT/FantasyMags-Methodology.xlsx";
 
-# ---- content: [ Area, Feature, Where, What we calculate, Assumptions, Example ] ----
+# =====================================================================
+# Sheet 1: Methodology  [ Area, Feature, Where, What, Assumptions, Example ]
+# =====================================================================
 my @HDR = ('Area','Feature','Where on the site','What we calculate',
            'Key assumptions & choices','Worked example');
 my @ROWS = (
@@ -110,10 +113,10 @@ my @ROWS = (
  'A player worth 2000 with a +300 30-day trend shows "+15%".'],
 ['Baseball','Season "Value" (player valuation)','Players',
  'One number per player-season = sum of the player\'s z-scores across the league\'s scoring categories vs the rosterable pool.',
- 'FULL SEASON, regardless of owner or timing. Scored against THAT season\'s categories (OPS only from the year it was added, etc.). Source = ESPN end-of-season roster snapshot stat lines (complete back to 2008; no outside data). Counting cats (R,HR,RBI,SB,W,K,SV,HLD,IP): z-score of the raw total vs the pool. Rate cats (AVG,OBP,SLG,OPS,ERA,WHIP,K/9): playing-time weighted -- contribution = (player rate - pool PT-weighted rate) x playing time (AB / PA / IP), then z-scored; ERA & WHIP flipped so lower is better. Pool = top (teams x starting slots x 1.6) at hitting and at pitching. ~0 = replacement-level regular; elite ~+10 to +19; no explicit replacement subtraction in v1. Two-way players valued on both sides. Needs ~20 AB or ~10 IP to be valued. In-progress seasons use the current year\'s to-date line.',
+ 'FULL SEASON, regardless of owner or timing. Scored against THAT season\'s categories (OPS only from the year it was added, etc.). Source = ESPN end-of-season roster snapshot stat lines (complete back to 2008; no outside data). Counting cats (R,HR,RBI,SB,W,K,SV,HLD,IP): z-score of the raw total vs the pool. Rate cats (AVG,OBP,SLG,OPS,ERA,WHIP,K/9): playing-time weighted -- contribution = (player rate - pool PT-weighted rate) x playing time (AB / PA / IP), then z-scored; ERA & WHIP flipped so lower is better. Pool = top (teams x starting slots x 1.6) at hitting and at pitching. ~0 = replacement-level regular; elite ~+10 to +19; no explicit replacement subtraction in v1. Two-way players valued on both sides. Needs ~20 AB or ~10 IP to be valued. In-progress seasons use the current year\'s to-date line.  See the "Judge 2022 example" tab for a full walkthrough.',
  'Jake Arrieta 2015 (22 W, 1.77 ERA, 236 K) = +10.5, the league\'s top value that year. Aaron Judge 2022 (62 HR, .425 OBP) = +19.9, the all-time single-season high.'],
 ['Baseball','"Drafted by" vs "Team"','Players',
- 'Each player-season is credited to the drafting manager; the card also shows who held him at season\'s end.',
+ 'Each player-season is credited to the manager who drafted the player; the card also shows who held him at season\'s end.',
  'ESPN keeps no historical transaction log, so only the start (draft) and end (final roster) are known -- mid-season moves between them are not shown. An undrafted in-season pickup shows "(added)".',
  'Vladimir Guerrero Jr. 2024: "Murrderers\' Row -> Baseball Chaz 13" -- drafted by Ryan Murray, finished on Charles Rorke.'],
 ['Baseball','Player identity','Players / Drafts',
@@ -126,21 +129,87 @@ my @ROWS = (
  'A manager who goes 7-5, 8-4, 3-9 over three weeks is 2-1, with 18 category wins and 18 category losses.'],
 );
 
+# =====================================================================
+# Sheet 2: "Judge 2022 example"  [ label, detail ]  (label '' = full-width prose)
+# style: H = section header, sub = indented sub-row
+# =====================================================================
+my @J = (
+ ['H','THE SHORT VERSION',''],
+ ['','','Value = for each scoring category, how many standard deviations better than a typical rosterable hitter he was, added up. A "standard deviation" is just a normal amount of spread: if most rostered hitters are within about 10 HR of each other, 1 standard deviation is about 10 HR.'],
+ ['','',''],
+ ['H','STEP 1  -  which categories counted in 2022',''],
+ ['','','The FBL used 6 hitting categories that year: Runs, HR, RBI, SB, Slugging, On-Base %. Only hitting categories apply to a hitter; pitching categories are scored separately for pitchers.'],
+ ['','',''],
+ ['H','STEP 2  -  build the pool',''],
+ ['','','Take every hitter that season with about 20 or more at-bats (a real amount of playing time). In 2022 that is 153 hitters. This pool is the yardstick: "a typical rosterable hitter" means the average of this group.'],
+ ['','',''],
+ ['H','STEP 3  -  score the counting categories (Runs, HR, RBI, SB)',''],
+ ['','','Compare his total to the pool, measured in standard deviations.'],
+ ['sub','Home runs, worked in full:',''],
+ ['sub','   Pool average','18.9 HR'],
+ ['sub','   1 standard deviation (typical spread)','9.8 HR'],
+ ['sub','   Judge','62 HR'],
+ ['sub','   Score','(62 - 18.9) / 9.8 = +4.38   ->   about 4.4 "normal gaps" above average'],
+ ['sub','All four counting categories:',''],
+ ['sub','   Runs','Judge 133  |  pool avg ~78  |  score +2.90'],
+ ['sub','   HR','Judge 62  |  pool avg ~19  |  score +4.38'],
+ ['sub','   RBI','Judge 131  |  pool avg ~74  |  score +2.75'],
+ ['sub','   SB','Judge 16  |  pool avg ~13  |  score +0.97'],
+ ['','',''],
+ ['H','STEP 4  -  score the rate categories (SLG, OBP)',''],
+ ['','','A .425 on-base in 25 at-bats is not as valuable as .425 over a full year, so rates are weighted by playing time. The question becomes: over all his plate appearances, how many EXTRA times did he reach base compared with an average hitter?'],
+ ['sub','On-base %, worked in full:',''],
+ ['sub','   Playing-time-weighted league OBP','.334'],
+ ['sub','   Judge OBP, over 696 plate appearances','.425'],
+ ['sub','   Extra times on base','696 x (.425 - .334) = about 63'],
+ ['sub','   1 standard deviation of that "extra times on base" number across the pool','about 16.6'],
+ ['sub','   Score','63 / 16.6 = +3.79'],
+ ['sub','Slugging','Same method  ->  +5.07 (a .686 slugging over a full season)'],
+ ['','',''],
+ ['H','STEP 5  -  add it up',''],
+ ['sub','   Runs','+2.90'],
+ ['sub','   HR','+4.38'],
+ ['sub','   RBI','+2.75'],
+ ['sub','   SB','+0.97'],
+ ['sub','   SLG','+5.07'],
+ ['sub','   OBP','+3.79'],
+ ['sub','   VALUE','+19.9'],
+ ['','',''],
+ ['H','WHAT THE NUMBER MEANS',''],
+ ['sub','   about 0','replacement-level everyday player - a waiver-wire stream'],
+ ['sub','   +8 to +12','a strong first-round season'],
+ ['sub','   +19.9','best in league history: elite (not just good) in five of six categories in the same year; only SB is ordinary'],
+ ['','',''],
+ ['H','HOW "1 STANDARD DEVIATION" IS CALCULATED  (the 2022 HR pool)',''],
+ ['sub','Step 1 - average','2,885 total HR / 153 hitters = 18.86'],
+ ['sub','Step 2 - distance from average, per hitter','their HR minus 18.86  (a 30-HR hitter is +11.1; Judge is +43.1)'],
+ ['sub','Step 3 - square each distance and add them up','sum = 14,719   (squaring makes them all positive and weights big misses more)'],
+ ['sub','Step 4 - divide by (hitters - 1), then square-root','14,719 / 152 = 96.8 (variance);   sqrt(96.8) = 9.84 (standard deviation)'],
+ ['sub','Why square then square-root','raw distances would cancel to zero; the square-root at the end puts the answer back in home runs'],
+ ['','',''],
+ ['sub','Tiny version you can check by hand','5 hitters: 8, 14, 19, 24, 30 HR'],
+ ['sub','   mean','95 / 5 = 19'],
+ ['sub','   squared distances','121 + 25 + 0 + 25 + 121 = 292'],
+ ['sub','   variance, then standard deviation','292 / 4 = 73;   sqrt(73) = 8.5'],
+ ['','',''],
+ ['H','THE 20 AT-BAT MINIMUM',''],
+ ['','','A judgment call, not a statistical rule. It only keeps cup-of-coffee seasons out of the list and the pool pre-rank. It is deliberately low because the rate-stat weighting and the counting-stat penalties already handle small samples on their own. Raising it (say to 50 AB) would drop marginal names but move no real player\'s value.'],
+);
+
 # ------------------------------------------------------------------ xlsx XML ---
 sub xesc { my $s = shift // ''; $s =~ s/&/&amp;/g; $s =~ s/</&lt;/g; $s =~ s/>/&gt;/g; $s =~ s/"/&quot;/g; $s }
-
-my $ncols = scalar @HDR;
-my $lastcol = chr(ord('A') + $ncols - 1);            # 'F'
-my $nrows = scalar(@ROWS) + 1;
-
 sub cell {
   my ($col, $rownum, $text, $style) = @_;
-  my $ref = $col . $rownum;
   my $s = defined $style ? " s=\"$style\"" : '';
-  return qq{<c r="$ref"$s t="inlineStr"><is><t xml:space="preserve">} . xesc($text) . qq{</t></is></c>};
+  return qq{<c r="$col$rownum"$s t="inlineStr"><is><t xml:space="preserve">} . xesc($text) . qq{</t></is></c>};
 }
+# styles: 1 = green header (bold white, fill), 2 = body wrap/top, 3 = bold wrap/top (no fill)
 
-my $sheet = <<'XML_HEAD';
+# ---- sheet 1 ----
+my $ncols  = scalar @HDR;
+my $lastc1 = chr(ord('A') + $ncols - 1);
+my $nrow1  = scalar(@ROWS) + 1;
+my $sheet1 = <<'XML_HEAD';
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
 <sheetViews><sheetView workbookViewId="0" tabSelected="1"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
@@ -155,32 +224,48 @@ my $sheet = <<'XML_HEAD';
 </cols>
 <sheetData>
 XML_HEAD
-
-# header row (style 1 = bold + fill + wrap + top)
-$sheet .= qq{<row r="1" ht="30">};
-for my $i (0 .. $#HDR) {
-  $sheet .= cell(chr(ord('A')+$i), 1, $HDR[$i], 1);
-}
-$sheet .= qq{</row>\n};
-
-# body rows (style 2 = wrap + top)
+$sheet1 .= qq{<row r="1" ht="30">};
+$sheet1 .= cell(chr(ord('A')+$_), 1, $HDR[$_], 1) for 0 .. $#HDR;
+$sheet1 .= qq{</row>\n};
 my $r = 2;
 for my $row (@ROWS) {
-  $sheet .= qq{<row r="$r">};
-  for my $i (0 .. $#$row) {
-    $sheet .= cell(chr(ord('A')+$i), $r, $row->[$i], 2);
-  }
-  $sheet .= qq{</row>\n};
+  $sheet1 .= qq{<row r="$r">};
+  $sheet1 .= cell(chr(ord('A')+$_), $r, $row->[$_], 2) for 0 .. $#$row;
+  $sheet1 .= qq{</row>\n};
   $r++;
 }
-$sheet .= qq{</sheetData>\n<autoFilter ref="A1:${lastcol}${nrows}"/>\n</worksheet>\n};
+$sheet1 .= qq{</sheetData>\n<autoFilter ref="A1:$lastc1$nrow1"/>\n</worksheet>\n};
+
+# ---- sheet 2 ----
+my $sheet2 = <<'XML_HEAD';
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="15"/>
+<cols>
+<col min="1" max="1" width="42" customWidth="1"/>
+<col min="2" max="2" width="95" customWidth="1"/>
+</cols>
+<sheetData>
+XML_HEAD
+$sheet2 .= qq{<row r="1" ht="24"><c r="A1" s="1" t="inlineStr"><is><t>Aaron Judge - 2022 - how the +19.9 season value is built</t></is></c><c r="B1" s="1" t="inlineStr"><is><t xml:space="preserve"> </t></is></c></row>\n};
+my $r2 = 2;
+for my $row (@J) {
+  my ($kind, $a, $b) = @$row;
+  my $sa = $kind eq 'H' ? 1 : $kind eq 'sub' ? 3 : 2;
+  my $sb = 2;
+  $sheet2 .= qq{<row r="$r2">} . cell('A', $r2, $a, $sa) . cell('B', $r2, $b, $sb) . qq{</row>\n};
+  $r2++;
+}
+$sheet2 .= qq{</sheetData>\n<mergeCells count="1"><mergeCell ref="A1:B1"/></mergeCells>\n</worksheet>\n};
 
 my $styles = <<'XML';
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<fonts count="2">
+<fonts count="3">
 <font><sz val="11"/><name val="Calibri"/></font>
 <font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><name val="Calibri"/></font>
 </fonts>
 <fills count="3">
 <fill><patternFill patternType="none"/></fill>
@@ -189,10 +274,11 @@ my $styles = <<'XML';
 </fills>
 <borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="3">
+<cellXfs count="4">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
 </cellXfs>
 <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>
@@ -205,6 +291,7 @@ my $content_types = <<'XML';
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>
 XML
@@ -219,7 +306,10 @@ XML
 my $workbook = <<'XML';
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheets><sheet name="Methodology" sheetId="1" r:id="rId1"/></sheets>
+<sheets>
+<sheet name="Methodology" sheetId="1" r:id="rId1"/>
+<sheet name="Judge 2022 example" sheetId="2" r:id="rId2"/>
+</sheets>
 </workbook>
 XML
 
@@ -227,26 +317,26 @@ my $wb_rels = <<'XML';
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>
 XML
 
-# ---- write the staged parts ----
-use File::Path qw(make_path remove_tree);
 remove_tree($STAGE) if -d $STAGE;
 make_path("$STAGE/_rels", "$STAGE/xl/_rels", "$STAGE/xl/worksheets");
 my %parts = (
-  "$STAGE/[Content_Types].xml"           => $content_types,
-  "$STAGE/_rels/.rels"                   => $root_rels,
-  "$STAGE/xl/workbook.xml"               => $workbook,
-  "$STAGE/xl/_rels/workbook.xml.rels"    => $wb_rels,
-  "$STAGE/xl/styles.xml"                 => $styles,
-  "$STAGE/xl/worksheets/sheet1.xml"      => $sheet,
+  "$STAGE/[Content_Types].xml"        => $content_types,
+  "$STAGE/_rels/.rels"                => $root_rels,
+  "$STAGE/xl/workbook.xml"            => $workbook,
+  "$STAGE/xl/_rels/workbook.xml.rels" => $wb_rels,
+  "$STAGE/xl/styles.xml"              => $styles,
+  "$STAGE/xl/worksheets/sheet1.xml"   => $sheet1,
+  "$STAGE/xl/worksheets/sheet2.xml"   => $sheet2,
 );
 for my $p (sort keys %parts) {
   open my $fh, '>:raw', $p or die "write $p: $!";
   print $fh $parts{$p};
   close $fh;
 }
-print "staged xlsx parts in $STAGE\n";
-print "now run the PowerShell zip step (see scripts/make_methodology_xlsx.ps1)\n";
+print "staged xlsx parts (2 sheets) in $STAGE\n";
+print "now: powershell -File scripts/make_methodology_xlsx.ps1\n";

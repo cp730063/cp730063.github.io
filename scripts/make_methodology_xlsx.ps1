@@ -1,5 +1,5 @@
 # Zips the parts staged by scripts/make_methodology_xlsx.pl into a real .xlsx.
-#   perl scripts/make_methodology_xlsx.pl      # stage the XML parts
+#   perl scripts/make_methodology_xlsx.pl        # stage the XML parts
 #   powershell -File scripts/make_methodology_xlsx.ps1
 $root  = Split-Path -Parent $PSScriptRoot
 $stage = Join-Path $root '.xlsx_stage'
@@ -15,11 +15,11 @@ $parts = @(
   'xl/workbook.xml',
   'xl/_rels/workbook.xml.rels',
   'xl/styles.xml',
-  'xl/worksheets/sheet1.xml'
+  'xl/worksheets/sheet1.xml',
+  'xl/worksheets/sheet2.xml'
 )
-$sep = [char]92
 foreach ($p in $parts) {
-  $src   = Join-Path $stage ($p.Replace('/', $sep))
+  $src   = Join-Path $stage $p          # PowerShell accepts forward slashes in paths
   $entry = $zip.CreateEntry($p, [System.IO.Compression.CompressionLevel]::Optimal)
   $es    = $entry.Open()
   $bytes = [System.IO.File]::ReadAllBytes($src)
