@@ -172,8 +172,12 @@ for my $y (@ESPN_Y) {
       for my $en (@{ ($t->{roster} || {})->{entries} || [] }) {
         my $pl = ($en->{playerPoolEntry} || {})->{player} or next;
         next unless defined $pl->{id};
-        my ($blk) = grep { ($_->{statSourceId}//1)==0 && ($_->{statSplitTypeId}//1)==0 }
-                    @{ $pl->{stats} || [] };
+        # an in-progress season's file carries BOTH last year's final line and this
+        # year's to-date line, both as src0/split0 — pick the one for THIS season.
+        my @c0  = grep { ($_->{statSourceId}//1)==0 && ($_->{statSplitTypeId}//1)==0 }
+                  @{ $pl->{stats} || [] };
+        my ($blk) = grep { ($_->{seasonId} // $y) == $y } @c0;
+        $blk ||= $c0[0];
         next unless $blk && ref $blk->{stats} eq 'HASH' && %{ $blk->{stats} };
         $MLB_PSTATS{$y}{ $pl->{id} } ||= {
           name => $pl->{fullName}, pos => ($MLB_POS{ $pl->{defaultPositionId} // -1 } // ''),
@@ -984,13 +988,15 @@ if ($SPORT eq 'mlb') {
 
       my $drafter;
       if (my $dp = $ESPN_DRAFT{$y}{$e}) { $drafter = $ESPN_T2P{$y}{ $dp->[2] }; }
-      $drafter ||= $pm->{own};
-      next unless $drafter;
+      my $ended  = $pm->{own};                       # roster-snapshot owner (season end)
+      my $primary = $drafter // $ended;
+      next unless $primary;
 
       my $grp = $p && !$h ? 'pit' : $h && $p ? 'both' : 'hit';
       push @playerSeasons, {
-        year => $y + 0, personId => $drafter,
-        key  => norm_name($pm->{name}) . '|' . ($grp eq 'pit' ? 'p' : 'h'),
+        year => $y + 0, personId => $primary,
+        draftedBy => $drafter, endedOn => $ended, espnId => $e + 0,
+        key  => 'e' . $e,          # ESPN player id — stable across years, unique per player (Jr. != Sr.)
         name => $pm->{name}, pos => $pm->{pos},
         val  => r2($val{$e}), vRank => $vrank{$e} + 0, group => $grp,
         drafted => ($ESPN_DRAFT{$y}{$e} ? { round => $ESPN_DRAFT{$y}{$e}[0] + 0, overall => $ESPN_DRAFT{$y}{$e}[1] + 0 } : undef),

@@ -1089,7 +1089,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904013627"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2008,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":19,"slug":"fbl","sport":"mlb","type":"redraft"}]},"version":"20260904015235"}</script>
 <script>
 "use strict";
 (function(){
@@ -3016,13 +3016,33 @@
   function sec_playersMlb(ps){
     var note = document.querySelector('#p-players .sec-note');
     if (note) note.textContent = 'Every player-season by value — the sum of its category z-scores against the rosterable player pool. ' +
-      '≈ 0 is a replacement-level regular; elite seasons reach +10 and up. Full-season totals, credited to the manager who drafted the player.';
+      '≈ 0 is a replacement-level regular; elite seasons reach +10 and up. Value is the player’s full season; “Team” is who drafted them and who held them at season’s end.';
     var foot = document.querySelector('#p-players .foot');
-    if (foot) foot.innerHTML = 'Value is computed per season against <b>that year’s scoring categories</b>, so OPS, K/9, holds, etc. only count in the seasons the league actually used them. Rate stats (AVG/ERA/WHIP…) are playing-time weighted.';
+    if (foot) foot.innerHTML = 'Value is computed per season against <b>that year’s scoring categories</b>, so OPS, K/9, holds, etc. only count in the seasons the league actually used them. Rate stats (AVG/ERA/WHIP…) are playing-time weighted. ESPN doesn’t retain in-season transactions, so a player who changed hands shows only where he started and finished.';
+
+    function teamOf(pid, yr){
+      if (!pid) return '';
+      var s = seasons.filter(function(x){ return x.year===yr; })[0];
+      var e = s && (s.entries||[]).filter(function(x){ return x.personId===pid; })[0];
+      return e ? e.team : pName(pid);
+    }
+    /* who held the player this year: "X", "X → Y" (changed hands), or "Y (added)" (undrafted pickup) */
+    function teamHtml(r, plain){
+      var d = r.draftedBy, o = r.endedOn, sep = plain ? ' → ' : ' <span class="mn2">→</span> ';
+      if (d && o && d!==o) return esc(teamOf(d, r.year)) + sep + esc(teamOf(o, r.year));
+      if (!d && o)         return esc(teamOf(o, r.year)) + (plain ? ' (added)' : ' <span class="mn2">(added)</span>');
+      return esc(teamOf(d || o, r.year));
+    }
+    function moved(r){ return (r.draftedBy && r.endedOn && r.draftedBy!==r.endedOn) || (!r.draftedBy && r.endedOn); }
 
     var zc = function(z){ var s = (z>0?'+':'') + f1(z); return '<span class="zc '+(z>=0?'zp':'zn')+'">'+s+'</span>'; };
     function catBreak(r){
-      return (r.cats||[]).map(function(c){ return '<span class="pl-cb">'+esc(c.k)+' '+zc(c.z)+'</span>'; }).join('');
+      var mv = moved(r)
+        ? '<span class="pl-cb" style="color:var(--ink-muted)">' +
+            (r.draftedBy ? 'drafted by '+esc(pName(r.draftedBy))+', finished on '+esc(pName(r.endedOn))
+                         : 'in-season pickup — '+esc(pName(r.endedOn))) + '</span>'
+        : '';
+      return mv + (r.cats||[]).map(function(c){ return '<span class="pl-cb">'+esc(c.k)+' '+zc(c.z)+'</span>'; }).join('');
     }
 
     function openCard(key){
@@ -3032,33 +3052,51 @@
       var nm = rows[0].name, pos = rows[rows.length-1].pos;
       var yLo = rows[0].year, yHi = rows[rows.length-1].year;
       var best = rows.slice().sort(function(a,b){ return b.val-a.val; })[0];
+      var eid = rows[rows.length-1].espnId;
+
+      var fd = rows[0].drafted, fdBy = rows[0].draftedBy;
+      var draftLine = fd
+        ? '<b>Drafted</b> ' + rows[0].year + ' · R' + fd.round + ' <span class="mn2">(' + fd.overall + ' overall)</span> · ' + esc(pName(fdBy))
+        : '<b>First rostered</b> ' + rows[0].year + ' · ' + esc(pName(rows[0].personId)) + ' · undrafted pickup';
+
       var body = rows.map(function(r){
         return '<tr><td class="yr">'+r.year+'</td>' +
-          '<td>'+esc(pName(r.personId))+'</td>' +
+          '<td>'+teamHtml(r)+'</td>' +
           '<td class="num"><b>'+f1(r.val)+'</b></td>' +
           '<td class="num">'+ord(r.vRank)+'</td>' +
           '<td>'+esc(r.line)+'</td></tr>' +
           '<tr class="pl-move"><td></td><td colspan="4">'+catBreak(r)+'</td></tr>';
       }).join('');
+
       var mono = esc(nm.split(/\s+/).map(function(w){return w.charAt(0);}).slice(0,2).join(''));
+      var img = eid
+        ? '<img src="https://a.espncdn.com/i/headshots/mlb/players/full/'+eid+'.png" alt=""><span style="display:none">'+mono+'</span>'
+        : '<span>'+mono+'</span>';
+
       var m = document.createElement('div');
       m.className = 'modal';
       m.innerHTML =
         '<div class="pcard pc-mlb" role="dialog" aria-label="'+esc(nm)+'">' +
           '<div class="pcard-top">' +
-            '<div class="pcard-photo"><span>'+mono+'</span></div>' +
+            '<div class="pcard-photo">'+img+'</div>' +
             '<div class="pcard-bio"><h3>'+esc(nm)+'</h3>' +
               '<div class="pl-sub">'+esc(pos)+' · in the league '+(yLo===yHi?yLo:yLo+'–'+yHi) +
                 ' · '+rows.length+' season'+(rows.length!==1?'s':'') +
                 ' · best '+f1(best.val)+' ('+best.year+')</div>' +
+              '<div class="pl-draft">'+draftLine+'</div>' +
             '</div>' +
             '<button class="pcard-x" aria-label="Close">×</button>' +
           '</div>' +
-          '<table class="pcard-tbl"><thead><tr><th>Yr</th><th>Drafted by</th><th>Value</th><th>Rank</th><th>Season line</th></tr></thead>' +
+          '<table class="pcard-tbl"><thead><tr><th>Yr</th><th>Team</th><th>Value</th><th>Rank</th><th>Season line</th></tr></thead>' +
           '<tbody>'+body+'</tbody></table>' +
-          '<p class="pcard-foot">Value = sum of category z-scores vs the rosterable pool that season. Rank is among all valued players that year.</p>' +
+          '<p class="pcard-foot">Value = sum of category z-scores vs the rosterable pool that season; rank is among all valued players that year. “Team” shows who drafted the player and who held him at season’s end — in-season moves between the two aren’t on record.</p>' +
         '</div>';
       document.body.appendChild(m);
+      var i2 = m.querySelector('.pcard-photo img');
+      if (i2) i2.addEventListener('error', function(){
+        this.style.display = 'none';
+        var s2 = this.parentNode.querySelector('span'); if (s2) s2.style.display = 'flex';
+      });
       function close(){ m.remove(); document.removeEventListener('keydown', onKey); }
       function onKey(e){ if (e.key==='Escape') close(); }
       m.addEventListener('click', function(e){ if (e.target===m) close(); });
@@ -3079,16 +3117,16 @@
     var curMgr='ALL', curYear='ALL', q='', expand=false;
     function renderTable(){
       var rows = ps.filter(function(r){
-        if (curMgr!=='ALL' && r.personId!==curMgr) return false;
+        if (curMgr!=='ALL' && r.draftedBy!==curMgr && r.endedOn!==curMgr) return false;
         if (curYear!=='ALL' && r.year!==+curYear) return false;
-        if (q && (r.name + ' ' + pName(r.personId)).toLowerCase().indexOf(q) < 0) return false;
+        if (q && (r.name + ' ' + pName(r.draftedBy) + ' ' + pName(r.endedOn)).toLowerCase().indexOf(q) < 0) return false;
         return true;
       });
       var cols = [
         {key:'name', label:'Player', align:'left', val:function(r){return r.name;},
           cell:function(r){return '<a href="#" class="plink" data-k="'+esc(r.key)+'">'+esc(r.name)+'</a><span class="pos-tag">'+esc(r.pos)+'</span>';}},
-        {key:'mgr', label:'Drafted by', align:'left', val:function(r){return pName(r.personId);},
-          cell:function(r){return '<span class="mn2">'+esc(pName(r.personId))+'</span>';}},
+        {key:'mgr', label:'Team', align:'left', val:function(r){return pName(r.draftedBy||r.endedOn);},
+          cell:function(r){return '<span class="mn2">'+teamHtml(r)+'</span>';}},
         {key:'year', label:'Season', num:true, val:function(r){return r.year;}, cell:function(r){return r.year;}},
         {key:'val', label:'Value', num:true, val:function(r){return r.val;},
           cell:function(r){return '<b>'+f1(r.val)+'</b>';}},
@@ -3096,7 +3134,6 @@
         {key:'line', label:'Season line', align:'left', val:function(r){return r.val;}, sortable:false,
           cell:function(r){return '<span class="pl-line">'+esc(r.line)+'</span>';}}
       ];
-      if (curMgr!=='ALL') cols.splice(1,1);
       sortableTable(document.getElementById('plTbl'), cols, rows, {sortKey:'val', sortDir:-1, rownum:true, limit: expand ? 0 : 50, limitStep:50});
     }
 
