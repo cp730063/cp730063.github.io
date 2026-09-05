@@ -1127,7 +1127,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905142710"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905145151"}</script>
 <script>
 "use strict";
 (function(){
@@ -1187,7 +1187,7 @@
      pitching, in roughly the order a scorecard lists them) -- anything not
      in this list (a category a league used that isn't here) sorts after it,
      in whatever order it was first seen, so nothing silently disappears. */
-  var CAT_ORDER = ['R','HR','RBI','SB','AVG','OBP','SLG','OPS','IP','W','K','K/9','SV','ERA','WHIP'];
+  var CAT_ORDER = ['R','HR','RBI','SB','AVG','OBP','SLG','OPS','IP','W','K','K/9','SV','SVHD','ERA','WHIP'];
   function catRank(k){ var i = CAT_ORDER.indexOf(k); return i < 0 ? CAT_ORDER.length : i; }
   function outsToIP(outs){ if (outs==null) return '—'; outs = Math.round(outs); return Math.floor(outs/3) + '.' + (outs%3); }
   var f2 = function(n){ return (n==null?0:n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); };
@@ -1667,7 +1667,7 @@
         ? 'Optimal is the best possible lineup score; Bench is the gap to it (Sleeper only).' : '';
       var cols = [
         {key:'team', label:'Team', align:'left', val:function(e){return e.team;},
-          cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(pName(e.personId))+'</span></div>';}},
+          cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(e.mgrName||pName(e.personId))+'</span></div>';}},
         {key:'rec', label:'Rec', num:true,
           val:function(e){return seasonScoreless(s) ? -(e.finalRank||99) : (s.played ? (e.w*100000 + (e.pf||0)) : 0);},
           cell:function(e){return e.catRec ? e.catRec.w+'–'+e.catRec.l+(e.catRec.t?'–'+e.catRec.t:'')
@@ -1708,7 +1708,7 @@
       var hasRate = withCats[0].catTotals.some(function(c){ return c.rate; });
       var cols = [
         {key:'team', label:'Team', align:'left', val:function(e){return e.team;},
-          cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(pName(e.personId))+'</span></div>';}}
+          cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(e.mgrName||pName(e.personId))+'</span></div>';}}
       ];
       catKeys.forEach(function(k){
         cols.push({ key:'c_'+k, label:k, num:true,

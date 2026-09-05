@@ -68,7 +68,10 @@
       ],
       "id" : "dinicola",
       "mgr" : "qb101515",
-      "name" : "Jim McGarrity / Rob DiNicola"
+      "name" : "Jim McGarrity / Rob DiNicola",
+      "names" : [
+        { "until" : 2013, "name" : "Jim McGarrity" }
+      ]
     },
     {
       "espn" : "{5665F499-0FFE-48B4-95A0-6D790350D82B}",
@@ -181,6 +184,10 @@
     }
   ],
   "playerWeeksFile" : null,
+  "regSeasonChampByYear" : {
+    "2011" : "kerrigan",
+    "2018" : "morrissey"
+  },
   "prestige" : {
     "championship" : 7,
     "divisionTitle" : 2,

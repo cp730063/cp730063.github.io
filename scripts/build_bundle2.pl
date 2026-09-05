@@ -21,6 +21,10 @@ my @ESPN_Y = ($CFG->{espnYears}[0] .. $CFG->{espnYears}[1]);
 my $PW_FILE = $CFG->{playerWeeksFile};              # ESPN player-week pull, or undef
 my $SLE_PW  = $CFG->{sleeperPlayerWeeksLeague};     # Sleeper league id for player weeks, or undef
 my $OVERLAY = $CFG->{overlay};                      # manual pre-API overlay file, or undef
+my $REGCHAMP_FIX = $CFG->{regSeasonChampByYear} || {};  # {year => personId} — override where
+                                                        # the league's real tiebreaker (per the
+                                                        # commissioner's records) differs from
+                                                        # what W-L-T / points-for alone imply
 
 # ---------------------------------------------------------------------------
 # 1. Canonical people, from the league config.
@@ -37,6 +41,20 @@ for my $p (@PEOPLE) {
   $OVERLAY_NAME_TO_ID{ $_ } = $p->{id} for @{ $p->{alias} || [] };
 }
 my %P; for my $p (@PEOPLE) { $P{$p->{id}} = { %$p }; $P{$p->{id}}{firstSeason}=9999; $P{$p->{id}}{seasons}={}; $P{$p->{id}}{titles}=[]; }
+
+# Era-aware manager name: a person config may carry a `names` list of
+# { "until": <year>, "name": <str> } rules (e.g. a co-manager who joined a
+# franchise partway through). Returns the name in effect for a given season,
+# or undef when it matches the canonical `name` (so the bundle stays small).
+sub mgr_name_for {
+  my ($pid, $y) = @_;
+  my $p = $P{$pid} or return undef;
+  my $nm = $p->{name};
+  for my $r (@{ $p->{names} || [] }) {
+    if (!defined $r->{until} || $y <= $r->{until}) { $nm = $r->{name}; last; }
+  }
+  return (defined $nm && $nm ne ($p->{name} // '')) ? $nm : undef;
+}
 
 # captured during the season loops, used later for player-level data
 my %ESPN_T2P;          # year -> { espn teamId -> canonical person id }
@@ -64,7 +82,7 @@ my %MLB_STAT = (
   20=>['R',0], 5=>['HR',0], 21=>['RBI',0], 23=>['SB',0], 24=>['CS',1],
   2=>['AVG',0], 17=>['OBP',0], 9=>['SLG',0], 18=>['OPS',0], 10=>['BB',0],
   1=>['H',0], 3=>['2B',0], 4=>['3B',0], 0=>['AB',0], 27=>['SO',1], 25=>['GIDP',1],
-  53=>['W',0], 54=>['L',1], 57=>['SV',0], 58=>['BS',1], 83=>['HLD',0],
+  53=>['W',0], 54=>['L',1], 57=>['SV',0], 58=>['BS',1], 83=>['SVHD',0],
   48=>['K',0], 47=>['ERA',1], 41=>['WHIP',1], 49=>['K/9',0], 42=>['K/BB',0],
   44=>['BB',1], 45=>['H',1], 46=>['ER',1], 34=>['IP',0], 32=>['GS',0],
   37=>['QS',0], 39=>['CG',0], 13=>['SHO',0],
@@ -86,7 +104,7 @@ my %MLB_CATDEF = (
   20=>['R',  'h','c',0,0 ], 5 =>['HR', 'h','c',0,0 ], 21=>['RBI','h','c',0,0 ],
   23=>['SB', 'h','c',0,0 ], 2 =>['AVG','h','r',0,0 ], 17=>['OBP','h','r',0,16],
   9 =>['SLG','h','r',0,0 ], 18=>['OPS','h','r',0,16],
-  53=>['W',  'p','c',0,0 ], 57=>['SV', 'p','c',0,0 ], 83=>['HLD','p','c',0,0 ],
+  53=>['W',  'p','c',0,0 ], 57=>['SV', 'p','c',0,0 ], 83=>['SVHD','p','c',0,0 ],
   48=>['K',  'p','c',0,0 ], 34=>['IP', 'p','c',0,0 ],
   47=>['ERA','p','r',1,34], 41=>['WHIP','p','r',1,34], 49=>['K/9','p','r',0,34],
 );
@@ -302,7 +320,8 @@ for my $y (@ESPN_Y) {
   }
   $_->{pf}=r2($_->{pf}), $_->{pa}=r2($_->{pa}) for values %entry;
 
-  # regular-season champ (best win %, then PF, then raw wins) + per-division champ
+  # regular-season standings order: win % (ties = half a win), then points-for,
+  # then raw wins.
   my @byRec = sort {
     wpct($b->{w},$b->{l},$b->{t}) <=> wpct($a->{w},$a->{l},$a->{t})
       || ($b->{pf}||0) <=> ($a->{pf}||0)
@@ -311,6 +330,8 @@ for my $y (@ESPN_Y) {
   my $regChamp = $standingsOnly
     ? ( (map { $_->{personId} } grep { ($_->{finalRank}||0)==1 } values %entry)[0] )
     : ( ($espnPlayed && @byRec) ? $byRec[0]{personId} : undef );
+  $regChamp = $REGCHAMP_FIX->{$y}
+    if $REGCHAMP_FIX->{$y} && $entry{ $REGCHAMP_FIX->{$y} };
   if ($hasDivs && $espnPlayed) {
     my %dbest;
     for my $e (@byRec) { my $d = $e->{division} // next; $dbest{$d} ||= $e; }
@@ -1428,6 +1449,15 @@ if ($CFG->{type} eq 'dynasty' && %SLE_FUTURE_PICKS) {
 # 5. people output
 # ---------------------------------------------------------------------------
 @seasons = sort { $a->{year} <=> $b->{year} } @seasons;
+
+# stamp era-aware manager names onto each season entry (see mgr_name_for)
+for my $s (@seasons) {
+  for my $e (@{ $s->{entries} || [] }) {
+    my $nm = mgr_name_for($e->{personId}, $s->{year});
+    $e->{mgrName} = $nm if defined $nm;
+  }
+}
+
 # people referenced only by a draft board (e.g. new managers in a not-yet-played season)
 my %draftPid;
 for my $d (@draftsOut) {
