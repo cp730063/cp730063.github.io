@@ -113,6 +113,7 @@ my %MLB_CATDEF = (
 # 2. ESPN seasons 2015-2024
 # ---------------------------------------------------------------------------
 my @seasons;
+my $DIV_ORDER;   # ESPN division order (names) from the newest season with divisions
 for my $y (@ESPN_Y) {
   my $raw = jload("$ESPN/$y.json") or next;
   my $d = ref $raw eq 'ARRAY' ? $raw->[0] : $raw;
@@ -131,8 +132,12 @@ for my $y (@ESPN_Y) {
   my $ss = $st->{scheduleSettings} || {};
   my $regWeeks = $ss->{matchupPeriodCount} || 14;
   my $poTeams  = $ss->{playoffTeamCount}  || 4;
-  my %divName = map { $_->{id} => $_->{name} } @{ $ss->{divisions} || [] };
-  my $hasDivs = (scalar(keys %divName) > 1) ? 1 : 0;
+  my @divList  = @{ $ss->{divisions} || [] };
+  my %divName  = map { $_->{id} => $_->{name} } @divList;
+  my $hasDivs  = (scalar(keys %divName) > 1) ? 1 : 0;
+  # remember ESPN's own division order (East, Central, West, …) from the newest
+  # season that has one
+  $DIV_ORDER = [ map { $_->{name} } sort { ($a->{id}//0) <=> ($b->{id}//0) } @divList ] if $hasDivs;
 
   # team_id -> canonical person id (via owners GUID)  &  team_id -> division name.
   # A team with 2+ owners is co-managed: every co-owner shares that season's
@@ -1525,6 +1530,7 @@ my $out = {
     hasDrafts => (@draftsOut ? \1 : \0),
     hasDivisions => ((grep { $_->{hasDivisions} } @seasons) ? \1 : \0),
     divisionsSince => ($CFG->{divisionsSince} ? $CFG->{divisionsSince}+0 : undef),
+    divisionOrder => ($DIV_ORDER || undef),
     prestige => ($CFG->{prestige} || { championship=>10, regularSeasonTitle=>4, runnerUp=>3, divisionTitle=>2, thirdPlace=>0, lastPlace=>0, playoffBerth=>0 }),
   },
   generated_at => $generated,
