@@ -781,6 +781,14 @@
       <div class="tbl-wrap"><table id="catStatsTbl"></table></div>
       <p class="foot" style="border:0;margin-top:14px;padding:0" id="catStatsFoot"></p>
     </section>
+    <section id="divSec" hidden style="margin-top:40px">
+      <div class="h-kicker">Bragging rights</div>
+      <h3 class="sec" style="font-size:19px">Divisions</h3>
+      <p class="sec-note" id="divNote"></p>
+      <div class="tbl-wrap"><table id="divCmpTbl"></table></div>
+      <div id="divDetail" style="margin-top:8px"></div>
+      <p class="foot" style="border:0;margin-top:14px;padding:0" id="divFoot"></p>
+    </section>
   </div>
 
   <div class="panel" id="p-records" hidden>
@@ -1127,7 +1135,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905145151"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905150030"}</script>
 <script>
 "use strict";
 (function(){
@@ -1768,6 +1776,99 @@
       if (b.dataset.y==='all') renderAllTime(); else renderSeason(+b.dataset.y);
     });
     renderSeason(yLast);
+    renderDivisions();
+
+    /* ---- divisions: head-to-head between the divisions over the current alignment ---- */
+    function renderDivisions(){
+      var sec = document.getElementById('divSec');
+      var since = (DATA.league && DATA.league.divisionsSince) || null;
+      var yrs = played.filter(function(s){
+        return s.hasDivisions && (s.games||[]).length && (!since || s.year >= since);
+      });
+      if (yrs.length < 1){ sec.hidden = true; return; }
+      sec.hidden = false;
+      var y0 = yrs[0].year, y1 = yrs[yrs.length-1].year;
+      var skipped = [];
+      for (var y = y0; y <= y1; y++){ if (!yrs.some(function(s){ return s.year===y; })) skipped.push(y); }
+
+      /* per person: overall / in-division / vs-other-divisions W-L-T, + division seen counts */
+      var P = {};
+      function rec(){ return { w:0, l:0, t:0 }; }
+      function add(o, mine, opp){ if (mine>opp) o.w++; else if (mine<opp) o.l++; else o.t++; }
+      yrs.forEach(function(s){
+        var divOf = {};
+        (s.entries||[]).forEach(function(e){ divOf[e.personId] = e.division; });
+        (s.games||[]).forEach(function(g){
+          if (g.type !== 'reg') return;
+          var da = divOf[g.a], db = divOf[g.b];
+          if (!da || !db) return;
+          [[g.a, g.ap, g.bp, da, db], [g.b, g.bp, g.ap, db, da]].forEach(function(x){
+            var pid = x[0], mine = x[1], opp = x[2], myDiv = x[3], oppDiv = x[4];
+            var r = P[pid] || (P[pid] = { pid:pid, o:rec(), i:rec(), x:rec(), dc:{} });
+            r.dc[myDiv] = (r.dc[myDiv]||0) + 1;
+            add(r.o, mine, opp);
+            add(myDiv === oppDiv ? r.i : r.x, mine, opp);
+          });
+        });
+      });
+      var people = Object.keys(P).map(function(k){ return P[k]; });
+      if (!people.length){ sec.hidden = true; return; }
+      people.forEach(function(r){
+        r.div = Object.keys(r.dc).sort(function(a,b){ return r.dc[b]-r.dc[a]; })[0];
+      });
+
+      function wl(o){ return o.w + '–' + o.l + (o.t ? '–'+o.t : ''); }
+      function pct(o){ var g = o.w+o.l+o.t; return g ? ((o.w + 0.5*o.t)/g) : 0; }
+      function pctTxt(o){ var g = o.w+o.l+o.t; return g ? pct(o).toFixed(3).replace(/^0\./,'.') : '—'; }
+      function sumRecs(list, key){ var o = rec(); list.forEach(function(r){ o.w+=r[key].w; o.l+=r[key].l; o.t+=r[key].t; }); return o; }
+
+      /* division comparison */
+      var byDiv = {};
+      people.forEach(function(r){ (byDiv[r.div] = byDiv[r.div] || []).push(r); });
+      var divRows = Object.keys(byDiv).map(function(d){
+        var list = byDiv[d];
+        return { div:d, n:list.length, overall:sumRecs(list,'o'), vs:sumRecs(list,'x') };
+      }).sort(function(a,b){ return pct(b.vs) - pct(a.vs); });
+
+      document.getElementById('divNote').textContent =
+        'Regular-season results by division, ' + y0 + '–' + y1 +
+        (skipped.length ? ' (' + skipped.join(', ') + ' had no divisions)' : '') +
+        '. "Vs. other divisions" is how each division fared against the rest — the real measure of which was toughest.';
+
+      sortableTable(document.getElementById('divCmpTbl'), [
+        { key:'div', label:'Division', align:'left', val:function(r){return r.div;},
+          cell:function(r){ return '<b>'+esc(r.div)+'</b>'; } },
+        { key:'n', label:'Teams', num:true, val:function(r){return r.n;}, cell:function(r){return r.n;} },
+        { key:'ov', label:'Overall', align:'left', val:function(r){return pct(r.overall);}, cell:function(r){return wl(r.overall);} },
+        { key:'vs', label:'Vs. other divisions', align:'left', val:function(r){return pct(r.vs);}, cell:function(r){return wl(r.vs);} },
+        { key:'pct', label:'Win %', num:true, val:function(r){return pct(r.vs);}, cell:function(r){return pctTxt(r.vs);} }
+      ], divRows, { sortKey:'pct', sortDir:-1 });
+
+      /* per-division detail (plain tables so the total pins to the foot) */
+      var host = document.getElementById('divDetail');
+      host.innerHTML = divRows.map(function(dr){
+        var list = byDiv[dr.div].slice().sort(function(a,b){ return pct(b.x) - pct(a.x); });
+        var body = list.map(function(r){
+          return '<tr><td style="text-align:left"><b>'+esc(pName(r.pid))+'</b>'
+            + '<span class="mn2">'+esc(pMgr(r.pid))+'</span></td>'
+            + '<td style="text-align:left">'+wl(r.o)+'</td>'
+            + '<td style="text-align:left">'+wl(r.i)+'</td>'
+            + '<td style="text-align:left">'+wl(r.x)+' <span class="mn2">'+pctTxt(r.x)+'</span></td></tr>';
+        }).join('');
+        var foot = '<tr class="more-row"><td style="text-align:left"><b>Division total</b></td>'
+          + '<td style="text-align:left">'+wl(dr.overall)+'</td>'
+          + '<td style="text-align:left">'+wl(sumRecs(list,'i'))+'</td>'
+          + '<td style="text-align:left"><b>'+wl(dr.vs)+'</b> <span class="mn2">'+pctTxt(dr.vs)+'</span></td></tr>';
+        return '<div style="margin-top:22px"><div class="h-kicker">'+esc(dr.div)+'</div>'
+          + '<div class="tbl-wrap"><table><thead><tr>'
+          + '<th style="text-align:left">Manager</th><th style="text-align:left">Overall</th>'
+          + '<th style="text-align:left">In division</th><th style="text-align:left">Vs. other divisions</th>'
+          + '</tr></thead><tbody>'+body+foot+'</tbody></table></div></div>';
+      }).join('');
+
+      document.getElementById('divFoot').textContent =
+        'Records are matchup W–L–T. In-division games net to even across a whole division, so cross-division play is what separates them. Teams are grouped by the division they’ve spent the most seasons in.';
+    }
   }
 
   function sec_records(){

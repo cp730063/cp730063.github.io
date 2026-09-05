@@ -1503,6 +1503,7 @@ my $out = {
     hasPlayers => (($PW_FILE || @playerSeasons) ? \1 : \0), hasTrades => ($SLE_PW ? \1 : \0),
     hasDrafts => (@draftsOut ? \1 : \0),
     hasDivisions => ((grep { $_->{hasDivisions} } @seasons) ? \1 : \0),
+    divisionsSince => ($CFG->{divisionsSince} ? $CFG->{divisionsSince}+0 : undef),
     prestige => ($CFG->{prestige} || { championship=>10, regularSeasonTitle=>4, runnerUp=>3, divisionTitle=>2, thirdPlace=>0, lastPlace=>0, playoffBerth=>0 }),
   },
   generated_at => $generated,
