@@ -519,6 +519,7 @@
   .dcell .dpos{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:var(--ink-faint);border:1px solid var(--border);border-radius:3px;padding:0 3px}
   .dcell .dvia{font-size:10px;color:var(--accent);font-weight:600}
   .dcell .dval{font-family:var(--mono);font-size:10px;font-weight:600;margin-left:auto}
+  .dcell .dsurp{font-family:var(--mono);font-size:9px;opacity:.75}
   .dcell.traded{box-shadow:inset 3px 0 0 var(--accent)}
   .dcell[data-pos="QB"]{background:rgba(214,69,90,.12)}
   .dcell[data-pos="RB"]{background:rgba(31,150,92,.14)}
@@ -1250,6 +1251,8 @@
   function gamePlayed(ap, bp){ ap = ap||0; bp = bp||0; return isCats ? (ap>0 || bp>0) : (ap>0 && bp>0); }
   var openPlayerCard = null;   /* set by sec_players once its modal is wired */
   var _dgShow = null;          /* set by sec_draftGrades; sec_drafts calls it on board change */
+  var _dgSurplus = null;       /* {"year|playerKey": surplus} — set by sec_draftGrades */
+  var _dgBoardRefresh = null;  /* set by sec_drafts; sec_draftGrades calls it once surpluses exist */
   function pName(id){ return P[id] ? P[id].name : id; }
   function pMgr(id){ return P[id] ? P[id].mgr : ''; }
   function deriveModel(){
@@ -2859,7 +2862,7 @@
   }
 
   function sec_drafts(){
-    _dgShow = null;   /* cleared each render; sec_draftGrades re-arms it for this league */
+    _dgShow = null; _dgSurplus = null;   /* cleared each render; sec_draftGrades re-arms them for this league */
     var drafts = (DATA.drafts || []).slice();
     if (!drafts.length) return;   /* tab hidden by applyTabAvailability */
 
@@ -2886,12 +2889,23 @@
       if (!ps.key) return;
       (valOf[ps.year] = valOf[ps.year] || {})[ps.key] = (isCats ? ps.val : ps.pts);
     });
+    /* value = the player's season outcome (baseball category value / football
+       points). surplus (when the grade engine has run) = that value minus what
+       the pick's round slot has historically returned — the steal/reach. */
     function valTag(year, key){
       var v = (valOf[year] || {})[key];
       if (v == null) return '';
-      if (isCats) return '<span class="dval" style="color:' +
-        (v >= 0 ? 'var(--good,#2e9e5b)' : 'var(--neg,#c0552b)') + '">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '</span>';
-      return '<span class="dval">' + f0(v) + '</span>';
+      var sp = _dgSurplus ? _dgSurplus[year + '|' + key] : null;
+      var main = isCats ? v.toFixed(1) : f0(v);
+      var col  = isCats ? (v >= 0 ? 'var(--good,#2e9e5b)' : 'var(--neg,#c0552b)') : '';
+      var spHtml = '';
+      if (sp != null){
+        var r = Math.round(sp * 10) / 10;
+        spHtml = ' <span class="dsurp" title="vs. what this round’s slot returns" style="color:' +
+          (r > 0 ? 'var(--good,#2e9e5b)' : r < 0 ? 'var(--neg,#c0552b)' : 'var(--ink-faint)') + '">' +
+          (r > 0 ? '+' : '') + r.toFixed(1) + '</span>';
+      }
+      return '<span class="dval"' + (col ? ' style="color:' + col + '"' : '') + '>' + main + '</span>' + spHtml;
     }
     function pcell(pk){
       var nm = esc(pk.player.name);
@@ -2994,6 +3008,12 @@
       render(+b.dataset.i);
     });
     render(0);
+    /* redraw the board once the grade engine has computed per-pick surpluses */
+    _dgBoardRefresh = function(){
+      var cur = document.querySelector('#draftPick button[aria-pressed="true"]');
+      render(cur ? +cur.dataset.i : 0);
+    };
+    if (_dgSurplus) _dgBoardRefresh();
 
     /* future draft capital (dynasty) */
     var fp  = DATA.futurePicks || [];
@@ -3152,6 +3172,18 @@
         gradeVal = allVal.length ? grader(allVal) : null;
       }
       M = { prodScores:prodScores, gradeProd:grader(allProd), valScores:valScores, gradeVal:gradeVal };
+
+      /* per-pick surplus, keyed for the draft board to read */
+      _dgSurplus = {};
+      prodScores.forEach(function(s){
+        var yr = drafts[s.i].year;
+        Object.keys(s.by).forEach(function(pid){
+          (s.by[pid].picks || []).forEach(function(pk){
+            if (pk.p.playerKey) _dgSurplus[yr + '|' + pk.p.playerKey] = pk.surplus;
+          });
+        });
+      });
+      if (_dgBoardRefresh) _dgBoardRefresh();
     }
     build();
 
