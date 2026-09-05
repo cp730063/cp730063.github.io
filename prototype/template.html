@@ -1215,6 +1215,10 @@
   function scoreLeaderLabel(){ return isCats ? 'Most category wins' : 'Scoring leader'; }
   function seasonScoreless(s){ return (s.scoring || SCORING) === 'roto'; }   /* no weekly games */
   function fS(n){ return isCats ? f0(n) : f2(n); }   /* score formatter: category wins are whole numbers */
+  /* was this matchup actually played?  A points-league bye/unplayed week has
+     both sides at 0; a category-league shutout (a 12-0 sweep) has ONE side at 0
+     and is a real result, so only skip it when BOTH sides are 0. */
+  function gamePlayed(ap, bp){ ap = ap||0; bp = bp||0; return isCats ? (ap>0 || bp>0) : (ap>0 && bp>0); }
   var openPlayerCard = null;   /* set by sec_players once its modal is wired */
   var _dgShow = null;          /* set by sec_draftGrades; sec_drafts calls it on board change */
   function pName(id){ return P[id] ? P[id].name : id; }
@@ -1455,7 +1459,7 @@
         if (scope==='reg' && g.type!=='reg') return;
         if (scope==='all' && !(g.type==='reg'||g.type==='playoff')) return;
         if (scope==='po' && g.type!=='playoff') return;
-        if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+        if (!gamePlayed(g.ap, g.bp)) return;
         out.push({season:s.year, week:g.week, a:g.a, ap:g.ap, b:g.b, bp:g.bp});
       });
     });
@@ -2059,7 +2063,7 @@
           if (scope==='reg' && g.type!=='reg') return;
           if (scope==='playoff' && g.type!=='playoff') return;
           if (scope==='both' && !(g.type==='reg'||g.type==='playoff')) return;
-          if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+          if (!gamePlayed(g.ap, g.bp)) return;
           [[g.a,g.ap,g.bp],[g.b,g.bp,g.ap]].forEach(function(x){
             var e = rr(x[0]); e.gp++; e.pf += x[1]; e.pa += x[2];
             if (x[1]>x[2]) e.w++; else if (x[1]<x[2]) e.l++; else e.t++;
@@ -2175,7 +2179,7 @@
     var pair = {};
     played.forEach(function(s){
       regGames(s).forEach(function(g){
-        if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+        if (!gamePlayed(g.ap, g.bp)) return;
         var lo = g.a < g.b ? g.a : g.b, hi = g.a < g.b ? g.b : g.a;
         var e = pair[lo+'|'+hi] || (pair[lo+'|'+hi] = { lo:lo, hi:hi, n:0, loW:0, hiW:0, t:0, loPts:0, hiPts:0 });
         var loPts = g.a===lo ? g.ap : g.bp, hiPts = g.a===lo ? g.bp : g.ap;
@@ -2226,7 +2230,7 @@
       var out = [];
       played.forEach(function(s){
         (s.games||[]).forEach(function(g){
-          if ((g.ap||0)<=0 || (g.bp||0)<=0) return;
+          if (!gamePlayed(g.ap, g.bp)) return;
           var ab = (g.a===a && g.b===b), ba = (g.a===b && g.b===a);
           if (!ab && !ba) return;
           out.push({ year:s.year, week:g.week, type:g.type, final:!!g.final,
@@ -2549,7 +2553,7 @@
       var g = regGames(s); if (!g.length) return;
       var byWeek = {};
       g.forEach(function(x){
-        if ((x.ap||0)<=0 || (x.bp||0)<=0) return;
+        if (!gamePlayed(x.ap, x.bp)) return;
         apYears[s.year] = 1;
         (byWeek[x.week] = byWeek[x.week] || []).push({ pid:x.a, pts:x.ap });
         byWeek[x.week].push({ pid:x.b, pts:x.bp });
@@ -3168,7 +3172,7 @@
     var titleGames = [];
     played.forEach(function(s){
       (s.games||[]).forEach(function(g){
-        if (!g.final || (g.ap||0)<=0 || (g.bp||0)<=0) return;
+        if (!g.final || !gamePlayed(g.ap, g.bp)) return;
         var wPid = g.ap>=g.bp ? g.a : g.b, lPid = g.ap>=g.bp ? g.b : g.a;
         var wS = Math.max(g.ap,g.bp), lS = Math.min(g.ap,g.bp);
         titleGames.push({ year:s.year, w:wPid, l:lPid, ws:wS, ls:lS, m:wS-lS, tot:wS+lS });
