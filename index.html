@@ -1135,7 +1135,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905150030"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905151744"}</script>
 <script>
 "use strict";
 (function(){
@@ -1616,8 +1616,9 @@
       {key:'ns', label:'Seasons', num:true, val:function(r){return r.ns;}, cell:function(r){return r.ns;}},
       {key:'w', label:'W', num:true, val:function(r){return r.w;}, cell:function(r){return '<span class="w">'+r.w+'</span>';}},
       {key:'l', label:'L', num:true, val:function(r){return r.l;}, cell:function(r){return r.l;}},
-      {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?r.w/g:0;},
-        cell:function(r){var g=r.w+r.l+r.t;return g?(100*r.w/g).toFixed(1)+'%':'—';}},
+      {key:'t', label:'T', num:true, val:function(r){return r.t;}, cell:function(r){return r.t||'—';}},
+      {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?(r.w+0.5*r.t)/g:0;},
+        cell:function(r){var g=r.w+r.l+r.t;return g?(100*(r.w+0.5*r.t)/g).toFixed(1)+'%':'—';}},
       {key:'pf', label:pfShort(), num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
       {key:'avg', label:pfPer(), num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
         cell:function(r){return r.gp?f2(r.pf/r.gp):'—';}}
@@ -1649,8 +1650,9 @@
         {key:'ns', label:'Seasons', num:true, val:function(r){return r.ns;}, cell:function(r){return r.ns;}},
         {key:'w', label:'W', num:true, val:function(r){return r.w;}, cell:function(r){return '<span class="w">'+r.w+'</span>';}},
         {key:'l', label:'L', num:true, val:function(r){return r.l;}, cell:function(r){return r.l;}},
-        {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?r.w/g:0;},
-          cell:function(r){var g=r.w+r.l+r.t;return g?(100*r.w/g).toFixed(1)+'%':'—';}},
+        {key:'t', label:'T', num:true, val:function(r){return r.t;}, cell:function(r){return r.t||'—';}},
+        {key:'pct', label:'Win%', num:true, val:function(r){var g=r.w+r.l+r.t;return g?(r.w+0.5*r.t)/g:0;},
+          cell:function(r){var g=r.w+r.l+r.t;return g?(100*(r.w+0.5*r.t)/g).toFixed(1)+'%':'—';}},
         {key:'pf', label:pfShort(), num:true, val:function(r){return r.pf;}, cell:function(r){return r.gp?f0(r.pf):'—';}},
         {key:'pa', label:(isCats?'CL':'PA'), num:true, val:function(r){return r.pa;}, cell:function(r){return r.gp?f0(r.pa):'—';}},
         {key:'avg', label:pfPer(), num:true, val:function(r){return r.gp?r.pf/r.gp:0;},
@@ -1855,10 +1857,11 @@
             + '<td style="text-align:left">'+wl(r.i)+'</td>'
             + '<td style="text-align:left">'+wl(r.x)+' <span class="mn2">'+pctTxt(r.x)+'</span></td></tr>';
         }).join('');
-        var foot = '<tr class="more-row"><td style="text-align:left"><b>Division total</b></td>'
-          + '<td style="text-align:left">'+wl(dr.overall)+'</td>'
-          + '<td style="text-align:left">'+wl(sumRecs(list,'i'))+'</td>'
-          + '<td style="text-align:left"><b>'+wl(dr.vs)+'</b> <span class="mn2">'+pctTxt(dr.vs)+'</span></td></tr>';
+        var tdf = 'text-align:left;border-top:2px solid var(--border-strong);font-weight:600';
+        var foot = '<tr><td style="'+tdf+'">Division total</td>'
+          + '<td style="'+tdf+'">'+wl(dr.overall)+'</td>'
+          + '<td style="'+tdf+'">'+wl(sumRecs(list,'i'))+'</td>'
+          + '<td style="'+tdf+'">'+wl(dr.vs)+' <span class="mn2">'+pctTxt(dr.vs)+'</span></td></tr>';
         return '<div style="margin-top:22px"><div class="h-kicker">'+esc(dr.div)+'</div>'
           + '<div class="tbl-wrap"><table><thead><tr>'
           + '<th style="text-align:left">Manager</th><th style="text-align:left">Overall</th>'
@@ -2448,30 +2451,38 @@
     /* ---- event counts per person ---- */
     var ST = {};
     function row(pid){ return ST[pid] || (ST[pid] = { pid:pid, seas:0, champ:0, runner:0, third:0, reg:0, div:0, last:0, berth:0, appear:0 }); }
+    /* pids sharing an entry's honors: the primary personId plus any co-managers */
+    function entryPids(e){ return [e.personId].concat(e.coPids || []); }
+    function coPidsFor(s, pid){
+      var e = (s.entries||[]).filter(function(x){ return x.personId === pid; })[0];
+      return e ? entryPids(e) : [pid];
+    }
     played.forEach(function(s){
       var teamCt = s.teams || (s.entries||[]).length;
       (s.entries||[]).forEach(function(e){
-        var r = row(e.personId);
-        r.seas++;
-        if (e.madePlayoffs) r.appear++;                                          // any playoff berth
-        // "berth" drives the prestige wildcard column. In a league that uses
-        // divisions (anyDiv), a wildcard means: this season HAD divisions and
-        // the team made the playoffs without winning its division. Seasons with
-        // no divisions (e.g. the pre-2008 manual years, roto years) have no
-        // wildcard concept, so a playoff appearance there doesn't count. Only
-        // in a league with no division seasons at all does the column fall back
-        // to a plain "PO berths" count of every playoff appearance.
-        if (e.madePlayoffs) {
-          if (!anyDiv) r.berth++;
-          else if (s.hasDivisions && !e.divisionChamp) r.berth++;
-        }
-        if (s.hasDivisions && e.divisionChamp) r.div++;
-        if (e.finalRank && teamCt && e.finalRank === teamCt) r.last++;
+        entryPids(e).forEach(function(pid){
+          var r = row(pid);
+          r.seas++;
+          if (e.madePlayoffs) r.appear++;                                          // any playoff berth
+          // "berth" drives the prestige wildcard column. In a league that uses
+          // divisions (anyDiv), a wildcard means: this season HAD divisions and
+          // the team made the playoffs without winning its division. Seasons with
+          // no divisions (e.g. the pre-2008 manual years, roto years) have no
+          // wildcard concept, so a playoff appearance there doesn't count. Only
+          // in a league with no division seasons at all does the column fall back
+          // to a plain "PO berths" count of every playoff appearance.
+          if (e.madePlayoffs) {
+            if (!anyDiv) r.berth++;
+            else if (s.hasDivisions && !e.divisionChamp) r.berth++;
+          }
+          if (s.hasDivisions && e.divisionChamp) r.div++;
+          if (e.finalRank && teamCt && e.finalRank === teamCt) r.last++;
+        });
       });
-      if (s.champion)       row(s.champion).champ++;
-      if (s.runnerUp)       row(s.runnerUp).runner++;
-      if (s.third)          row(s.third).third++;
-      if (s.regSeasonChamp) row(s.regSeasonChamp).reg++;
+      if (s.champion)       coPidsFor(s, s.champion).forEach(function(p){ row(p).champ++; });
+      if (s.runnerUp)       coPidsFor(s, s.runnerUp).forEach(function(p){ row(p).runner++; });
+      if (s.third)          coPidsFor(s, s.third).forEach(function(p){ row(p).third++; });
+      if (s.regSeasonChamp) coPidsFor(s, s.regSeasonChamp).forEach(function(p){ row(p).reg++; });
     });
     function score(r){
       return r.champ*W.championship + r.reg*W.regularSeasonTitle + r.runner*W.runnerUp +

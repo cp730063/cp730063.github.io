@@ -60,7 +60,6 @@
       "name" : "Brian DiIenno"
     },
     {
-      "alias" : [ "Jim McGarrity" ],
       "espn" : "{65B22561-B66D-45F1-9032-ABF5C140732B}",
       "espnAlt" : [
         "{E59EA390-14F1-472E-9EA3-9014F1372ED1}",
@@ -68,16 +67,24 @@
       ],
       "id" : "dinicola",
       "mgr" : "qb101515",
-      "name" : "Jim McGarrity / Rob DiNicola",
+      "name" : "Jim McGarrity",
       "names" : [
-        { "until" : 2013, "name" : "Jim McGarrity" }
+        { "until" : 2013, "name" : "Jim McGarrity" },
+        { "name" : "Jim McGarrity / Rob DiNicola" }
       ]
     },
     {
       "espn" : "{5665F499-0FFE-48B4-95A0-6D790350D82B}",
+      "espnAlt" : [
+        "{5348C33F-1521-46E8-8C81-6D35A4286BD7}"
+      ],
       "id" : "englese",
       "mgr" : "DerekEnglese",
-      "name" : "Derek Englese"
+      "name" : "Derek Englese",
+      "names" : [
+        { "until" : 2014, "name" : "Derek Englese / Brendan Nelson" },
+        { "name" : "Derek Englese" }
+      ]
     },
     {
       "espn" : "{411A40B1-D0D6-44D2-9193-48249A653BDD}",
@@ -142,12 +149,6 @@
       "name" : "Ryan Murray"
     },
     {
-      "espn" : "{5348C33F-1521-46E8-8C81-6D35A4286BD7}",
-      "id" : "nelson",
-      "mgr" : "1MVP1L23",
-      "name" : "Brendan Nelson"
-    },
-    {
       "espn" : "{ADD6A8E2-9261-4912-982A-D94F3D470047}",
       "id" : "pashko",
       "mgr" : "patriots122436",
@@ -160,14 +161,18 @@
       "name" : "Matt Potts"
     },
     {
-      "alias" : [ "Alex Bradley" ],
       "espn" : "{248E5D4E-6341-41CD-B648-7C8EFEC43C70}",
       "espnAlt" : [
         "{789BF6AF-010D-43A7-8E9E-15FBFD2E6ED0}"
       ],
       "id" : "quigley",
       "mgr" : "abnd14",
-      "name" : "Alex Bradley / Joe Quigley"
+      "name" : "Alex Bradley",
+      "names" : [
+        { "until" : 2011, "name" : "Alex Bradley" },
+        { "until" : 2019, "name" : "Alex Bradley / Joe Quigley" },
+        { "name" : "Alex Bradley" }
+      ]
     },
     {
       "espn" : "{EC9D4D86-5554-4BF6-90B5-DED0722C0B39}",

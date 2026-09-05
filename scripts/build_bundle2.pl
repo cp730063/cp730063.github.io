@@ -134,14 +134,22 @@ for my $y (@ESPN_Y) {
   my %divName = map { $_->{id} => $_->{name} } @{ $ss->{divisions} || [] };
   my $hasDivs = (scalar(keys %divName) > 1) ? 1 : 0;
 
-  # team_id -> canonical person id (via owners GUID)  &  team_id -> division name
-  my %tid2pid; my %tid2div;
+  # team_id -> canonical person id (via owners GUID)  &  team_id -> division name.
+  # A team with 2+ owners is co-managed: every co-owner shares that season's
+  # honors (division title, runner-up, championship, ...).  %tid2co keeps the
+  # extra resolved personIds beyond the primary.
+  my %tid2pid; my %tid2div; my %tid2co;
   for my $t (@{$d->{teams}||[]}) {
     $tid2div{$t->{id}} = $hasDivs ? ($divName{ $t->{divisionId} } // undef) : undef;
-    my $g = uc( ($t->{owners}||[])->[0] // '' );
-    my $pid = $ESPN_TO_ID{$g};
+    my @pids;
+    for my $g (@{ $t->{owners} || [] }) {
+      my $p = $ESPN_TO_ID{ uc $g };
+      push @pids, $p if $p && !grep { $_ eq $p } @pids;
+    }
+    my $pid = $pids[0];
     if (!$pid) { $pid = 'espn_'.($t->{id}); $P{$pid} ||= { id=>$pid, name=>"ESPN team $t->{id}", mgr=>'(unmatched)', firstSeason=>9999, seasons=>{}, titles=>[] }; }
     $tid2pid{$t->{id}} = $pid;
+    $tid2co{$t->{id}}  = [ @pids[1..$#pids] ] if @pids > 1;
   }
   $ESPN_T2P{$y} = { %tid2pid };
   my $dset = $st->{draftSettings} || {};
@@ -306,6 +314,7 @@ for my $y (@ESPN_Y) {
       seed=>($espnPlayed ? ($t->{playoffSeed}||undef) : undef), finalRank=>$fr||undef,
       poResult=>$por,
       madePlayoffs=>($fr && $poTeams && $fr<=$poTeams ? 1 : 0),
+      ($tid2co{$t->{id}} && @{$tid2co{$t->{id}}} ? (coPids => $tid2co{$t->{id}}) : ()),
     };
   }
   if ($espnPlayed) {
@@ -351,8 +360,15 @@ for my $y (@ESPN_Y) {
   if ($counts) {
     for my $pid (keys %entry) {
       my $p = $P{$pid}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y<$p->{firstSeason};
+      for my $cp (@{ $entry{$pid}{coPids} || [] }) {
+        my $q = $P{$cp} or next; $q->{seasons}{$y}=1; $q->{firstSeason}=$y if $y<$q->{firstSeason};
+      }
     }
-    push @{$P{$champ}{titles}}, $y if $champ;
+    if ($champ) {
+      push @{$P{$champ}{titles}}, $y;
+      my ($ce) = grep { $_->{personId} eq $champ } values %entry;
+      push @{$P{$_}{titles}}, $y for @{ ($ce && $ce->{coPids}) || [] };
+    }
   }
 
   # mlb: attach each team's regular-season category totals (counting stats
@@ -1450,10 +1466,15 @@ if ($CFG->{type} eq 'dynasty' && %SLE_FUTURE_PICKS) {
 # ---------------------------------------------------------------------------
 @seasons = sort { $a->{year} <=> $b->{year} } @seasons;
 
-# stamp era-aware manager names onto each season entry (see mgr_name_for)
+# stamp era-aware manager names onto each season entry (see mgr_name_for).
+# A co-managed entry shows all its managers joined with " / " unless an
+# explicit era-name rule already covers that year.
 for my $s (@seasons) {
   for my $e (@{ $s->{entries} || [] }) {
     my $nm = mgr_name_for($e->{personId}, $s->{year});
+    if (!defined $nm && $e->{coPids} && @{$e->{coPids}}) {
+      $nm = join(' / ', map { ($P{$_} || {})->{name} // $_ } $e->{personId}, @{$e->{coPids}});
+    }
     $e->{mgrName} = $nm if defined $nm;
   }
 }
