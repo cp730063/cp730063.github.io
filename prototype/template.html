@@ -1893,44 +1893,96 @@
       var pairs = scopeGames(scope);
       var host = document.getElementById('recList');
       if (!pairs.length){ host.innerHTML='<div class="rec"><span class="rl">No games in this scope</span></div>'; return; }
-      var sd = sides(pairs), recs=[];
-      var hi = sd.slice().sort(function(a,b){return b.pf-a.pf;})[0];
-      var lo = sd.slice().sort(function(a,b){return a.pf-b.pf;})[0];
-      recs.push([isCats?'Most categories won, week':'Most points, game', fS(hi.pf), '<b>'+esc(pName(hi.pid))+'</b> vs '+esc(pName(hi.opp))+' — '+ctx(hi.season,hi.week)]);
-      recs.push([isCats?'Fewest categories won, week':'Fewest points, game', fS(lo.pf), '<b>'+esc(pName(lo.pid))+'</b> vs '+esc(pName(lo.opp))+' — '+ctx(lo.season,lo.week)]);
-      var blow = pairs.slice().sort(function(a,b){return Math.abs(b.ap-b.bp)-Math.abs(a.ap-a.bp);})[0];
-      var bW = blow.ap>=blow.bp?blow.a:blow.b, bL = blow.ap>=blow.bp?blow.b:blow.a;
-      recs.push([isCats?'Most lopsided week':'Biggest blowout', fS(Math.abs(blow.ap-blow.bp)), '<b>'+esc(pName(bW))+'</b> def. '+esc(pName(bL))+' '+fS(Math.max(blow.ap,blow.bp))+'–'+fS(Math.min(blow.ap,blow.bp))+' — '+ctx(blow.season,blow.week)]);
-      var close = pairs.filter(function(g){ return Math.abs(g.ap-g.bp) > 0; })
-        .sort(function(a,b){return Math.abs(a.ap-a.bp)-Math.abs(b.ap-b.bp);})[0];
-      if (close){
-        var cW = close.ap>=close.bp?close.a:close.b, cL = close.ap>=close.bp?close.b:close.a;
-        recs.push([isCats?'Narrowest category win':'Narrowest win', fS(Math.abs(close.ap-close.bp)), '<b>'+esc(pName(cW))+'</b> edged '+esc(pName(cL))+' '+fS(Math.max(close.ap,close.bp))+'–'+fS(Math.min(close.ap,close.bp))+' — '+ctx(close.season,close.week)]);
+      var recs = [];
+      var sd = sides(pairs);
+
+      /* holders: [{pid, year?}], single: fn(holders[0]) -> full context html.
+         1 holder -> full context; 2-3 -> name (year) list; 4+ -> "N teams". */
+      function pushRec(label, valStr, holders, single){
+        var seen = {}, uniq = [];
+        holders.forEach(function(h){ if (!seen[h.pid]){ seen[h.pid] = 1; uniq.push(h); } });
+        if (!uniq.length) return;
+        var rh;
+        if (uniq.length === 1) rh = single(uniq[0]);
+        else if (uniq.length <= 3) rh = uniq.map(function(h){
+          return '<b>'+esc(pName(h.pid))+'</b>' + (h.year!=null ? ' <span class="mn2">'+h.year+'</span>' : '');
+        }).join(' &nbsp;·&nbsp; ');
+        else rh = uniq.length + ' teams';
+        recs.push([label, valStr, rh]);
       }
+
+      var maxWk = Math.max.apply(null, sd.map(function(x){ return x.pf; }));
+      pushRec(isCats?'Most categories won, week':'Most points, game', fS(maxWk),
+        sd.filter(function(x){ return x.pf===maxWk; }).map(function(x){ return { pid:x.pid, year:x.season, x:x }; }),
+        function(h){ return '<b>'+esc(pName(h.x.pid))+'</b> vs '+esc(pName(h.x.opp))+' — '+ctx(h.x.season,h.x.week); });
+
+      var minWk = Math.min.apply(null, sd.map(function(x){ return x.pf; }));
+      pushRec(isCats?'Fewest categories won, week':'Fewest points, game', fS(minWk),
+        sd.filter(function(x){ return x.pf===minWk; }).map(function(x){ return { pid:x.pid, year:x.season, x:x }; }),
+        function(h){ return '<b>'+esc(pName(h.x.pid))+'</b> vs '+esc(pName(h.x.opp))+' — '+ctx(h.x.season,h.x.week); });
+
+      var mgn = pairs.map(function(g){ return Math.abs(g.ap-g.bp); });
+      var maxMgn = Math.max.apply(null, mgn);
+      pushRec(isCats?'Most lopsided week':'Biggest blowout', fS(maxMgn),
+        pairs.filter(function(g){ return Math.abs(g.ap-g.bp)===maxMgn; })
+             .map(function(g){ return { pid:(g.ap>=g.bp?g.a:g.b), year:g.season, g:g }; }),
+        function(h){ var g=h.g, W=g.ap>=g.bp?g.a:g.b, L=g.ap>=g.bp?g.b:g.a;
+          return '<b>'+esc(pName(W))+'</b> def. '+esc(pName(L))+' '+fS(Math.max(g.ap,g.bp))+'–'+fS(Math.min(g.ap,g.bp))+' — '+ctx(g.season,g.week); });
+
+      var closePairs = pairs.filter(function(g){ return Math.abs(g.ap-g.bp) > 0; });
+      if (closePairs.length){
+        var minMgn = Math.min.apply(null, closePairs.map(function(g){ return Math.abs(g.ap-g.bp); }));
+        pushRec(isCats?'Narrowest category win':'Narrowest win', fS(minMgn),
+          closePairs.filter(function(g){ return Math.abs(g.ap-g.bp)===minMgn; })
+                    .map(function(g){ return { pid:(g.ap>=g.bp?g.a:g.b), year:g.season, g:g }; }),
+          function(h){ var g=h.g, W=g.ap>=g.bp?g.a:g.b, L=g.ap>=g.bp?g.b:g.a;
+            return '<b>'+esc(pName(W))+'</b> edged '+esc(pName(L))+' '+fS(Math.max(g.ap,g.bp))+'–'+fS(Math.min(g.ap,g.bp))+' — '+ctx(g.season,g.week); });
+      }
+
       if (!isCats){
-        var shoot = pairs.slice().sort(function(a,b){return (b.ap+b.bp)-(a.ap+a.bp);})[0];
-        recs.push(['Highest-scoring matchup', f2(shoot.ap+shoot.bp), esc(pName(shoot.a))+' '+f2(shoot.ap)+' – '+f2(shoot.bp)+' '+esc(pName(shoot.b))+' — '+ctx(shoot.season,shoot.week)]);
+        var tot = pairs.map(function(g){ return g.ap+g.bp; });
+        var maxTot = Math.max.apply(null, tot);
+        pushRec('Highest-scoring matchup', f2(maxTot),
+          pairs.filter(function(g){ return (g.ap+g.bp)===maxTot; })
+               .map(function(g){ return { pid:g.a, year:g.season, g:g }; }),
+          function(h){ var g=h.g; return esc(pName(g.a))+' '+f2(g.ap)+' – '+f2(g.bp)+' '+esc(pName(g.b))+' — '+ctx(g.season,g.week); });
       }
 
       if (scope==='reg'){
-        var bestRec=null, worstRec=null, mostPf=null, fewPf=null, mostBench=null;
-        played.forEach(function(s){
-          (s.entries||[]).forEach(function(e){
-            var gp = (e.w||0)+(e.l||0)+(e.t||0);
-            if (!bestRec || e.w>bestRec.e.w || (e.w===bestRec.e.w && (e.pf||0)>(bestRec.e.pf||0))) bestRec={s:s,e:e};
-            if (gp>=4 && (!worstRec || e.l>worstRec.e.l || (e.l===worstRec.e.l && (e.pf||1e9)<(worstRec.e.pf||1e9)))) worstRec={s:s,e:e};
-            if (e.pf!=null && (!mostPf || e.pf>mostPf.e.pf)) mostPf={s:s,e:e};
-            if (e.pf!=null && gp>=4 && (!fewPf || e.pf<fewPf.e.pf)) fewPf={s:s,e:e};
-            if (s.hasOptimal && e.optimal){ var b=e.optimal-e.pf; if(!mostBench||b>mostBench.b) mostBench={s:s,e:e,b:b}; }
-          });
-        });
-        if (bestRec) recs.push(['Best record, season', bestRec.e.w+'–'+bestRec.e.l+(bestRec.e.t?'–'+bestRec.e.t:''), '<b>'+esc(pName(bestRec.e.personId))+'</b> — '+bestRec.s.year]);
-        if (worstRec) recs.push(['Worst record, season', worstRec.e.w+'–'+worstRec.e.l+(worstRec.e.t?'–'+worstRec.e.t:''), '<b>'+esc(pName(worstRec.e.personId))+'</b> — '+worstRec.s.year]);
-        if (mostPf) recs.push([isCats?'Most category wins, season':'Most points, season', fS(mostPf.e.pf), '<b>'+esc(pName(mostPf.e.personId))+'</b> — '+mostPf.s.year+' ('+mostPf.s.regWeeks+' wks)']);
-        if (fewPf) recs.push([isCats?'Fewest category wins, season':'Fewest points, season', fS(fewPf.e.pf), '<b>'+esc(pName(fewPf.e.personId))+'</b> — '+fewPf.s.year+' ('+fewPf.s.regWeeks+' wks)']);
-        if (mostBench) recs.push(['Most points left on bench, season', f2(mostBench.b), '<b>'+esc(pName(mostBench.e.personId))+'</b> — '+mostBench.s.year]);
+        var ents = [];
+        played.forEach(function(s){ (s.entries||[]).forEach(function(e){ ents.push({ s:s, e:e }); }); });
+        var recStr = function(o){ return o.e.w+'–'+o.e.l+(o.e.t?'–'+o.e.t:''); };
+        var gp = function(o){ return (o.e.w||0)+(o.e.l||0)+(o.e.t||0); };
 
-        var best={n:0};
+        var byBest = ents.slice().sort(function(a,b){ return b.e.w-a.e.w || a.e.l-b.e.l || (b.e.pf||0)-(a.e.pf||0); });
+        if (byBest.length){
+          var topRec = recStr(byBest[0]);
+          pushRec('Best record, season', topRec,
+            ents.filter(function(o){ return recStr(o)===topRec; }).map(function(o){ return { pid:o.e.personId, year:o.s.year }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.year; });
+        }
+        var wrEnts = ents.filter(function(o){ return gp(o)>=4; });
+        var byWorst = wrEnts.slice().sort(function(a,b){ return b.e.l-a.e.l || a.e.w-b.e.w || (a.e.pf||1e9)-(b.e.pf||1e9); });
+        if (byWorst.length){
+          var botRec = recStr(byWorst[0]);
+          pushRec('Worst record, season', botRec,
+            wrEnts.filter(function(o){ return recStr(o)===botRec; }).map(function(o){ return { pid:o.e.personId, year:o.s.year }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.year; });
+        }
+        var pfEnts = ents.filter(function(o){ return o.e.pf!=null; });
+        if (pfEnts.length){
+          var maxPf = Math.max.apply(null, pfEnts.map(function(o){ return o.e.pf; }));
+          pushRec(isCats?'Most category wins, season':'Most points, season', fS(maxPf),
+            pfEnts.filter(function(o){ return o.e.pf===maxPf; }).map(function(o){ return { pid:o.e.personId, year:o.s.year, o:o }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.o.s.year+' ('+h.o.s.regWeeks+' wks)'; });
+          var pfEnts4 = pfEnts.filter(function(o){ return gp(o)>=4; });
+          var minPf = Math.min.apply(null, pfEnts4.map(function(o){ return o.e.pf; }));
+          pushRec(isCats?'Fewest category wins, season':'Fewest points, season', fS(minPf),
+            pfEnts4.filter(function(o){ return o.e.pf===minPf; }).map(function(o){ return { pid:o.e.personId, year:o.s.year, o:o }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.o.s.year+' ('+h.o.s.regWeeks+' wks)'; });
+        }
+
+        var streak = [];
         played.forEach(function(s){
           var by={};
           regGames(s).slice().sort(function(a,b){return a.week-b.week;}).forEach(function(g){
@@ -1939,23 +1991,33 @@
               if (x[1]>x[2]){ st.c++; if(st.c>st.m) st.m=st.c; } else st.c=0;
             });
           });
-          Object.keys(by).forEach(function(pid){ if (by[pid].m>best.n) best={n:by[pid].m,pid:pid,y:s.year}; });
+          Object.keys(by).forEach(function(pid){ streak.push({ pid:pid, year:s.year, n:by[pid].m }); });
         });
-        if (best.n) recs.push(['Longest win streak', best.n+' games', '<b>'+esc(pName(best.pid))+'</b> — '+best.y]);
+        if (streak.length){
+          var maxStreak = Math.max.apply(null, streak.map(function(x){ return x.n; }));
+          pushRec('Longest win streak', maxStreak+' games',
+            streak.filter(function(x){ return x.n===maxStreak; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.year; });
+        }
 
         var maxT = 0;
         (DATA.people||[]).forEach(function(p){ maxT = Math.max(maxT, (p.titles||[]).length); });
         if (maxT){
-          var champLeaders = (DATA.people||[]).filter(function(p){ return (p.titles||[]).length === maxT; })
-            .sort(function(a,b){ return a.titles[0]-b.titles[0]; });
-          recs.push(['Most championships', maxT+'',
-            champLeaders.map(function(p){ return '<b>'+esc(p.name)+'</b>'; }).join(', ') +
-            (champLeaders.length===1 ? ' — '+champLeaders[0].titles.join(', ') : '')]);
+          pushRec('Most championships', maxT+'',
+            (DATA.people||[]).filter(function(p){ return (p.titles||[]).length === maxT; })
+              .sort(function(a,b){ return a.titles[0]-b.titles[0]; })
+              .map(function(p){ return { pid:p.id, p:p }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> — '+h.p.titles.join(', '); });
         }
         var appt={};
         played.forEach(function(s){ (s.entries||[]).forEach(function(e){ if (e.madePlayoffs) appt[e.personId]=(appt[e.personId]||0)+1; }); });
-        var topApp = Object.keys(appt).sort(function(a,b){return appt[b]-appt[a];})[0];
-        if (topApp) recs.push(['Most playoff appearances', appt[topApp]+'', '<b>'+esc(pName(topApp))+'</b> of '+played.length+' seasons']);
+        var appKeys = Object.keys(appt);
+        if (appKeys.length){
+          var maxApp = Math.max.apply(null, appKeys.map(function(k){ return appt[k]; }));
+          pushRec('Most playoff appearances', maxApp+'',
+            appKeys.filter(function(k){ return appt[k]===maxApp; }).map(function(k){ return { pid:k }; }),
+            function(h){ return '<b>'+esc(pName(h.pid))+'</b> of '+played.length+' seasons'; });
+        }
       }
       host.innerHTML = recs.map(function(r){
         return '<div class="rec"><span class="rl">'+r[0]+'</span><span class="rv">'+r[1]+'</span><span class="rh">'+r[2]+'</span></div>';
