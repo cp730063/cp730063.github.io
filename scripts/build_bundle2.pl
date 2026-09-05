@@ -70,6 +70,9 @@ my %MLB_STAT = (
   37=>['QS',0], 39=>['CG',0], 13=>['SHO',0],
 );
 sub r3 { my ($n)=@_; defined $n ? 0+sprintf("%.3f",$n) : undef }
+# regular-season standings rank by WIN % (ties = half a win), not raw win count —
+# a 12-5-4 team finishes ahead of a 13-7-1 team.
+sub wpct { my ($w,$l,$t)=@_; my $g=($w||0)+($l||0)+($t||0); $g ? (($w||0)+0.5*($t||0))/$g : 0 }
 
 # which MLB_STAT ids are rate stats (need averaging, not summing) vs counting
 my %RATE_ID = map { $_=>1 } (2, 17, 9, 18, 47, 41, 49, 42);   # AVG OBP SLG OPS ERA WHIP K/9 K/BB
@@ -299,8 +302,12 @@ for my $y (@ESPN_Y) {
   }
   $_->{pf}=r2($_->{pf}), $_->{pa}=r2($_->{pa}) for values %entry;
 
-  # regular-season champ (best record, PF tiebreak) + per-division champ
-  my @byRec = sort { $b->{w} <=> $a->{w} || ($b->{pf}||0) <=> ($a->{pf}||0) } values %entry;
+  # regular-season champ (best win %, then PF, then raw wins) + per-division champ
+  my @byRec = sort {
+    wpct($b->{w},$b->{l},$b->{t}) <=> wpct($a->{w},$a->{l},$a->{t})
+      || ($b->{pf}||0) <=> ($a->{pf}||0)
+      || $b->{w} <=> $a->{w}
+  } values %entry;
   my $regChamp = $standingsOnly
     ? ( (map { $_->{personId} } grep { ($_->{finalRank}||0)==1 } values %entry)[0] )
     : ( ($espnPlayed && @byRec) ? $byRec[0]{personId} : undef );
