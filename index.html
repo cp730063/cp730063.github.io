@@ -1165,7 +1165,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905182640"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905183312"}</script>
 <script>
 "use strict";
 (function(){
@@ -2901,10 +2901,11 @@
       var col  = isCats ? (v >= 0 ? 'var(--good,#2e9e5b)' : 'var(--neg,#c0552b)') : '';
       var spHtml = '';
       if (sp != null){
-        var r = Math.round(sp * 10) / 10;
+        var r = isCats ? Math.round(sp * 10) / 10 : Math.round(sp);
+        var rt = isCats ? r.toFixed(1) : String(r);
         spHtml = ' <span class="dsurp" title="vs. what this round’s slot returns" style="color:' +
           (r > 0 ? 'var(--good,#2e9e5b)' : r < 0 ? 'var(--neg,#c0552b)' : 'var(--ink-faint)') + '">' +
-          (r > 0 ? '+' : '') + r.toFixed(1) + '</span>';
+          (r > 0 ? '+' : '') + rt + '</span>';
       }
       return '<span class="dval"' + (col ? ' style="color:' + col + '"' : '') + '>' + main + '</span>' + spHtml;
     }
@@ -3175,13 +3176,16 @@
       }
       M = { prodScores:prodScores, gradeProd:grader(allProd), valScores:valScores, gradeVal:gradeVal };
 
-      /* per-pick surplus, keyed for the draft board to read */
+      /* per-pick surplus, keyed for the draft board to read. Baseball surplus is
+         already in category-value units (matches the board's value); football
+         surplus is a points-÷-baseline ratio, so scale it back to points so the
+         two numbers on the board are the same unit. */
       _dgSurplus = {};
       prodScores.forEach(function(s){
-        var yr = drafts[s.i].year;
+        var yr = drafts[s.i].year, base = isCats ? 1 : (yrBase[yr] || 1);
         Object.keys(s.by).forEach(function(pid){
           (s.by[pid].picks || []).forEach(function(pk){
-            if (pk.p.playerKey) _dgSurplus[yr + '|' + pk.p.playerKey] = pk.surplus;
+            if (pk.p.playerKey) _dgSurplus[yr + '|' + pk.p.playerKey] = pk.surplus * base;
           });
         });
       });
@@ -3366,7 +3370,7 @@
       /* one row per manager-draft, scored by the weighted-mean pick surplus */
       var draftRows = [], pickRows = [];
       M.prodScores.forEach(function(s){
-        var d = drafts[s.i];
+        var d = drafts[s.i], base = isCats ? 1 : (yrBase[d.year] || 1);
         Object.keys(s.by).forEach(function(pid){
           var b = s.by[pid];
           if (!b.picks || !b.picks.length) return;
@@ -3374,7 +3378,7 @@
             grade:M.gradeProd(b.score) });
           b.picks.forEach(function(pk){
             pickRows.push({ pid:pid, year:d.year, name:pk.p.player.name,
-              round:pk.p.round, rp:pk.p.roundPick, surplus:pk.surplus, o:pk.o });
+              round:pk.p.round, rp:pk.p.roundPick, surplus:pk.surplus * base, o:pk.o });
           });
         });
       });
