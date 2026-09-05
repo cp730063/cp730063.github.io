@@ -1,0 +1,57 @@
+{
+  "leagueId": "espn:3714",
+  "label": "24th Annual FBL",
+  "note": "Manual overlay for pre-ESPN seasons, transcribed from the commissioner's 'FBL History 3.17.2024.xlsx' (sheet '2003 - 2012'). 2004-2006 were scored as season-long category totals (roto / total-categories style), not weekly head-to-head, so W-L-T here is the CATEGORY record for the year, kept separate from the weekly-matchup records of the 2008+ ESPN era. 2003 standings are lost ('MISSING INFO' in the sheet). 2007 (the lost Yahoo season) is not in the sheet either.",
+  "regWeeksByYear": { "2004": 22, "2005": 22, "2006": 22 },
+  "playoffTeamsByYear": { "2004": 4, "2005": 4, "2006": 4 },
+  "seasons": [
+    {
+      "year": 2004, "source": "manual", "scoring": "roto", "catStandings": true,
+      "champion": "Charles Rorke", "runnerUp": "Kevin Burke", "regSeasonChamp": "Charles Rorke",
+      "teams": [
+        { "owner": "Charles Rorke",  "w": 129, "l": 78,  "t": 13 },
+        { "owner": "Andrew Payne",   "w": 120, "l": 91,  "t": 9  },
+        { "owner": "Kevin Burke",    "w": 108, "l": 91,  "t": 21 },
+        { "owner": "Mike Scelsa",    "w": 109, "l": 97,  "t": 14 },
+        { "owner": "Alex Bradley",   "w": 101, "l": 100, "t": 19 },
+        { "owner": "Chuck is Crazy", "w": 100, "l": 110, "t": 10 },
+        { "owner": "Matt Cook",      "w": 95,  "l": 109, "t": 16 },
+        { "owner": "Carl Pashko",    "w": 92,  "l": 116, "t": 12 },
+        { "owner": "Brian Dilenno",  "w": 93,  "l": 113, "t": 14 },
+        { "owner": "Shawn Smith",    "w": 84,  "l": 126, "t": 10 }
+      ]
+    },
+    {
+      "year": 2005, "source": "manual", "scoring": "roto", "catStandings": true,
+      "champion": "Charles Rorke", "runnerUp": "Andrew Payne", "regSeasonChamp": "Shawn Smith",
+      "teams": [
+        { "owner": "Shawn Smith",   "w": 122, "l": 86,  "t": 12 },
+        { "owner": "Andrew Payne",  "w": 115, "l": 83,  "t": 22 },
+        { "owner": "Mike Scelsa",   "w": 118, "l": 87,  "t": 15 },
+        { "owner": "Charles Rorke", "w": 112, "l": 89,  "t": 19 },
+        { "owner": "Dave Gratz",    "w": 106, "l": 98,  "t": 16 },
+        { "owner": "Carl Pashko",   "w": 98,  "l": 100, "t": 22 },
+        { "owner": "Alex Bradley",  "w": 92,  "l": 113, "t": 15 },
+        { "owner": "Matt Cook",     "w": 92,  "l": 113, "t": 15 },
+        { "owner": "Jim McGarrity", "w": 80,  "l": 118, "t": 22 },
+        { "owner": "Mike Kerrigan", "w": 80,  "l": 128, "t": 12 }
+      ]
+    },
+    {
+      "year": 2006, "source": "manual", "scoring": "roto", "catStandings": true,
+      "champion": "Carl Pashko", "runnerUp": "Brian Dilenno", "regSeasonChamp": "Brian Dilenno",
+      "teams": [
+        { "owner": "Brian Dilenno", "w": 128, "l": 73,  "t": 19 },
+        { "owner": "Carl Pashko",   "w": 122, "l": 84,  "t": 14 },
+        { "owner": "Charles Rorke", "w": 112, "l": 86,  "t": 22 },
+        { "owner": "Andrew Payne",  "w": 111, "l": 96,  "t": 13 },
+        { "owner": "Mike Kerrigan", "w": 110, "l": 98,  "t": 12 },
+        { "owner": "Matt Cook",     "w": 99,  "l": 105, "t": 16 },
+        { "owner": "Jim McGarrity", "w": 89,  "l": 120, "t": 11 },
+        { "owner": "Mike Scelsa",   "w": 87,  "l": 121, "t": 12 },
+        { "owner": "Shawn Smith",   "w": 84,  "l": 121, "t": 15 },
+        { "owner": "Alex Bradley",  "w": 83,  "l": 121, "t": 16 }
+      ]
+    }
+  ]
+}

@@ -628,13 +628,26 @@ if ($OVERLAY && -e "$ROOT/$OVERLAY") {
     my $y = $s->{year} + 0;
     my $champPid = $s->{champion} ? ov_pid($s->{champion}) : undef;
     my $ruPid    = $s->{runnerUp} ? ov_pid($s->{runnerUp}) : undef;
-    my @rows = map { { pid=>ov_pid($_->{owner}), team=>$_->{owner},
-                       w=>($_->{w}||0)+0, l=>($_->{l}||0)+0, t=>($_->{t}||0)+0,
-                       division=>$_->{division} } } @{ $s->{teams} || [] };
-    # playoff berths: top N by wins (then unused pf) — no seed data pre-API
+    my $thirdPid = $s->{third}    ? ov_pid($s->{third})    : undef;
+    # catStandings: this year was scored as season-long category totals (roto /
+    # total-categories), not weekly head-to-head. The w/l/t in the overlay is
+    # the CATEGORY record — keep it in a separate `catRec` so it never sums into
+    # the weekly-matchup career totals, and rank teams by their listed order.
+    my $catStd = $s->{catStandings} ? 1 : 0;
+    my @rows;
+    my $i = 0;
+    for my $t (@{ $s->{teams} || [] }) {
+      $i++;
+      push @rows, { pid=>ov_pid($t->{owner}), team=>$t->{owner},
+                    w=>($t->{w}||0)+0, l=>($t->{l}||0)+0, t=>($t->{t}||0)+0,
+                    ord=>$i, division=>$t->{division} };
+    }
     my $poN = $poBy->{$y} // $s->{playoffTeams} // 4;
-    my @byRec = sort { $b->{w} <=> $a->{w} || $a->{l} <=> $b->{l} } @rows;
-    my %made; $made{ $byRec[$_]{pid} } = 1 for 0 .. ($poN-1 < $#byRec ? $poN-1 : $#byRec);
+    # playoff berths: for a catStandings year use the listed finish order; else
+    # top N by wins (no seed data pre-API)
+    my @byRank = $catStd ? @rows
+               : sort { $b->{w} <=> $a->{w} || $a->{l} <=> $b->{l} } @rows;
+    my %made; $made{ $byRank[$_]{pid} } = 1 for 0 .. ($poN-1 < $#byRank ? $poN-1 : $#byRank);
     # division champs
     my %divBest;
     for my $r (@rows) {
@@ -647,26 +660,33 @@ if ($OVERLAY && -e "$ROOT/$OVERLAY") {
     my @entries;
     for my $r (@rows) {
       my $por = $champPid && $r->{pid} eq $champPid ? 'champion'
-              : $ruPid    && $r->{pid} eq $ruPid    ? 'runner_up' : undef;
-      push @entries, {
+              : $ruPid    && $r->{pid} eq $ruPid    ? 'runner_up'
+              : $thirdPid  && $r->{pid} eq $thirdPid ? 'third' : undef;
+      my $e = {
         personId=>$r->{pid}, team=>$r->{team},
-        w=>$r->{w}, l=>$r->{l}, t=>$r->{t}, pf=>undef, pa=>undef,
-        seed=>undef, finalRank=>undef,
+        w=>($catStd ? 0 : $r->{w}), l=>($catStd ? 0 : $r->{l}), t=>($catStd ? 0 : $r->{t}),
+        pf=>undef, pa=>undef,
+        seed=>undef, finalRank=>($catStd ? $r->{ord} : undef),
         poResult=>$por, madePlayoffs=>($made{$r->{pid}} ? 1 : 0),
         division=>$r->{division}, divisionChamp=>($isDivChamp{$r->{pid}} ? 1 : 0),
       };
+      $e->{catRec} = { w=>$r->{w}, l=>$r->{l}, t=>$r->{t} } if $catStd;
+      push @entries, $e;
       my $p = $P{$r->{pid}}; $p->{seasons}{$y}=1; $p->{firstSeason}=$y if $y < $p->{firstSeason};
     }
     push @{ $P{$champPid}{titles} }, $y if $champPid;
-    my $mRegChamp = @byRec ? $byRec[0]{pid} : undef;
+    my $mRegChamp = $s->{regSeasonChamp} ? ov_pid($s->{regSeasonChamp})
+                  : (@byRank ? $byRank[0]{pid} : undef);
     push @seasons, {
       year=>$y, platform=>'manual', teams=>scalar(@entries),
       regWeeks=>($regBy->{$y} // 13), playoffTeams=>$poN,
       hasDivisions=>(%divBest ? \1 : \0),
       played=>1, hasOptimal=>0, manual=>1,
+      ($s->{scoring} ? (scoring=>$s->{scoring}) : ()),
+      ($catStd ? (catStandings=>\1) : ()),
       entries=>[ sort { $a->{personId} cmp $b->{personId} } @entries ],
       games=>[],
-      champion=>$champPid, runnerUp=>$ruPid, third=>undef, regSeasonChamp=>$mRegChamp,
+      champion=>$champPid, runnerUp=>$ruPid, third=>$thirdPid, regSeasonChamp=>$mRegChamp,
     };
   }
 }

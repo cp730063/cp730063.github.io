@@ -15,6 +15,20 @@
          "type" : "dynasty"
       },
       {
+         "firstSeason" : 2004,
+         "hasDrafts" : true,
+         "hasPlayers" : true,
+         "hasTrades" : false,
+         "label" : "24th Annual FBL",
+         "lastSeason" : 2026,
+         "primary" : 0,
+         "scoring" : "cats",
+         "seasons" : 22,
+         "slug" : "fbl",
+         "sport" : "mlb",
+         "type" : "redraft"
+      },
+      {
          "firstSeason" : 2003,
          "hasDrafts" : true,
          "hasPlayers" : true,
@@ -26,20 +40,6 @@
          "seasons" : 22,
          "slug" : "cdiddy",
          "sport" : "nfl",
-         "type" : "redraft"
-      },
-      {
-         "firstSeason" : 2008,
-         "hasDrafts" : true,
-         "hasPlayers" : true,
-         "hasTrades" : false,
-         "label" : "24th Annual FBL",
-         "lastSeason" : 2026,
-         "primary" : 0,
-         "scoring" : "cats",
-         "seasons" : 19,
-         "slug" : "fbl",
-         "sport" : "mlb",
          "type" : "redraft"
       }
    ]

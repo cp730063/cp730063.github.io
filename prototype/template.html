@@ -1653,7 +1653,9 @@
 
     function renderSeason(y){
       var s = seasons.filter(function(x){ return x.year===y; })[0];
-      document.getElementById('standNote').textContent = s.manual
+      document.getElementById('standNote').textContent = s.catStandings
+        ? y+' — hand-entered from the league history sheet. This year was scored as season-long category totals (no weekly matchups); “Rec” is the category W–L–T.'
+        : s.manual
         ? y+' — hand-entered standings (no game scores).'
         : seasonScoreless(s)
           ? y+' — roto season. Final category standings; no weekly matchups.'
@@ -1668,7 +1670,8 @@
           cell:function(e){return '<div class="team-cell"><span class="tn">'+esc(e.team)+'</span><span class="mn">'+esc(pName(e.personId))+'</span></div>';}},
         {key:'rec', label:'Rec', num:true,
           val:function(e){return seasonScoreless(s) ? -(e.finalRank||99) : (s.played ? (e.w*100000 + (e.pf||0)) : 0);},
-          cell:function(e){return (seasonScoreless(s) || !s.played) ? '—' : e.w+'–'+e.l+(e.t?'–'+e.t:'');}},
+          cell:function(e){return e.catRec ? e.catRec.w+'–'+e.catRec.l+(e.catRec.t?'–'+e.catRec.t:'')
+            : (seasonScoreless(s) || !s.played) ? '—' : e.w+'–'+e.l+(e.t?'–'+e.t:'');}},
         {key:'pf', label:pfShort(), num:true, val:function(e){return e.pf;},
           cell:function(e){return (seasonScoreless(s)||e.pf==null)?'—':(isCats?f0(e.pf):f2(e.pf));}},
         {key:'pa', label:(isCats?'CL':'PA'), num:true, val:function(e){return e.pa;},
