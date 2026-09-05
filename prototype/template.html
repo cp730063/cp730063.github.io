@@ -2353,7 +2353,17 @@
         var r = row(e.personId);
         r.seas++;
         if (e.madePlayoffs) r.appear++;                                          // any playoff berth
-        if (e.madePlayoffs && !(s.hasDivisions && e.divisionChamp)) r.berth++;   // wildcard = made playoffs without a division title
+        // "berth" drives the prestige wildcard column. In a league that uses
+        // divisions (anyDiv), a wildcard means: this season HAD divisions and
+        // the team made the playoffs without winning its division. Seasons with
+        // no divisions (e.g. the pre-2008 manual years, roto years) have no
+        // wildcard concept, so a playoff appearance there doesn't count. Only
+        // in a league with no division seasons at all does the column fall back
+        // to a plain "PO berths" count of every playoff appearance.
+        if (e.madePlayoffs) {
+          if (!anyDiv) r.berth++;
+          else if (s.hasDivisions && !e.divisionChamp) r.berth++;
+        }
         if (s.hasDivisions && e.divisionChamp) r.div++;
         if (e.finalRank && teamCt && e.finalRank === teamCt) r.last++;
       });
