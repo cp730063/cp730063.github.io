@@ -17,6 +17,7 @@ my $SLUG = $ARGV[0] or die "usage: build_bundle2.pl <league-slug>\n";
 my $CFG  = jload("$ROOT/scripts/leagues/$SLUG.json") or die "no config: scripts/leagues/$SLUG.json\n";
 my $SPORT = $CFG->{sport} || 'nfl';                 # 'nfl' (points) | 'mlb' (category / roto)
 my $ESPN   = "$ROOT/data/raw/espn/$CFG->{espnId}/history";
+my $ESPNPOOL = "$ROOT/data/raw/espn/$CFG->{espnId}/pool";   # full player pool (pull_espn_pool.pl)
 my @ESPN_Y = ($CFG->{espnYears}[0] .. $CFG->{espnYears}[1]);
 my $PW_FILE = $CFG->{playerWeeksFile};              # ESPN player-week pull, or undef
 my $SLE_PW  = $CFG->{sleeperPlayerWeeksLeague};     # Sleeper league id for player weeks, or undef
@@ -222,6 +223,20 @@ for my $y (@ESPN_Y) {
           own  => $own, s => $blk->{stats},
         };
       }
+    }
+
+    # full player pool: every player with a season stat line, not just those on a
+    # year-end roster. A player drafted then cut mid-season lands here (and, with
+    # a known drafter, gets a graded pick). Roster entries above already set the
+    # season-end owner, so ||= keeps that; pool-only players get own => undef.
+    my $pool = jload("$ESPNPOOL/$y.json");
+    for my $pr (@{ ($pool || {})->{players} || [] }) {
+      next unless defined $pr->{id} && ref $pr->{stats} eq 'HASH' && %{ $pr->{stats} };
+      $MLB_PSTATS{$y}{ $pr->{id} } ||= {
+        name => $pr->{name}, pos => ($MLB_POS{ $pr->{pos} // -1 } // ''),
+        own  => undef, s => $pr->{stats},
+      };
+      $ESPN_PLAYER_NAME{ $pr->{id} } ||= [ $pr->{name}, ($MLB_POS{ $pr->{pos} // -1 } // '') ];
     }
   }
 
