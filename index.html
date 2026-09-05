@@ -789,6 +789,18 @@
       <div id="divDetail" style="margin-top:8px"></div>
       <p class="foot" style="border:0;margin-top:14px;padding:0" id="divFoot"></p>
     </section>
+
+    <section id="rotoSec" hidden style="margin-top:40px">
+      <div class="h-kicker">What if</div>
+      <h3 class="sec" style="font-size:19px">Roto standings</h3>
+      <p class="sec-note" id="rotoNote"></p>
+      <div class="rec-controls" id="rotoPick" role="group" aria-label="Season"></div>
+      <div class="tbl-wrap"><table id="rotoTbl"></table></div>
+      <p class="foot" style="border:0;margin-top:14px;padding:0" id="rotoFoot"></p>
+      <h4 class="sec" style="font-size:16px;margin-top:30px">All-time roto</h4>
+      <p class="sec-note" id="rotoAllNote"></p>
+      <div class="tbl-wrap"><table id="rotoAllTbl"></table></div>
+    </section>
   </div>
 
   <div class="panel" id="p-records" hidden>
@@ -1135,7 +1147,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905173006"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905174230"}</script>
 <script>
 "use strict";
 (function(){
@@ -1783,6 +1795,123 @@
     });
     renderSeason(yLast);
     renderDivisions();
+    renderRoto();
+
+    /* ---- roto: re-score each season rotisserie-style from the category totals ---- */
+    function rotoScore(s){
+      var ents = (s.entries||[]).filter(function(e){ return e.catTotals && e.catTotals.length; });
+      if (ents.length < 2) return null;
+      var N = ents.length;
+      var cats = ents[0].catTotals.map(function(c){ return c.k; })
+        .sort(function(a,b){ return catRank(a)-catRank(b); });
+      var byPid = {};
+      ents.forEach(function(e){ byPid[e.personId] = { pid:e.personId, team:e.team, byCat:{}, total:0,
+        actual:(e.finalRank||null) }; });
+      cats.forEach(function(k){
+        var def = ents[0].catTotals.filter(function(c){ return c.k===k; })[0] || {};
+        var lo = !!def.lo;
+        var vals = ents.map(function(e){
+          var c = (e.catTotals||[]).filter(function(x){ return x.k===k; })[0];
+          return { pid:e.personId, v: c ? c.v : null };
+        }).filter(function(x){ return x.v != null; });
+        vals.sort(function(a,b){ return lo ? a.v-b.v : b.v-a.v; });   // best first
+        var i = 0;
+        while (i < vals.length){
+          var j = i;
+          while (j+1 < vals.length && vals[j+1].v === vals[i].v) j++;
+          var sum = 0;
+          for (var p = i; p <= j; p++) sum += (N - p);              // slot p (0-based) is worth N-p
+          var share = sum / (j - i + 1);
+          for (var p2 = i; p2 <= j; p2++){ byPid[vals[p2].pid].byCat[k] = share; byPid[vals[p2].pid].total += share; }
+          i = j + 1;
+        }
+      });
+      var rows = Object.keys(byPid).map(function(k){ return byPid[k]; })
+        .sort(function(a,b){ return b.total - a.total; });
+      rows.forEach(function(r, idx){ r.rotoRank = idx + 1; });
+      return { cats:cats, N:N, max:N*cats.length, rows:rows };
+    }
+
+    function renderRoto(){
+      var sec = document.getElementById('rotoSec');
+      var yrs = played.filter(function(s){
+        return isCats && (s.entries||[]).some(function(e){ return e.catTotals && e.catTotals.length; });
+      });
+      if (yrs.length < 1){ sec.hidden = true; return; }
+      sec.hidden = false;
+      var pick = document.getElementById('rotoPick');
+      pick.innerHTML = yrs.map(function(s, i){
+        return '<button aria-pressed="'+(i===yrs.length-1)+'" data-y="'+s.year+'">'+s.year+
+          (s.scoring==='roto' ? ' •' : '') + '</button>';
+      }).join('');
+
+      function fRoto(n){ return n % 1 ? n.toFixed(1) : String(n); }
+
+      function drawSeason(y){
+        var s = yrs.filter(function(x){ return x.year===y; })[0];
+        var r = rotoScore(s);
+        if (!r){ document.getElementById('rotoTbl').innerHTML = ''; return; }
+        var isReal = s.scoring === 'roto';
+        document.getElementById('rotoNote').textContent = isReal
+          ? y + ' really was a roto season — this is its actual result, rebuilt from the category totals.'
+          : 'If ' + y + ' had been scored rotisserie-style: each team ranked 1–' + r.N +
+            ' in every category (' + r.N + ' points for the best, split on ties), summed. Max ' + r.max + '.';
+        var cols = [
+          { key:'team', label:'Team', align:'left', val:function(x){return x.rotoRank;},
+            cell:function(x){return '<div class="team-cell"><span class="tn">'+esc(x.team)+'</span><span class="mn">'+esc(pName(x.pid))+'</span></div>';} }
+        ];
+        r.cats.forEach(function(k){
+          cols.push({ key:'c_'+k, label:k, num:true,
+            val:function(x){ return x.byCat[k]==null ? -1 : x.byCat[k]; },
+            cell:function(x){ return x.byCat[k]==null ? '—' : fRoto(x.byCat[k]); } });
+        });
+        cols.push({ key:'tot', label:'Roto', num:true, val:function(x){return x.total;},
+          cell:function(x){return '<b>'+fRoto(x.total)+'</b>';} });
+        cols.push({ key:'rk', label:'Roto #', num:true, val:function(x){return -x.rotoRank;},
+          cell:function(x){return x.rotoRank;} });
+        cols.push({ key:'act', label:'Actual', num:true, val:function(x){return x.actual?-x.actual:-99;},
+          cell:function(x){ if(!x.actual) return '—';
+            var d = x.actual - x.rotoRank;
+            var tag = d>0 ? ' <span class="mn2" style="color:var(--good,#2e9e5b)">▲'+d+'</span>'
+                    : d<0 ? ' <span class="mn2" style="color:var(--neg,#c0552b)">▼'+(-d)+'</span>' : '';
+            return ord(x.actual) + tag; } });
+        sortableTable(document.getElementById('rotoTbl'), cols, r.rows, { sortKey:'tot', sortDir:-1 });
+        document.getElementById('rotoFoot').innerHTML = isReal ? ''
+          : 'Counting categories (HR, RBI, K, W, …) use exact season totals; rate categories (AVG, ERA, …) use the weekly-average approximation from Team stats, so their ranks are close but not official. “Actual” is the real head-to-head finish, with the change vs. the roto finish.';
+      }
+      pick.addEventListener('click', function(e){
+        var b = e.target.closest('button'); if(!b) return;
+        Array.prototype.forEach.call(pick.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        drawSeason(+b.dataset.y);
+      });
+      drawSeason(yrs[yrs.length-1].year);
+
+      /* all-time roto: every manager's roto finishes across all scored seasons */
+      var agg = {};
+      yrs.forEach(function(s){
+        var r = rotoScore(s); if (!r) return;
+        r.rows.forEach(function(row){
+          var a = agg[row.pid] || (agg[row.pid] = { pid:row.pid, seas:0, pts:0, pctSum:0, rankSum:0, wins:0, best:99 });
+          a.seas++; a.pts += row.total; a.pctSum += row.total / r.max;
+          a.rankSum += row.rotoRank; if (row.rotoRank === 1) a.wins++;
+          if (row.rotoRank < a.best) a.best = row.rotoRank;
+        });
+      });
+      var allRows = Object.keys(agg).map(function(k){ return agg[k]; }).filter(function(a){ return a.seas; });
+      document.getElementById('rotoAllNote').textContent =
+        'Every manager’s roto finishes across the ' + yrs.length + ' scored seasons (' + yrs[0].year + '–' + yrs[yrs.length-1].year + '). Ranked by average roto finish.';
+      sortableTable(document.getElementById('rotoAllTbl'), [
+        { key:'name', label:'Manager', align:'left', val:function(a){return pName(a.pid);},
+          cell:function(a){return '<div class="team-cell"><span class="tn">'+esc(pName(a.pid))+'</span><span class="mn">'+esc(pMgr(a.pid))+'</span></div>';} },
+        { key:'seas', label:'Seasons', num:true, val:function(a){return a.seas;}, cell:function(a){return a.seas;} },
+        { key:'avgrk', label:'Avg finish', num:true, val:function(a){return -(a.rankSum/a.seas);},
+          cell:function(a){return (a.rankSum/a.seas).toFixed(1);} },
+        { key:'wins', label:'Roto titles', num:true, val:function(a){return a.wins;}, cell:function(a){return a.wins||'—';} },
+        { key:'best', label:'Best', num:true, val:function(a){return -a.best;}, cell:function(a){return ord(a.best);} },
+        { key:'avgpct', label:'Avg % of max', num:true, val:function(a){return a.pctSum/a.seas;},
+          cell:function(a){return (100*a.pctSum/a.seas).toFixed(1)+'%';} }
+      ], allRows, { sortKey:'avgrk', sortDir:-1 });
+    }
 
     /* ---- divisions: head-to-head between the divisions over the current alignment ---- */
     function renderDivisions(){
