@@ -3119,11 +3119,17 @@
     }
     build();
 
-    function pickLabel(p){ return esc(p.player.name) + ' <span class="dg-sub">' + p.round + '.' + (p.roundPick || '–') + '</span>'; }
+    function sgn(n){ return (n >= 0 ? '+' : '') + n.toFixed(1); }
+    /* best/biggest-reach pick: extreme surplus (value earned minus what that
+       round's slot has historically returned). The cell shows the surplus, not
+       the draft slot. Returns {html, v} so the column sorts by the number. */
     function extreme(picks, hi){
-      if (!picks || !picks.length) return '—';
+      if (!picks || !picks.length) return { html:'—', v:0 };
       var b = picks.slice().sort(function(a, c){ return hi ? c.surplus - a.surplus : a.surplus - c.surplus; })[0];
-      return pickLabel(b.p);
+      return {
+        html: esc(b.p.player.name) + ' <span class="dg-sub">' + sgn(b.surplus) + '</span>',
+        v: b.surplus
+      };
     }
 
     function showDetail(d, row){
@@ -3178,8 +3184,8 @@
           return { pid:pid,
             prod: pb ? M.gradeProd(pb.score) : null,
             val:  (freshVal && vb) ? M.gradeVal(vb.score) : null,
-            best: pb ? extreme(pb.picks, true) : (vb ? extreme(vb.picks, true) : '—'),
-            reach: pb ? extreme(pb.picks, false) : (vb ? extreme(vb.picks, false) : '—'),
+            best: extreme((pb || vb || {}).picks, true),
+            reach: extreme((pb || vb || {}).picks, false),
             picks: pb ? pb.picks : (vb ? vb.picks : []) };
         });
 
@@ -3195,8 +3201,8 @@
         cols.push({ key:'prod', label:'Grade', val:function(r){ return r.prod ? GPA[r.prod] : -1; },
           cell:function(r){ return r.prod ? pill(r.prod) : '<span class="dg-tbd">TBD</span>'; } });
       }
-      cols.push({ key:'best', label:'Best pick', align:'left', val:function(r){ return r.best; }, cell:function(r){ return r.best; } });
-      cols.push({ key:'reach', label:'Biggest reach', align:'left', val:function(r){ return r.reach; }, cell:function(r){ return r.reach; } });
+      cols.push({ key:'best', label:'Best pick', align:'left', val:function(r){ return r.best.v; }, cell:function(r){ return r.best.html; } });
+      cols.push({ key:'reach', label:'Biggest reach', align:'left', val:function(r){ return r.reach.v; }, cell:function(r){ return r.reach.html; } });
 
       var startCol = (isDyn && d.kind === 'rookie' && completedSeasons(d.year) > 0) ? 'prod'
                    : (isDyn && d.kind === 'rookie') ? 'val' : 'prod';
