@@ -518,6 +518,7 @@
   .dcell .dmeta{font-family:var(--mono);font-size:10px;color:var(--ink-faint);display:flex;gap:6px;align-items:center}
   .dcell .dpos{font-family:var(--mono);font-size:9.5px;letter-spacing:.03em;color:var(--ink-faint);border:1px solid var(--border);border-radius:3px;padding:0 3px}
   .dcell .dvia{font-size:10px;color:var(--accent);font-weight:600}
+  .dcell .dval{font-family:var(--mono);font-size:10px;font-weight:600;margin-left:auto}
   .dcell.traded{box-shadow:inset 3px 0 0 var(--accent)}
   .dcell[data-pos="QB"]{background:rgba(214,69,90,.12)}
   .dcell[data-pos="RB"]{background:rgba(31,150,92,.14)}
@@ -955,6 +956,22 @@
       <h3 class="sec" style="font-size:15px;margin-top:28px">Career draft résumé</h3>
       <div class="tbl-wrap"><table id="dgResumeTbl"></table></div>
       <p class="dg-note" id="dgResumeNote"></p>
+
+      <h3 class="sec" style="font-size:15px;margin-top:30px">Best &amp; worst drafts all-time</h3>
+      <div class="rec-controls" id="dgDraftLbToggle" role="group" aria-label="Best or worst">
+        <button aria-pressed="true" data-d="best">Best 25</button>
+        <button aria-pressed="false" data-d="worst">Worst 25</button>
+      </div>
+      <div class="tbl-wrap"><table id="dgDraftLbTbl"></table></div>
+
+      <h3 class="sec" style="font-size:15px;margin-top:30px">Best &amp; worst picks all-time</h3>
+      <div class="rec-controls" id="dgPickLbToggle" role="group" aria-label="Best or worst">
+        <button aria-pressed="true" data-d="best">Best 50</button>
+        <button aria-pressed="false" data-d="worst">Worst 50</button>
+      </div>
+      <div class="tbl-wrap"><table id="dgPickLbTbl"></table></div>
+      <p class="dg-note" id="dgLbNote"></p>
+
       <details class="dg-method">
         <summary>How these grades are calculated</summary>
         <div id="dgMethodBody"></div>
@@ -1147,7 +1164,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905181001"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"}]},"version":"20260905181424"}</script>
 <script>
 "use strict";
 (function(){
@@ -2861,6 +2878,21 @@
 
     function pnm(id){ return id ? pName(id) : '—'; }
     function posTag(p){ return p ? '<span class="dpos" data-pos="'+esc(p)+'">'+esc(p)+'</span>' : ''; }
+
+    /* season outcome per drafted player: baseball = category value (z-sum),
+       football = fantasy points. Shown small next to each pick on the board. */
+    var valOf = {};
+    (DATA.playerSeasons || []).forEach(function(ps){
+      if (!ps.key) return;
+      (valOf[ps.year] = valOf[ps.year] || {})[ps.key] = (isCats ? ps.val : ps.pts);
+    });
+    function valTag(year, key){
+      var v = (valOf[year] || {})[key];
+      if (v == null) return '';
+      if (isCats) return '<span class="dval" style="color:' +
+        (v >= 0 ? 'var(--good,#2e9e5b)' : 'var(--neg,#c0552b)') + '">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '</span>';
+      return '<span class="dval">' + f0(v) + '</span>';
+    }
     function pcell(pk){
       var nm = esc(pk.player.name);
       var linkable = pk.playerKey && openPlayerCard && DATA.ownership && DATA.ownership[pk.playerKey];
@@ -2894,7 +2926,10 @@
           { key:'mgr', label:'Manager', align:'left', val:function(r){ return pnm(r.personId); },
             cell:function(r){ return '<span class="mn2">'+esc(pnm(r.personId))+'</span>' + (r.keeper ? ' <span class="dpos">K</span>' : ''); } },
           { key:'bid', label:'Bid', num:true, val:function(r){ return r.bid||0; },
-            cell:function(r){ return r.bid ? '$'+r.bid : '—'; } }
+            cell:function(r){ return r.bid ? '$'+r.bid : '—'; } },
+          { key:'val', label:(isCats?'Value':'Points'), num:true,
+            val:function(r){ var v=(valOf[d.year]||{})[r.playerKey]; return v==null?-1e9:v; },
+            cell:function(r){ return valTag(d.year, r.playerKey) || '—'; } }
         ], (d.picks||[]).slice(), { sortKey:'bid', sortDir:-1, rownum:true, limit:40, limitStep:60 });
         return;
       }
@@ -2940,7 +2975,8 @@
           var kb  = (p.keeper && markKeepers) ? '<span class="dpos">K</span>' : '';
           h += '<div class="dcell'+(p.keeper && markKeepers ?' keeper':'')+(tt?' traded':'')+'" data-pos="'+esc(p.player.pos||'')+'">' + pcell(p) +
                '<span class="dmeta">'+posTag(p.player.pos) +
-               (p.player.nfl ? '<span>'+esc(p.player.nfl)+'</span>' : '') + kb + via + '</span></div>';
+               (p.player.nfl ? '<span>'+esc(p.player.nfl)+'</span>' : '') + kb +
+               valTag(d.year, p.playerKey) + via + '</span></div>';
         }
       }
       h += '</div></div>';
@@ -3290,8 +3326,67 @@
         'positional need, bye weeks or best-player-available.</p>';
     }
 
+    /* ---- all-time leaderboards: best/worst whole drafts and individual picks ---- */
+    var dgDraftDir = 'best', dgPickDir = 'best';
+    function renderLeaders(){
+      /* one row per manager-draft, scored by the weighted-mean pick surplus */
+      var draftRows = [], pickRows = [];
+      M.prodScores.forEach(function(s){
+        var d = drafts[s.i];
+        Object.keys(s.by).forEach(function(pid){
+          var b = s.by[pid];
+          if (!b.picks || !b.picks.length) return;
+          draftRows.push({ pid:pid, year:d.year, kind:d.kind, score:b.score, n:b.picks.length,
+            grade:M.gradeProd(b.score) });
+          b.picks.forEach(function(pk){
+            pickRows.push({ pid:pid, year:d.year, name:pk.p.player.name,
+              round:pk.p.round, rp:pk.p.roundPick, surplus:pk.surplus, o:pk.o });
+          });
+        });
+      });
+
+      var dbest = draftRows.slice().sort(function(a,c){ return c.score - a.score; });
+      var dRows = (dgDraftDir === 'best' ? dbest : dbest.slice().reverse()).slice(0, 25);
+      sortableTable(document.getElementById('dgDraftLbTbl'), [
+        { key:'mgr', label:'Manager', align:'left', val:function(r){return pName(r.pid);},
+          cell:function(r){return '<span class="mn2">'+esc(pName(r.pid))+'</span>';} },
+        { key:'yr', label:'Year', num:true, val:function(r){return r.year;}, cell:function(r){return r.year;} },
+        { key:'sc', label:'Draft score', num:true, val:function(r){return r.score;},
+          cell:function(r){return '<b>'+sgn(r.score)+'</b> <span class="dg-sub">'+r.grade+'</span>';} },
+        { key:'n', label:'Picks', num:true, val:function(r){return r.n;}, cell:function(r){return r.n;} }
+      ], dRows, { sortKey:'sc', sortDir: dgDraftDir==='best' ? -1 : 1, rownum:true });
+
+      var pbest = pickRows.slice().sort(function(a,c){ return c.surplus - a.surplus; });
+      var pRows = (dgPickDir === 'best' ? pbest : pbest.slice().reverse()).slice(0, 50);
+      sortableTable(document.getElementById('dgPickLbTbl'), [
+        { key:'pl', label:'Player', align:'left', val:function(r){return r.name;},
+          cell:function(r){return '<b>'+esc(r.name)+'</b>';} },
+        { key:'mgr', label:'Drafted by', align:'left', val:function(r){return pName(r.pid);},
+          cell:function(r){return '<span class="mn2">'+esc(pName(r.pid))+'</span>';} },
+        { key:'yr', label:'Year', num:true, val:function(r){return r.year;}, cell:function(r){return r.year;} },
+        { key:'rd', label:'Round', num:true, val:function(r){return -r.round;},
+          cell:function(r){return r.round + '.' + (r.rp || '–');} },
+        { key:'su', label:'Surplus', num:true, val:function(r){return r.surplus;},
+          cell:function(r){return '<b>'+sgn(r.surplus)+'</b>';} }
+      ], pRows, { sortKey:'su', sortDir: dgPickDir==='best' ? -1 : 1, rownum:true });
+
+      document.getElementById('dgLbNote').textContent =
+        'Draft score is the average of a draft’s pick surpluses, weighting earlier picks more. Surplus is one pick’s outcome minus what that round’s slot has historically returned. ' +
+        draftRows.length + ' graded manager-drafts, ' + pickRows.length + ' graded picks.';
+    }
+    (function(){
+      var dt = document.getElementById('dgDraftLbToggle'), pt = document.getElementById('dgPickLbToggle');
+      dt.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return;
+        Array.prototype.forEach.call(dt.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        dgDraftDir = b.dataset.d; renderLeaders(); });
+      pt.addEventListener('click', function(e){ var b=e.target.closest('button'); if(!b) return;
+        Array.prototype.forEach.call(pt.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
+        dgPickDir = b.dataset.d; renderLeaders(); });
+    })();
+
     renderResume();
     renderMethod();
+    renderLeaders();
 
     var sub = document.getElementById('dgSubnote');
     if (isDyn){
@@ -3304,7 +3399,7 @@
         build();
         sub.innerHTML = 'Draft column: current <b>FantasyCalc</b> dynasty values (' + esc(V.generated || '') +
           '). Classes two or more seasons old show “—” there and are judged on production.';
-        renderResume(); renderMethod();
+        renderResume(); renderMethod(); renderLeaders();
         var pr = document.querySelector('#draftPick button[aria-pressed="true"]');
         _dgShow(pr && drafts[+pr.dataset.i] ? drafts[+pr.dataset.i] : (gradeable[0] && gradeable[0].d));
       }).catch(function(){
