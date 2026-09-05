@@ -2884,10 +2884,11 @@
 
     /* season outcome per drafted player: baseball = category value (z-sum),
        football = fantasy points. Shown small next to each pick on the board. */
-    var valOf = {};
+    var valOf = {}, cardKeys = {};
     (DATA.playerSeasons || []).forEach(function(ps){
       if (!ps.key) return;
       (valOf[ps.year] = valOf[ps.year] || {})[ps.key] = (isCats ? ps.val : ps.pts);
+      cardKeys[ps.key] = 1;   /* has a player-card row */
     });
     /* value = the player's season outcome (baseball category value / football
        points). surplus (when the grade engine has run) = that value minus what
@@ -2909,7 +2910,8 @@
     }
     function pcell(pk){
       var nm = esc(pk.player.name);
-      var linkable = pk.playerKey && openPlayerCard && DATA.ownership && DATA.ownership[pk.playerKey];
+      var linkable = pk.playerKey && openPlayerCard &&
+        ((DATA.ownership && DATA.ownership[pk.playerKey]) || cardKeys[pk.playerKey]);
       return linkable
         ? '<span class="dp plink" data-k="'+esc(pk.playerKey)+'">'+nm+'</span>'
         : '<span class="dp">'+nm+'</span>';
