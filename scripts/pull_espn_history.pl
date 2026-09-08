@@ -34,18 +34,31 @@ mkdir "$ROOT/data/raw/espn" unless -d "$ROOT/data/raw/espn";
 mkdir "$ROOT/data/raw/espn/$LID" unless -d "$ROOT/data/raw/espn/$LID";
 mkdir $dir unless -d $dir;
 
-for my $y ($Y0 .. $Y1) {
-  my $url = $y >= 2018
-    ? "https://lm-api-reads.fantasy.espn.com/apis/v3/games/$GAME/seasons/$y/segments/0/leagues/$LID?$vq"
-    : "https://lm-api-reads.fantasy.espn.com/apis/v3/games/$GAME/leagueHistory/$LID?seasonId=$y&$vq";
+# The "current season" endpoint (seasons/<y>/segments/0/leagues/<id>) only serves
+# the season(s) the league is actively in; every other season — however recent —
+# must come from leagueHistory?seasonId=<y>. Some leagues created on the newer
+# platform (>=2018) still keep their past years only on leagueHistory, so try the
+# current-season path first and fall back to leagueHistory when it has no data.
+sub fetch_json {
+  my ($url) = @_;
   my $tmp = "$ROOT/.pull_$$.json";
   my $rc = system('curl','-s','--compressed','--max-time','40','-A',$UA,
                   '-b',"SWID=$SWID; espn_s2=$S2",'-o',$tmp,$url);
-  if ($rc != 0) { warn "  $y: curl failed\n"; unlink $tmp; next; }
-  local $/; open my $f,'<:raw',$tmp or do { warn "  $y: no file\n"; next };
+  if ($rc != 0) { unlink $tmp; return (undef, undef); }
+  local $/; open my $f,'<:raw',$tmp or return (undef, undef);
   my $raw = <$f>; close $f; unlink $tmp;
   my $d = eval { JSON::PP->new->decode($raw) };
   my $obj = ref $d eq 'ARRAY' ? $d->[0] : $d;
+  return ($raw, $obj);
+}
+
+for my $y ($Y0 .. $Y1) {
+  my $cur  = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/$GAME/seasons/$y/segments/0/leagues/$LID?$vq";
+  my $hist = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/$GAME/leagueHistory/$LID?seasonId=$y&$vq";
+  my ($raw, $obj) = fetch_json($y >= 2018 ? $cur : $hist);
+  if (ref $obj ne 'HASH' || !$obj->{settings}) {
+    ($raw, $obj) = fetch_json($y >= 2018 ? $hist : $cur);   # fall back to the other endpoint
+  }
   if (ref $obj ne 'HASH' || !$obj->{settings}) { warn "  $y: no league data\n"; next; }
   open my $o,'>:raw',"$dir/$y.json" or die "write $y: $!";
   print $o $raw; close $o;

@@ -43,7 +43,7 @@
          "type" : "redraft"
       },
       {
-         "firstSeason" : 2024,
+         "firstSeason" : 2018,
          "hasDrafts" : true,
          "hasPlayers" : true,
          "hasTrades" : false,
@@ -51,7 +51,7 @@
          "lastSeason" : 2025,
          "primary" : 0,
          "scoring" : "points",
-         "seasons" : 2,
+         "seasons" : 8,
          "slug" : "afgl",
          "sport" : "nfl",
          "type" : "keeper"

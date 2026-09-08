@@ -49,13 +49,18 @@ my %OUT;     # season -> week -> { pid => [pts, starter, teamId] }
 my %PLAYERS; # pid -> [name, pos]
 my %COUNT;
 
+sub url_cur  { my ($y,$sp)=@_; "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/$y/segments/0/leagues/$LID?view=mBoxscore&scoringPeriodId=$sp" }
+sub url_hist { my ($y,$sp)=@_; "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory/$LID?seasonId=$y&view=mRoster&view=mMatchup&scoringPeriodId=$sp" }
+
 for my $y ($Y0..$Y1) {
-  my $hist = $y <= 2017;
+  # Only the season(s) the league is actively in answer on the current-season
+  # endpoint; every past year (even post-2018) must use leagueHistory. Try the
+  # likely one first, fall back to the other.
+  my $histFirst = $y <= 2017;
   for my $sp (1..17) {
-    my $url = $hist
-      ? "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory/$LID?seasonId=$y&view=mRoster&view=mMatchup&scoringPeriodId=$sp"
-      : "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/$y/segments/0/leagues/$LID?view=mBoxscore&scoringPeriodId=$sp";
-    my $d = fetch($url);
+    my @urls = $histFirst ? (url_hist($y,$sp), url_cur($y,$sp)) : (url_cur($y,$sp), url_hist($y,$sp));
+    my $d;
+    for my $u (@urls) { $d = fetch($u); last if $d && ref $d->{schedule} eq 'ARRAY' && @{$d->{schedule}}; }
     unless ($d && ref $d->{schedule} eq 'ARRAY') { print STDERR "  $y wk$sp: no data\n"; next; }
     my $n = 0;
     for my $g (@{$d->{schedule}}) {
