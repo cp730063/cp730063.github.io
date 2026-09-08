@@ -72,6 +72,8 @@ my %SLE_FUTURE_R2P;    # sleeper year -> { roster_id -> pid } for resolving futu
 my %ESPN_PLAYER_NAME;
 my %MLB_POS = (1=>'SP', 2=>'C', 3=>'1B', 4=>'2B', 5=>'3B', 6=>'SS',
                7=>'OF', 8=>'OF', 9=>'OF', 10=>'DH', 11=>'RP');
+my %NFL_POS = (1=>'QB', 2=>'RB', 3=>'WR', 4=>'TE', 5=>'K', 16=>'DST',
+               9=>'DL', 10=>'LB', 11=>'DB', 7=>'HC');
 
 # baseball H2H box scores: per-matchup category grid, keyed like the football
 # lineups file. cats[] carries both sides' totals + who won each category.
@@ -119,13 +121,18 @@ for my $y (@ESPN_Y) {
   my $raw = jload("$ESPN/$y.json") or next;
   my $d = ref $raw eq 'ARRAY' ? $raw->[0] : $raw;
 
-  if ($SPORT ne 'nfl') {
+  # Harvest player names/positions from current rosters. For NFL this is the
+  # fallback when there is no player-week data yet (e.g. a brand-new league
+  # before any scored weeks) — espn_player_meta prefers the weeks-derived key
+  # when it exists, so this only fills gaps.
+  {
+    my $posmap = $SPORT eq 'nfl' ? \%NFL_POS : \%MLB_POS;
     for my $t (@{ $d->{teams} || [] }) {
       for my $en (@{ ($t->{roster} || {})->{entries} || [] }) {
         my $pl = ($en->{playerPoolEntry} || {})->{player} or next;
         next unless defined $pl->{id} && defined $pl->{fullName};
         $ESPN_PLAYER_NAME{ $pl->{id} } ||=
-          [ $pl->{fullName}, ($MLB_POS{ $pl->{defaultPositionId} // -1 } // '') ];
+          [ $pl->{fullName}, ($posmap->{ $pl->{defaultPositionId} // -1 } // '') ];
       }
     }
   }
@@ -319,7 +326,11 @@ for my $y (@ESPN_Y) {
   # a season ESPN has scheduled but not yet played: fixtures exist, every score is 0.
   my $espnPlayed = grep { $_->{type} eq 'reg' && (($_->{ap}||0) > 0 || ($_->{bp}||0) > 0) } @games;
   # a roto season has no weekly games but does have real final standings.
-  my $standingsOnly = !$espnPlayed
+  # ESPN pre-populates rankCalculatedFinal (reverse draft order) before week 1,
+  # so also require the season's scoring to have actually started — a played or
+  # finished season has latestScoringPeriod well past 1 (roto: ~180+).
+  my $seasonUnderway = ( ($d->{status} || {})->{latestScoringPeriod} || 0 ) > 1;
+  my $standingsOnly = !$espnPlayed && $seasonUnderway
     && grep { ($_->{rankCalculatedFinal} || $_->{rankFinal}) } @{ $d->{teams} || [] };
   my $counts = $espnPlayed || $standingsOnly;   # season is real (played or roto), vs. not-yet-played
 

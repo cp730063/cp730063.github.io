@@ -55,6 +55,20 @@
          "slug" : "afgl",
          "sport" : "nfl",
          "type" : "keeper"
+      },
+      {
+         "firstSeason" : null,
+         "hasDrafts" : true,
+         "hasPlayers" : true,
+         "hasTrades" : false,
+         "label" : "1st Annual Knockout League",
+         "lastSeason" : null,
+         "primary" : 0,
+         "scoring" : "points",
+         "seasons" : 0,
+         "slug" : "knockout",
+         "sport" : "nfl",
+         "type" : "guillotine"
       }
    ]
 }

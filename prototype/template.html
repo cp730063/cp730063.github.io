@@ -1267,6 +1267,11 @@
     years   = played.map(function(s){ return s.year; });
     yFirst = years[0]; yLast = years[years.length-1];
     latestPlayed = played[played.length-1];
+    // a league added before its first season is played: fall back to the
+    // scheduled seasons so date ranges don't render as "undefined–undefined"
+    if (!years.length && seasons.length) {
+      yFirst = seasons[0].year; yLast = seasons[seasons.length-1].year;
+    }
   }
   /* per-entry regular-season totals — works for API and manual seasons alike */
   function entryTotals(s){
@@ -1523,8 +1528,9 @@
     }
 
     /* ---- context note ---- */
-    document.getElementById('ovNote').innerHTML =
-      '<b>' + played.length + ' seasons</b> loaded (' + yFirst + '–' + yLast + '). ' +
+    document.getElementById('ovNote').innerHTML = (!played.length
+      ? '<b>' + yLast + ' is this league’s first season</b> and it hasn’t started yet — the draft board and rosters are here now; standings, records and head-to-head fill in once games are played. '
+      : '<b>' + played.length + ' seasons</b> loaded (' + yFirst + '–' + yLast + '). ') +
       (manualYears.length
         ? manualYears.length + ' early season' + (manualYears.length>1?'s':'') + ' (' + manualYears[0] + '–' + manualYears[manualYears.length-1] + ') are hand-entered standings — no game data, so records and head-to-head cover the API era only. '
         : '') +
@@ -1539,11 +1545,13 @@
       var gp = 0; (s.entries||[]).forEach(function(e){ gp += (e.w||0)+(e.l||0)+(e.t||0); });
       games += Math.round(gp/2);
     });
-    var activeManagers = (DATA.people||[]).filter(function(p){ return (p.seasons||[]).indexOf(yLast)>=0; }).length;
+    var activeManagers = played.length
+      ? (DATA.people||[]).filter(function(p){ return (p.seasons||[]).indexOf(yLast)>=0; }).length
+      : (DATA.people||[]).length;
     var pastManagers = (DATA.people||[]).length - activeManagers;
     var tiles = [
-      ['Seasons', played.length, yFirst+'–'+yLast],
-      ['Managers', activeManagers, pastManagers+' more have played'],
+      ['Seasons', played.length, played.length ? yFirst+'–'+yLast : yLast+' — not started'],
+      ['Managers', activeManagers, pastManagers ? pastManagers+' more have played' : 'in the league now'],
       [isCats ? 'Matchups played' : 'Games played', games, 'all weeks, all seasons'],
       [isCats ? 'Category wins' : 'Points scored', Math.round(pts), 'every team, every week']
     ];
@@ -1814,7 +1822,12 @@
       Array.prototype.forEach.call(pick.children, function(x){ x.setAttribute('aria-pressed', x===b?'true':'false'); });
       if (b.dataset.y==='all') renderAllTime(); else renderSeason(+b.dataset.y);
     });
-    renderSeason(yLast);
+    if (yLast != null) { renderSeason(yLast); }
+    else if (seasons.length) {
+      // league added before its first season has been played
+      pick.querySelector('button[data-y="'+seasons[seasons.length-1].year+'"]').setAttribute('aria-pressed','true');
+      renderSeason(seasons[seasons.length-1].year);
+    } else { renderAllTime(); }
     renderDivisions();
     renderRoto();
 

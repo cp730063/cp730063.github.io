@@ -1,0 +1,32 @@
+{
+  "slug": "knockout",
+  "label": "1st Annual Knockout League",
+  "type": "guillotine",
+  "espnId": 1992466539,
+  "espnYears": [2026, 2026],
+  "sleeper": {},
+  "sleeperPlayerWeeksLeague": null,
+  "playerWeeksFile": "data/espn_player_weeks_1992466539.json",
+  "overlay": null,
+  "prestige": { "championship": 10, "regularSeasonTitle": 4, "runnerUp": 3, "divisionTitle": 2, "thirdPlace": 0, "lastPlace": 0, "playoffBerth": 0 },
+  "people": [
+    { "id": "pashko",      "name": "Carl Pashko",        "mgr": "patriots122436",    "espn": "{ADD6A8E2-9261-4912-982A-D94F3D470047}" },
+    { "id": "costantini",  "name": "Anthony Costantini",  "mgr": "acoznova",          "espn": "{BB8F1827-9475-4CD2-BDFA-4CBC00D32D9D}" },
+    { "id": "trembeth",    "name": "Patrick Trembeth",    "mgr": "pt618",             "espn": "{BD5195A8-B14F-4106-811B-886325393F70}" },
+    { "id": "bucko",       "name": "Andrew Bucko",        "mgr": "NittWitts11",       "espn": "{42BDBB61-2656-4968-BCE9-03441E6FC977}" },
+    { "id": "murphy",      "name": "Scott Murphy",        "mgr": "spense2007",        "espn": "{D55E8C57-7CA6-4347-9521-5DC54D15C085}" },
+    { "id": "joshpace",    "name": "Joshua Pace",         "mgr": "espn31904237",      "espn": "{5FF23280-1873-4C3C-B4F6-0678F6DE0DDE}" },
+    { "id": "fagioli",     "name": "Matt Fagioli",        "mgr": "espn08858819",      "espn": "{9968BF44-5B4D-479A-AF2A-8AF5FB11992B}" },
+    { "id": "cpashko",     "name": "Chris Pashko",        "mgr": "ESPNFAN3076707323", "espn": "{07E9BA64-0B39-44AD-8216-A83252AAFA97}" },
+    { "id": "anderson",    "name": "Robert Anderson",     "mgr": "ESPNFAN5771345452", "espn": "{61B7D72A-6713-4F8D-9708-7A78D76407F0}" },
+    { "id": "lenahan",     "name": "Ryan Lenahan",        "mgr": "RMLenahan",         "espn": "{181B2B53-9C04-49A6-96FC-CE9856AEEE2A}" },
+    { "id": "mikepace",    "name": "Michael Pace",        "mgr": "mpace1993",         "espn": "{6D03561D-E467-48C2-9523-90861820363F}" },
+    { "id": "giordano",    "name": "Joseph Giordano",     "mgr": "espn08317717",      "espn": "{411A40B1-D0D6-44D2-9193-48249A653BDD}" },
+    { "id": "fox",         "name": "Dylan Fox",           "mgr": "ESPNFAN4631329888", "espn": "{73324664-9CFF-46DD-8237-0F0E1D88A2CC}" },
+    { "id": "schwenke",    "name": "David Schwenke",      "mgr": "espn74186338",      "espn": "{006911B1-262C-43C3-A666-AFC8E76BEF54}" },
+    { "id": "lombardi",    "name": "Mike Lombardi",       "mgr": "Lombardi240",       "espn": "{0701E21C-DC62-493C-AD88-5591D6CECA31}" },
+    { "id": "bthomas",     "name": "Brian Thomas",        "mgr": "espn61990530",      "espn": "{2A78AB49-0368-45C6-8A94-FE5A0A08734C}" },
+    { "id": "dicampli",    "name": "Michael DiCampli",    "mgr": "espn68683252",      "espn": "{3723D00F-0110-45A6-A237-D9E75BF850E2}" },
+    { "id": "legradi",     "name": "PJ Legradi",         "mgr": "plegradi830",       "espn": "{583D8B24-6FFE-49FA-84A2-900190E26EC6}" }
+  ]
+}
