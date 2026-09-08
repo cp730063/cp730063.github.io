@@ -41,6 +41,20 @@
          "slug" : "cdiddy",
          "sport" : "nfl",
          "type" : "redraft"
+      },
+      {
+         "firstSeason" : 2024,
+         "hasDrafts" : true,
+         "hasPlayers" : true,
+         "hasTrades" : false,
+         "label" : "A Football Guy League",
+         "lastSeason" : 2025,
+         "primary" : 0,
+         "scoring" : "points",
+         "seasons" : 2,
+         "slug" : "afgl",
+         "sport" : "nfl",
+         "type" : "keeper"
       }
    ]
 }

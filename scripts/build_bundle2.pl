@@ -185,6 +185,10 @@ for my $y (@ESPN_Y) {
     $first = $r;
   }
   $first = $maxR + 1 if $first <= 1;       # startup year: every round is "real", no rookie tail
+  # The appended-rookie-draft split only exists in dynasty leagues. In a keeper or
+  # redraft league there is one board per year; keepers just cost early/mid picks,
+  # so trailing keeper-free rounds are NOT a rookie draft.
+  $first = $maxR + 1 unless ($CFG->{type} // '') eq 'dynasty';
   $ESPN_ROOKIE_FIRST{$y} = $first;
 
   # games from schedule

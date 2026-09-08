@@ -1429,7 +1429,7 @@
     var football = (lg.sport || 'nfl') === 'nfl';
     var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
-                  tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft') &&
+                  tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft' || lg.type === 'keeper') &&
                              (football || (!!lg.hasPlayers && (DATA.playerSeasons || []).length)) };
     Object.keys(avail).forEach(function(p){
       var btn = tabs.querySelector('button[data-p="'+p+'"]');

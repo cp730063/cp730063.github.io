@@ -214,6 +214,6 @@ for my $slug (@slugs) {
   my $type = $cfg->{type} // '';
   print STDERR "== $slug ($type) ==\n";
   if    ($type eq 'dynasty') { do_dynasty($cfg, $slug); }
-  elsif ($type eq 'redraft') { do_redraft($cfg, $slug); }
+  elsif ($type eq 'redraft' || $type eq 'keeper') { do_redraft($cfg, $slug); }
   else { print STDERR "  skip (type '$type' has no trade calculator)\n"; }
 }
