@@ -352,15 +352,21 @@
   .live-gap.some{color:var(--loss)}
   .live-chev{color:var(--ink-faint);font-size:11px;text-align:center}
   @media (max-width:640px){
-    .live-row{grid-template-columns:1fr 20px;grid-template-rows:auto auto;row-gap:5px;padding:10px 14px}
-    .live-team{grid-column:1;grid-row:1}
-    .live-chev{grid-column:2;grid-row:1}
-    .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:12px}
-    .live-cur,.live-max,.live-gap{text-align:left}
-    .live-cur::before,.live-max::before{color:var(--ink-faint);font-weight:400;font-family:var(--disp)}
-    .live-cur::before{content:'Cur ';}
-    .live-max::before{content:'Max ';}
-    .live-col-hd{display:none}
+    .live-row:not(.live-col-hd){grid-template-columns:1fr 20px;grid-template-rows:auto auto;row-gap:5px;padding:10px 14px}
+    .live-row:not(.live-col-hd) .live-team{grid-column:1;grid-row:1}
+    .live-row:not(.live-col-hd) .live-chev{grid-column:2;grid-row:1}
+    .live-row:not(.live-col-hd) .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:12px}
+    .live-row:not(.live-col-hd) .live-cur,.live-row:not(.live-col-hd) .live-max,.live-row:not(.live-col-hd) .live-gap{text-align:left}
+    .live-row:not(.live-col-hd) .live-cur::before,.live-row:not(.live-col-hd) .live-max::before,
+    .live-row:not(.live-col-hd) .live-gap::before{color:var(--ink-faint);font-weight:400;font-family:var(--disp)}
+    .live-row:not(.live-col-hd) .live-cur::before{content:'Cur ';}
+    .live-row:not(.live-col-hd) .live-max::before{content:'Max ';}
+    .live-row:not(.live-col-hd) .live-gap::before{content:'Bench ';}
+    /* header stays visible on mobile, but as one compact row: name column + 3 tappable metric labels */
+    .live-col-hd{grid-template-columns:1.1fr 1fr 1fr 1fr;gap:6px;padding:8px 14px}
+    .live-col-hd .live-team{grid-column:1}
+    .live-col-hd .live-nums{grid-column:2/5;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:9.5px}
+    .live-col-hd .live-chev{display:none}
   }
   .live-col-hd{cursor:default}
   .live-col-hd:hover{background:none}
@@ -821,7 +827,7 @@
     <h2 class="sec">Standings</h2>
     <section id="liveSec" hidden style="margin-bottom:30px">
       <div class="live-hd">
-        <div><div class="h-kicker">Right now</div><h3 class="sec" style="font-size:19px;margin:0">Live scoring<span id="liveWeek"></span></h3></div>
+        <div><div class="h-kicker">Right now</div><h3 class="sec" style="font-size:19px;margin:0"><span id="liveTitle">Live scoring</span><span id="liveWeek"></span></h3></div>
         <div class="live-refresh"><span id="liveAsOf" class="mn2"></span><button type="button" id="liveRefreshBtn" aria-label="Refresh now">⟳</button></div>
       </div>
       <p class="sec-note" id="liveNote"></p>
@@ -1900,9 +1906,11 @@
       var asOf = document.getElementById('liveAsOf');
       var weekLbl = document.getElementById('liveWeek');
       var refreshBtn = document.getElementById('liveRefreshBtn');
+      var titleEl = document.getElementById('liveTitle');
+      if (titleEl) titleEl.textContent = DATA.league.liveLabel || 'Live scoring';
       var expanded = {};   // rosterId -> open?
       var lastRows = null;
-      var sortKey = 'gap', sortDir = -1;   // 1 = ascending, -1 = descending
+      var sortKey = 'max', sortDir = 1;   // default: live max, lowest to highest
       var SORT_KEYS = { team:1, cur:1, max:1, gap:1 };
 
       function jget(url){ return fetch(url).then(function(r){ if (!r.ok) throw new Error('http '+r.status); return r.json(); }); }

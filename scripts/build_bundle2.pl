@@ -1565,6 +1565,7 @@ my $out = {
     # year (string) -> Sleeper league id, so the browser can hit Sleeper's live API
     # directly for the currently-active NFL season without a build/deploy round-trip.
     sleeperLeagues => (%SLE_LEAGUES ? { %SLE_LEAGUES } : undef),
+    liveLabel => $CFG->{liveLabel} || undef,   # optional per-league title for the Live scoring section
   },
   generated_at => $generated,
   people => \@peopleOut,
