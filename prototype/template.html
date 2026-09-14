@@ -343,7 +343,9 @@
   .live-row:first-child{border-top:0}
   .live-row:hover{background:var(--surface-2)}
   .live-row.exp{background:var(--surface-2)}
-  .live-team{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .live-team{display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0}
+  .live-tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .live-pick{font-size:11px;color:var(--ink-faint);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .live-nums{display:grid;grid-template-columns:74px 74px 96px;gap:10px}
   .live-cur,.live-max{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
   .live-max{color:var(--ink-muted)}
@@ -1911,6 +1913,8 @@
       var lastRows = null;
       var sortKey = 'max', sortDir = 1;   // default: live max, lowest to highest
       var SORT_KEYS = { team:1, cur:1, max:1, gap:1 };
+      var ownerToPid = {};   // Sleeper owner_id -> our canonical person id
+      (DATA.people || []).forEach(function(p){ if (p.sleeperOwnerId) ownerToPid[p.sleeperOwnerId] = p.id; });
 
       function jget(url){ return fetch(url).then(function(r){ if (!r.ok) throw new Error('http '+r.status); return r.json(); }); }
 
@@ -1991,7 +1995,8 @@
           var gapCls = r.gap < 0.05 ? 'zero' : 'some';
           var open = !!expanded[r.rid];
           return '<button type="button" class="live-row'+(open?' exp':'')+'" data-rid="'+r.rid+'">' +
-            '<span class="live-team">'+esc(r.team)+'</span>' +
+            '<span class="live-team"><span class="live-tn">'+esc(r.team)+'</span>' +
+              (r.pickNote ? '<span class="live-pick">'+esc(r.pickNote)+'</span>' : '') + '</span>' +
             '<span class="live-nums">' +
               '<span class="live-cur">'+f1(r.cur)+'</span>' +
               '<span class="live-max">'+f1(r.max)+'</span>' +
@@ -2059,10 +2064,22 @@
             var lg = r[0], rosters = r[1], users = r[2], matchups = r[3];
             if (!matchups || !matchups.length){ note.textContent = 'No live matchups yet for Week '+week+'.'; wrap.innerHTML = ''; return; }
             var uById = {}; users.forEach(function(u){ uById[u.user_id] = u; });
-            var teamOf = {};
+            var teamOf = {}, pickNoteOf = {};
+            // Whoever ends up worst gets next year's 1st — but only among teams that miss
+            // the playoffs, and that's not knowable mid-season. What IS knowable now is
+            // whether a team's own 1st has already been traded away, so surface that
+            // (it's true regardless of how the standings shake out).
+            var nextSeason = String((+season) + 1);
+            var pick1Holder = {};
+            (DATA.futurePicks || []).forEach(function(r){
+              if (String(r.season) === nextSeason && +r.round === 1) pick1Holder[r.originalPersonId] = r.ownerPersonId;
+            });
             rosters.forEach(function(ro){
               var u = uById[ro.owner_id] || {};
               teamOf[ro.roster_id] = (u.metadata && u.metadata.team_name) || u.display_name || ('Roster '+ro.roster_id);
+              var pid = ownerToPid[ro.owner_id];
+              var heldBy = pid && pick1Holder[pid];
+              if (heldBy && heldBy !== pid) pickNoteOf[ro.roster_id] = nextSeason + ' 1st → ' + pName(heldBy);
             });
             var slots = (lg.roster_positions || []).filter(function(s){ return !SKIP_SLOTS[s]; });
             var allIds = [];
@@ -2079,6 +2096,7 @@
                 var maxPts = optimal.reduce(function(s,p){ return s + (p?p.pts:0); }, 0);
                 var starterSet = {}; (m.starters||[]).forEach(function(id){ starterSet[id] = 1; });
                 return { rid:m.roster_id, team: teamOf[m.roster_id] || ('Roster '+m.roster_id),
+                  pickNote: pickNoteOf[m.roster_id] || null,
                   cur: m.points || 0, max: maxPts, gap: Math.max(0, maxPts - (m.points||0)),
                   slots: slots, optimal: optimal, starterSet: starterSet };
               });
@@ -3314,8 +3332,10 @@
       sortableTable(document.getElementById('futureCapTbl'), [
         { key:'season', label:'Season', num:true, val:function(r){ return +r.season; }, cell:function(r){ return r.season; } },
         { key:'round', label:'Round', num:true, val:function(r){ return r.round; }, cell:function(r){ return 'R'+r.round; } },
-        { key:'trade', label:'Pick', align:'left', val:function(r){ return pnm(r.originalPersonId); },
-          cell:function(r){ return esc(pnm(r.originalPersonId)) + ' <span class="mn2">→</span> <b>' + esc(pnm(r.ownerPersonId)) + '</b>'; } }
+        { key:'orig', label:'Original owner', align:'left', val:function(r){ return pnm(r.originalPersonId); },
+          cell:function(r){ return esc(pnm(r.originalPersonId)); } },
+        { key:'now', label:'Now owned by', align:'left', val:function(r){ return pnm(r.ownerPersonId); },
+          cell:function(r){ return '<b>'+esc(pnm(r.ownerPersonId))+'</b>'; } }
       ], fp.slice(), { sortKey:'season', sortDir:1 });
     }
   }

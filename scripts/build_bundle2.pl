@@ -1532,6 +1532,7 @@ for my $pid (sort { scalar(keys %{$P{$b}{seasons}}) <=> scalar(keys %{$P{$a}{sea
     firstSeason=>($p->{firstSeason}==9999?undef:$p->{firstSeason}),
     seasons=>[ map {0+$_} sort keys %{$p->{seasons}} ],
     titles=>[ map {0+$_} sort @{$p->{titles}} ],
+    sleeperOwnerId=>($p->{sleeper} || undef),   # Sleeper owner_id, to match live rosters -> our person ids
   };
 }
 
