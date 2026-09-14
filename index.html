@@ -362,10 +362,13 @@
     .live-max::before{content:'Max ';}
     .live-col-hd{display:none}
   }
-  .live-col-hd{cursor:default;pointer-events:none}
+  .live-col-hd{cursor:default}
   .live-col-hd:hover{background:none}
-  .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap{font-family:var(--disp);text-transform:uppercase;
-    letter-spacing:.05em;font-size:10.5px;color:var(--ink-faint);font-weight:600}
+  .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-team{font-family:var(--disp);
+    text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;color:var(--ink-faint);font-weight:600}
+  .live-hdbtn{display:block;width:100%;border:0;background:none;padding:0;margin:0;cursor:pointer;
+    font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;text-align:inherit}
+  .live-hdbtn:hover{color:var(--accent)}
   .live-detail{grid-column:1/-1;padding:2px 0 12px}
   .live-badge{font-family:var(--disp);text-transform:uppercase;letter-spacing:.04em;font-size:9px;padding:1px 6px;
     border-radius:5px;margin-left:6px;white-space:nowrap}
@@ -1218,7 +1221,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260914225909"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260914232255"}</script>
 <script>
 "use strict";
 (function(){
@@ -1898,6 +1901,9 @@
       var weekLbl = document.getElementById('liveWeek');
       var refreshBtn = document.getElementById('liveRefreshBtn');
       var expanded = {};   // rosterId -> open?
+      var lastRows = null;
+      var sortKey = 'gap', sortDir = -1;   // 1 = ascending, -1 = descending
+      var SORT_KEYS = { team:1, cur:1, max:1, gap:1 };
 
       function jget(url){ return fetch(url).then(function(r){ if (!r.ok) throw new Error('http '+r.status); return r.json(); }); }
 
@@ -1955,10 +1961,25 @@
         }).catch(function(){ return cache.map; });
       }
 
+      function sortRows(rows){
+        var key = sortKey, dir = sortDir;
+        return rows.slice().sort(function(a,b){
+          var va = key==='team' ? a.team.toLowerCase() : a[key];
+          var vb = key==='team' ? b.team.toLowerCase() : b[key];
+          return dir * (va<vb ? -1 : va>vb ? 1 : 0);
+        });
+      }
+      function hdLabel(k, txt){
+        var arrow = sortKey===k ? (sortDir===1?' ▲':' ▼') : '';
+        return '<button type="button" class="live-hdbtn" data-k="'+k+'">'+txt+arrow+'</button>';
+      }
       function renderRows(rows){
-        var hd = '<div class="live-row live-col-hd"><span class="live-team"></span>' +
-          '<span class="live-nums"><span class="live-cur">Current</span><span class="live-max">Live max</span><span class="live-gap">On bench</span></span>' +
+        var hd = '<div class="live-row live-col-hd"><span class="live-team">'+hdLabel('team','Team')+'</span>' +
+          '<span class="live-nums"><span class="live-cur">'+hdLabel('cur','Current')+'</span>' +
+          '<span class="live-max">'+hdLabel('max','Live max')+'</span>' +
+          '<span class="live-gap">'+hdLabel('gap','On bench')+'</span></span>' +
           '<span class="live-chev"></span></div>';
+        rows = sortRows(rows);
         return '<div class="live-list">' + hd + rows.map(function(r){
           var gapCls = r.gap < 0.05 ? 'zero' : 'some';
           var open = !!expanded[r.rid];
@@ -1982,9 +2003,24 @@
             '<span class="bx-nm">'+esc(p.name)+badge+'</span><span class="bx-pts">'+f1(p.pts)+'</span></div>';
         }).join('');
       }
+      function wireHeader(){
+        wrap.querySelectorAll('.live-hdbtn').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var k = btn.dataset.k;
+            if (sortKey === k) sortDir = -sortDir;
+            else { sortKey = k; sortDir = (k==='team') ? 1 : -1; }
+            if (lastRows) renderList(lastRows);
+          });
+        });
+      }
+      function renderList(rows){
+        wrap.innerHTML = renderRows(rows);
+        wireRows(rows);
+        wireHeader();
+      }
       function wireRows(rows){
         var byRid = {}; rows.forEach(function(r){ byRid[r.rid] = r; });
-        wrap.querySelectorAll('.live-row').forEach(function(btn){
+        wrap.querySelectorAll('.live-row:not(.live-col-hd)').forEach(function(btn){
           btn.addEventListener('click', function(){
             var rid = btn.dataset.rid;
             var det = wrap.querySelector('.live-detail[data-rid="'+rid+'"]');
@@ -2038,9 +2074,9 @@
                 return { rid:m.roster_id, team: teamOf[m.roster_id] || ('Roster '+m.roster_id),
                   cur: m.points || 0, max: maxPts, gap: Math.max(0, maxPts - (m.points||0)),
                   slots: slots, optimal: optimal, starterSet: starterSet };
-              }).sort(function(a,b){ return b.gap - a.gap; });
-              wrap.innerHTML = renderRows(rows);
-              wireRows(rows);
+              });
+              lastRows = rows;
+              renderList(rows);
               asOf.textContent = 'as of ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
             });
           });
