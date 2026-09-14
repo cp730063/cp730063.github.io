@@ -1562,6 +1562,9 @@ my $out = {
     divisionsSince => ($CFG->{divisionsSince} ? $CFG->{divisionsSince}+0 : undef),
     divisionOrder => ($DIV_ORDER || undef),
     prestige => ($CFG->{prestige} || { championship=>10, regularSeasonTitle=>4, runnerUp=>3, divisionTitle=>2, thirdPlace=>0, lastPlace=>0, playoffBerth=>0 }),
+    # year (string) -> Sleeper league id, so the browser can hit Sleeper's live API
+    # directly for the currently-active NFL season without a build/deploy round-trip.
+    sleeperLeagues => (%SLE_LEAGUES ? { %SLE_LEAGUES } : undef),
   },
   generated_at => $generated,
   people => \@peopleOut,
