@@ -402,54 +402,94 @@
   .elim-torso,.elim-arm{stroke:#0003;stroke-width:1}
   .elim-leg{fill:#3a3f47}
   .elim-runner{offset-rotate:0deg;animation-timing-function:linear;animation-fill-mode:forwards}
-  .elim-leg-back{animation:elim-run-leg-b .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
-  .elim-leg-front{animation:elim-run-leg-a .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
-  .elim-arm-back{animation:elim-run-arm-a .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
-  .elim-arm-front{animation:elim-run-arm-b .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
-  .elim-bob{animation:elim-run-bob .21s ease-in-out infinite}
+  .elim-leg-back{animation:elim-run-leg-b .27s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-leg-front{animation:elim-run-leg-a .27s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-arm-back{animation:elim-run-arm-a .27s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-arm-front{animation:elim-run-arm-b .27s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-bob{animation:elim-run-bob .135s ease-in-out infinite}
   .elim-nametag{animation-duration:20s;animation-iteration-count:1;animation-fill-mode:forwards;animation-timing-function:ease-in}
   .elim-nametag.role-out{animation-name:elim-tag-fade}
+  .elim-alarm{font-family:var(--disp);font-size:24px;font-weight:800;fill:#ffcf40;stroke:#7a1d1d;stroke-width:2px;
+    paint-order:stroke;text-anchor:middle;opacity:0;transform-box:fill-box;transform-origin:50% 50%;
+    animation-duration:20s;animation-iteration-count:1;animation-fill-mode:forwards;animation-timing-function:ease-out}
+  .elim-alarm.role-safe{animation-name:elim-alarm-safe}
+  .elim-alarm.role-out{animation-name:elim-alarm-out}
+  .elim-dust{opacity:0;animation:elim-dust-pop 20s 1 forwards ease-out}
+  .elim-dust circle{fill:#8a7a63;opacity:.6}
   .elim-wobble{transform-box:fill-box;transform-origin:50% 78%;animation-duration:20s;animation-iteration-count:1;
     animation-fill-mode:forwards;animation-timing-function:ease-in-out}
   .elim-wobble.role-safe{animation-name:elim-wobble-safe}
   .elim-wobble.role-out{animation-name:elim-wobble-out}
-  @keyframes elim-run-leg-a{ 0%,100%{transform:rotate(-24deg)} 50%{transform:rotate(24deg)} }
-  @keyframes elim-run-leg-b{ 0%,100%{transform:rotate(24deg)} 50%{transform:rotate(-24deg)} }
-  @keyframes elim-run-arm-a{ 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-20deg)} }
-  @keyframes elim-run-arm-b{ 0%,100%{transform:rotate(-20deg)} 50%{transform:rotate(20deg)} }
-  @keyframes elim-run-bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes elim-run-leg-a{ 0%,100%{transform:rotate(-36deg)} 50%{transform:rotate(36deg)} }
+  @keyframes elim-run-leg-b{ 0%,100%{transform:rotate(36deg)} 50%{transform:rotate(-36deg)} }
+  @keyframes elim-run-arm-a{ 0%,100%{transform:rotate(32deg)} 50%{transform:rotate(-32deg)} }
+  @keyframes elim-run-arm-b{ 0%,100%{transform:rotate(-32deg)} 50%{transform:rotate(32deg)} }
+  @keyframes elim-run-bob{ 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-9px) rotate(3deg)} }
   @keyframes elim-orbit{ 0%{offset-distance:0%} 100%{offset-distance:100%} }
-  @keyframes elim-tag-fade{ 0%,80%{opacity:1} 92%{opacity:.35} 100%{opacity:0} }
-  /* "safe" gets two dips it recovers from — its turns fall between the
-     "out" runner's escalating ones, so they read as taking turns. */
+  @keyframes elim-tag-fade{ 0%,78%{opacity:1} 90%{opacity:.35} 100%{opacity:0} }
+  @keyframes elim-dust-pop{
+    0%,93%{opacity:0;transform:scale(.3)}
+    95%{opacity:.9;transform:scale(1)}
+    100%{opacity:0;transform:scale(1.9)}
+  }
+  /* comic "uh oh!" pop timed to each runner's own near-fall beats below */
+  @keyframes elim-alarm-safe{
+    0%,29%{opacity:0;transform:scale(.4) translateY(6px)}
+    32%{opacity:1;transform:scale(1.3) translateY(-8px)}
+    38%{opacity:0;transform:scale(.8) translateY(-12px)}
+    55%,58%{opacity:0;transform:scale(.4) translateY(6px)}
+    61%{opacity:1;transform:scale(1.3) translateY(-8px)}
+    67%{opacity:0;transform:scale(.8) translateY(-12px)}
+    100%{opacity:0}
+  }
+  @keyframes elim-alarm-out{
+    0%,15%{opacity:0;transform:scale(.4) translateY(6px)}
+    18%{opacity:1;transform:scale(1.3) translateY(-8px)}
+    24%{opacity:0;transform:scale(.8) translateY(-12px)}
+    41%,44%{opacity:0;transform:scale(.4) translateY(6px)}
+    47%{opacity:1;transform:scale(1.4) translateY(-8px)}
+    53%{opacity:0;transform:scale(.8) translateY(-12px)}
+    65%,68%{opacity:0;transform:scale(.4) translateY(6px)}
+    71%{opacity:1;transform:scale(1.6) translateY(-10px)}
+    80%{opacity:.9;transform:scale(1.15) translateY(-4px)}
+    100%{opacity:0}
+  }
+  /* "safe" gets two BIG dips toward the pit it just barely recovers from —
+     its turns fall between the "out" runner's escalating ones, so the two
+     read as taking turns almost going in. */
   @keyframes elim-wobble-safe{
     0%,26%{transform:translate(0,0) rotate(0deg)}
-    30%{transform:translate(-4px,10px) rotate(-13deg)}
-    34%{transform:translate(2px,-2px) rotate(4deg)}
-    38%,52%{transform:translate(0,0) rotate(0deg)}
-    56%{transform:translate(4px,12px) rotate(13deg)}
-    60%{transform:translate(-2px,-2px) rotate(-4deg)}
-    64%,88%{transform:translate(0,0) rotate(0deg)}
-    92%{transform:translate(0,-8px) rotate(0deg)}
+    32%{transform:translate(-9px,28px) rotate(-27deg)}
+    36%{transform:translate(3px,-4px) rotate(6deg)}
+    40%,53%{transform:translate(0,0) rotate(0deg)}
+    59%{transform:translate(9px,30px) rotate(27deg)}
+    63%{transform:translate(-3px,-4px) rotate(-6deg)}
+    67%,88%{transform:translate(0,0) rotate(0deg)}
+    92%{transform:translate(0,-10px) rotate(-4deg)}
+    96%{transform:translate(0,-2px) rotate(4deg)}
     100%{transform:translate(0,0) rotate(0deg)}
   }
-  /* three escalating near-falls, each closer to going in, before the third
-     one doesn't recover and becomes the real fall (78-100%). */
+  /* three near-falls, each closer to going in than the last, with a comic
+     "boing" catch on the pit rim after the third — before it doesn't hold
+     and becomes the real fall: a long, accelerating, multi-rotation spin
+     down into the pit. */
   @keyframes elim-wobble-out{
-    0%,14%{transform:translate(0,0) rotate(0deg);opacity:1}
-    18%{transform:translate(4px,11px) rotate(-14deg);opacity:1}
-    22%{transform:translate(-2px,-2px) rotate(4deg);opacity:1}
-    26%,40%{transform:translate(0,0) rotate(0deg);opacity:1}
-    44%{transform:translate(-5px,15px) rotate(16deg);opacity:1}
-    48%{transform:translate(2px,-3px) rotate(-5deg);opacity:1}
-    52%,64%{transform:translate(0,0) rotate(0deg);opacity:1}
-    68%{transform:translate(6px,26px) rotate(-24deg);opacity:1}
-    73%{transform:translate(2px,10px) rotate(-6deg);opacity:1}
-    78%{transform:translate(0,3px) rotate(2deg);opacity:1}
-    84%{transform:translate(6px,26px) rotate(30deg);opacity:1}
-    90%{transform:translate(16px,76px) rotate(100deg) scale(.65);opacity:.75}
-    96%{transform:translate(24px,120px) rotate(175deg) scale(.35);opacity:.35}
-    100%{transform:translate(28px,150px) rotate(230deg) scale(.15);opacity:0}
+    0%,13%{transform:translate(0,0) rotate(0deg);opacity:1}
+    18%{transform:translate(8px,30px) rotate(-28deg);opacity:1}
+    23%{transform:translate(-3px,-4px) rotate(6deg);opacity:1}
+    28%,39%{transform:translate(0,0) rotate(0deg);opacity:1}
+    45%{transform:translate(-10px,34px) rotate(30deg);opacity:1}
+    50%{transform:translate(3px,-5px) rotate(-7deg);opacity:1}
+    55%,63%{transform:translate(0,0) rotate(0deg);opacity:1}
+    69%{transform:translate(11px,38px) rotate(-33deg);opacity:1}
+    73%{transform:translate(4px,14px) rotate(-9deg);opacity:1}
+    77%{transform:translate(8px,-8px) rotate(10deg);opacity:1}
+    81%{transform:translate(11px,20px) rotate(-16deg);opacity:1}
+    86%{transform:translate(16px,52px) rotate(70deg) scale(.85);opacity:1}
+    90%{transform:translate(22px,88px) rotate(220deg) scale(.6);opacity:.8}
+    94%{transform:translate(27px,122px) rotate(430deg) scale(.4);opacity:.55}
+    97%{transform:translate(31px,152px) rotate(620deg) scale(.24);opacity:.3}
+    100%{transform:translate(35px,180px) rotate(800deg) scale(.1);opacity:0}
   }
   .elim-caption{text-align:center;font-size:12px;color:var(--ink-faint);padding:8px 4px 10px}
   .elim-caption b{color:var(--ink)}
@@ -1434,6 +1474,7 @@
           '<rect class="elim-tag-bg" x="-78" y="-158" width="156" height="26" rx="8"></rect>' +
           '<text class="elim-tag-team" x="0" y="-140">' + esc(team.team || '') + '</text>' +
         '</g>' +
+        '<text class="elim-alarm ' + roleClass + '" x="26" y="-104">!</text>' +
         '<g class="elim-wobble ' + roleClass + '">' +
           '<rect class="elim-leg elim-leg-back" x="-10" y="-46" width="12" height="46" rx="6"></rect>' +
           '<rect class="elim-leg elim-leg-front" x="-2" y="-46" width="12" height="46" rx="6"></rect>' +
@@ -1459,10 +1500,12 @@
         '<ellipse class="elim-pit" cx="400" cy="330" rx="150" ry="90"></ellipse>' +
         '<ellipse class="elim-pit-rim" cx="400" cy="330" rx="150" ry="90"></ellipse>' +
         '<text class="elim-pit-label" x="400" y="340">Eliminator</text>' +
-        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_A + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
+        '<g class="elim-dust" transform="translate(400,345)"><circle cx="-18" cy="-4" r="8"></circle>' +
+          '<circle cx="14" cy="8" r="10"></circle><circle cx="0" cy="-12" r="7"></circle></g>' +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_A + '&quot;);animation:elim-orbit 4s linear 4 forwards">' +
           elimFigureSvg(teamA, roleA, -1) +
         '</g>' +
-        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_B + '&quot;);animation:elim-orbit 8s linear 2 forwards;animation-delay:-0.6s">' +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_B + '&quot;);animation:elim-orbit 4s linear 4 forwards;animation-delay:-0.35s">' +
           elimFigureSvg(teamB, roleB, 1) +
         '</g>' +
       '</svg>';
@@ -1471,8 +1514,8 @@
     var teamA = entry.teamA || {}, teamB = entry.teamB || {};
     var loser = entry.eliminated === 'A' ? teamA : teamB;
     var survivor = entry.eliminated === 'A' ? teamB : teamA;
-    return '<b>' + esc(loser.jersey||'') + '</b> (' + esc(loser.team||'') + ') takes the fall this week — <b>' +
-      esc(survivor.jersey||'') + '</b> (' + esc(survivor.team||'') + ') lives to run another week.';
+    return '<b>' + esc(loser.team||'') + '</b> takes the fall this week — <b>' +
+      esc(survivor.team||'') + '</b> lives to run another week.';
   }
   /* mounts the animated scene into `stage` and restarts it every 20s (a fresh
      subtree so every CSS animation replays from its own 0% keyframe — far
