@@ -407,20 +407,20 @@
   .elim-arm-back{animation:elim-run-arm-a .34s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
   .elim-arm-front{animation:elim-run-arm-b .34s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
   .elim-bob{animation:elim-run-bob .17s ease-in-out infinite}
-  .elim-nametag{animation-duration:27s;animation-iteration-count:1;animation-fill-mode:forwards;animation-timing-function:ease-in-out}
+  .elim-nametag{animation-duration:33s;animation-iteration-count:1;animation-fill-mode:forwards;animation-timing-function:ease-in-out}
   .elim-nametag.role-out{animation-name:elim-tag-fall}
   .elim-nametag.role-safe{animation-name:elim-tag-ride}
-  .elim-dust{opacity:0;animation:elim-dust-pop 27s 1 forwards ease-out}
+  .elim-dust{opacity:0;animation:elim-dust-pop 33s 1 forwards ease-out}
   .elim-dust circle{fill:#8a7a63;opacity:.6}
-  .elim-wobble{transform-box:fill-box;transform-origin:50% 78%;animation-duration:27s;animation-iteration-count:1;
+  .elim-wobble{transform-box:fill-box;transform-origin:50% 78%;animation-duration:33s;animation-iteration-count:1;
     animation-fill-mode:forwards;animation-timing-function:ease-in-out}
   .elim-wobble.role-safe{animation-name:elim-wobble-safe}
   .elim-wobble.role-out{animation-name:elim-wobble-out}
   /* the bear: entrance/block/dodge/ride-away all live in elim-bear-anim's
      translateX (see keyframes below); legs/bob are its own fast run-cycle,
      same technique as the human figures. */
-  .elim-bear{opacity:0;animation:elim-bear-onstage 27s 1 forwards linear}
-  .elim-bear-anim{animation:elim-bear-anim 27s 1 forwards ease-in-out}
+  .elim-bear{opacity:0;animation:elim-bear-onstage 33s 1 forwards linear}
+  .elim-bear-anim{animation:elim-bear-anim 33s 1 forwards ease-in-out}
   .elim-bear-bob{animation:elim-run-bob .16s ease-in-out infinite}
   .elim-bear-body,.elim-bear-head{fill:#8a5a34;stroke:#0003;stroke-width:1}
   .elim-bear-ear{fill:#6b4426}
@@ -435,69 +435,77 @@
   @keyframes elim-run-arm-b{ 0%,100%{transform:rotate(-26deg)} 50%{transform:rotate(26deg)} }
   @keyframes elim-run-bob{ 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(-8px) rotate(3deg)} }
   @keyframes elim-orbit{ 0%{offset-distance:0%} 100%{offset-distance:100%} }
-  @keyframes elim-bear-onstage{ 0%,66.6%{opacity:0} 66.7%,100%{opacity:1} }
-  /* off-screen right (66.7%) -> blocks the pit (79%, holds) -> dodges
-     sideways right as the charger arrives (87-89%) -> keeps going, "riding"
-     off to the right with whoever hopped on (100%). */
+  @keyframes elim-bear-onstage{ 0%,54.5%{opacity:0} 54.6%,100%{opacity:1} }
+  /* off-screen right (0-54.5%, Act 1) -> runs in and blocks the pit (63.6%,
+     holds) -> dodges sideways right as the charger reaches it (80.3-81.8%)
+     -> keeps holding there (the charger falls without it) -> once the
+     survivor hops on (93.9%), rides off to the right with it (100%). */
   @keyframes elim-bear-anim{
-    0%,66.6%{transform:translateX(420px)}
-    79%{transform:translateX(0)}
-    87%{transform:translateX(0)}
-    89%{transform:translateX(100px)}
+    0%,54.5%{transform:translateX(420px)}
+    63.6%{transform:translateX(0)}
+    80.3%{transform:translateX(0)}
+    81.8%,93.9%{transform:translateX(100px)}
     100%{transform:translateX(500px)}
   }
   @keyframes elim-tag-fall{
-    0%,86%{opacity:1;transform:translate(0,0)}
-    93%{opacity:1;transform:translate(4px,20px)}
-    100%{opacity:0;transform:translate(18px,95px)}
+    0%,80.3%{opacity:1;transform:translate(0,0)}
+    86.4%{opacity:1;transform:translate(4px,20px)}
+    91.8%{opacity:.3;transform:translate(10px,60px)}
+    93.3%,100%{opacity:0;transform:translate(15px,90px)}
   }
   @keyframes elim-tag-ride{
-    0%,88%{transform:translate(0,0)}
-    92%{transform:translate(100px,20px)}
+    0%,57.3%{transform:translate(0,0)}
+    63.6%,92.4%{transform:translate(-65px,-8px)}
+    93.9%{transform:translate(100px,20px)}
     100%{transform:translate(500px,16px)}
   }
   @keyframes elim-dust-pop{
-    0%,95%{opacity:0;transform:scale(.3)}
-    97%{opacity:.9;transform:scale(1)}
+    0%,89%{opacity:0;transform:scale(.3)}
+    91.5%{opacity:.9;transform:scale(1)}
     100%{opacity:0;transform:scale(1.9)}
   }
-  /* Act 1 (0-66.7%): "safe" gets two big dips toward the pit it barely
-     recovers from, alternating with "out"'s (below) so the two read as
-     taking turns almost going in. Act 2 (66.7-100%): it watches the bear
-     block the pit, then hops on its back once the bear dodges, and rides
-     off with it — its nametag mirrors this exact move, see elim-tag-ride. */
+  /* Act 1 (0-54.5%, 0-18s of 33s): "safe" gets two big dips toward the pit
+     it barely recovers from, alternating with "out"'s (below) so the two
+     read as taking turns almost going in. Act 2: as soon as the bear
+     starts closing in, it steps well aside (57.3-92.4%) so the charge and
+     dodge read clearly with nobody in the way — only once "out" is fully
+     gone does it hustle back, hop on the bear's back and ride off with it
+     (its nametag mirrors this exact move, see elim-tag-ride). */
   @keyframes elim-wobble-safe{
-    0%,25%{transform:translate(0,0) rotate(0deg)}
-    31%{transform:translate(-9px,28px) rotate(-27deg)}
-    35%{transform:translate(3px,-4px) rotate(6deg)}
-    39%,51%{transform:translate(0,0) rotate(0deg)}
-    57%{transform:translate(9px,30px) rotate(27deg)}
-    61%{transform:translate(-3px,-4px) rotate(-6deg)}
-    65%,88%{transform:translate(0,0) rotate(0deg)}
-    92%{transform:translate(90px,-6px) rotate(-8deg)}
-    95%{transform:translate(100px,20px) rotate(4deg)}
+    0%,25.5%{transform:translate(0,0) rotate(0deg)}
+    29.4%{transform:translate(-9px,28px) rotate(-27deg)}
+    33.3%{transform:translate(3px,-4px) rotate(6deg)}
+    36.4%,46.7%{transform:translate(0,0) rotate(0deg)}
+    50.9%{transform:translate(9px,30px) rotate(27deg)}
+    54.5%{transform:translate(-3px,-4px) rotate(-6deg)}
+    57.3%,92.4%{transform:translate(-65px,-8px) rotate(0deg)}
+    93%{transform:translate(20px,-10px) rotate(-6deg)}
+    93.9%{transform:translate(100px,20px) rotate(4deg)}
     100%{transform:translate(500px,16px) rotate(2deg)}
   }
-  /* Act 1: two near-falls (each bigger than "safe"'s). Act 2: watches the
-     bear arrive and take up position between it and the pit (66.7-84%),
-     then charges (84-87%) right as the bear dodges out of the way — with
-     nothing to stop it, momentum carries it past the rim into a long,
-     fast, accelerating multi-rotation spin down into the pit. */
+  /* Act 1: two near-falls (each bigger than "safe"'s). Act 2: holds neutral
+     while the bear runs in and takes up position between it and the pit
+     (54.5-80.3%), then charges — reaching right where the bear was
+     standing (80.3%) just as the bear dodges clear (81.8%) — so nothing
+     stops it: a long, fast, accelerating multi-rotation spin carries it
+     down into the pit, fully resolved (opacity 0) well before the survivor
+     hops on the bear at 93.9%. */
   @keyframes elim-wobble-out{
-    0%,12%{transform:translate(0,0) rotate(0deg);opacity:1}
-    17%{transform:translate(8px,30px) rotate(-28deg);opacity:1}
-    22%{transform:translate(-3px,-4px) rotate(6deg);opacity:1}
-    27%,38%{transform:translate(0,0) rotate(0deg);opacity:1}
-    44%{transform:translate(-10px,34px) rotate(30deg);opacity:1}
-    49%{transform:translate(3px,-5px) rotate(-7deg);opacity:1}
-    54%,83%{transform:translate(0,0) rotate(0deg);opacity:1}
-    86%{transform:translate(2px,22px) rotate(5deg);opacity:1}
-    88%{transform:translate(4px,48px) rotate(10deg);opacity:1}
-    90%{transform:translate(8px,80px) rotate(110deg) scale(.75);opacity:.9}
-    93%{transform:translate(14px,115px) rotate(280deg) scale(.55);opacity:.7}
-    96%{transform:translate(20px,148px) rotate(500deg) scale(.35);opacity:.45}
-    99%{transform:translate(25px,175px) rotate(760deg) scale(.18);opacity:.2}
-    100%{transform:translate(27px,188px) rotate(860deg) scale(.1);opacity:0}
+    0%,9.8%{transform:translate(0,0) rotate(0deg);opacity:1}
+    13.9%{transform:translate(8px,30px) rotate(-28deg);opacity:1}
+    17.9%{transform:translate(-3px,-4px) rotate(6deg);opacity:1}
+    22.1%,31.2%{transform:translate(0,0) rotate(0deg);opacity:1}
+    36.1%{transform:translate(-10px,34px) rotate(30deg);opacity:1}
+    40%{transform:translate(3px,-5px) rotate(-7deg);opacity:1}
+    44.2%,75.8%{transform:translate(0,0) rotate(0deg);opacity:1}
+    78%{transform:translate(1px,15px) rotate(3deg);opacity:1}
+    80.3%{transform:translate(4px,40px) rotate(8deg);opacity:1}
+    81.8%{transform:translate(7px,58px) rotate(15deg);opacity:1}
+    83.5%{transform:translate(10px,75px) rotate(40deg) scale(.9);opacity:1}
+    86.4%{transform:translate(14px,100px) rotate(150deg) scale(.65);opacity:.9}
+    89.4%{transform:translate(19px,130px) rotate(340deg) scale(.42);opacity:.6}
+    91.8%{transform:translate(23px,155px) rotate(560deg) scale(.22);opacity:.25}
+    93.3%,100%{transform:translate(26px,170px) rotate(710deg) scale(.1);opacity:0}
   }
   .elim-caption{text-align:center;font-size:12px;color:var(--ink-faint);padding:8px 4px 10px}
   .elim-caption b{color:var(--ink)}
@@ -921,7 +929,7 @@
   <div class="panel" id="p-overview">
     <section id="elimFeatSec" hidden style="margin-bottom:32px">
       <div class="h-kicker" id="elimFeatKicker">This week</div>
-      <h2 class="sec" style="font-size:20px" id="elimFeatHeading">On the Chopping Block</h2>
+      <h2 class="sec" style="font-size:20px" id="elimFeatHeading">Chopped!</h2>
       <div class="elim-wrap"><div id="elimFeatStage"></div><p class="elim-caption" id="elimFeatCaption"></p></div>
     </section>
     <div class="ov-top">
@@ -1475,7 +1483,7 @@
   var ELIM_LANE_A = "M 450,182 A 300,148 0 0 1 750,330 A 300,148 0 0 1 450,478 A 300,148 0 0 1 150,330 A 300,148 0 0 1 450,182";
   var ELIM_LANE_B = "M 450,205 A 270,125 0 0 1 720,330 A 270,125 0 0 1 450,455 A 270,125 0 0 1 180,330 A 270,125 0 0 1 450,205";
   var ELIM_TIMERS = [];
-  var ELIM_DURATION_MS = 27000;
+  var ELIM_DURATION_MS = 33000;
   function elimClearTimers(){ ELIM_TIMERS.forEach(function(id){ clearInterval(id); }); ELIM_TIMERS = []; }
   function elimFigureSvg(team, roleClass, tagSide){
     var c = esc(team.color || '#888');
