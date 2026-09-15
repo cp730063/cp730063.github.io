@@ -1388,7 +1388,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260915031202"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260915032021"}</script>
 <script>
 "use strict";
 (function(){
@@ -4146,7 +4146,7 @@
       return '<div class="elim-hist-card">' +
         '<button type="button" class="elim-hist-hd" data-i="'+i+'" aria-expanded="'+(open?'true':'false')+'">' +
           '<span class="elim-hist-wk">'+esc(entry.label || ('Week '+entry.week))+'</span>' +
-          '<span class="elim-hist-sum"><b>'+esc(loser.jersey||'')+'</b> eliminated &middot; <b>'+esc(survivor.jersey||'')+'</b> survives</span>' +
+          '<span class="elim-hist-sum"><b>'+esc(loser.team||'')+'</b> eliminated &middot; <b>'+esc(survivor.team||'')+'</b> survives</span>' +
           '<span class="elim-hist-toggle">'+(open?'▴ hide':'▾ watch')+'</span>' +
         '</button>' +
         '<div class="elim-hist-body"'+(open?'':' hidden')+'>' +

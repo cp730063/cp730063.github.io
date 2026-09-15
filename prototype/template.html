@@ -4146,7 +4146,7 @@
       return '<div class="elim-hist-card">' +
         '<button type="button" class="elim-hist-hd" data-i="'+i+'" aria-expanded="'+(open?'true':'false')+'">' +
           '<span class="elim-hist-wk">'+esc(entry.label || ('Week '+entry.week))+'</span>' +
-          '<span class="elim-hist-sum"><b>'+esc(loser.jersey||'')+'</b> eliminated &middot; <b>'+esc(survivor.jersey||'')+'</b> survives</span>' +
+          '<span class="elim-hist-sum"><b>'+esc(loser.team||'')+'</b> eliminated &middot; <b>'+esc(survivor.team||'')+'</b> survives</span>' +
           '<span class="elim-hist-toggle">'+(open?'▴ hide':'▾ watch')+'</span>' +
         '</button>' +
         '<div class="elim-hist-body"'+(open?'':' hidden')+'>' +
