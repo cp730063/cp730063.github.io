@@ -9,6 +9,15 @@
   "playerWeeksFile": "data/espn_player_weeks_1992466539.json",
   "overlay": null,
   "prestige": { "championship": 10, "regularSeasonTitle": 4, "runnerUp": 3, "divisionTitle": 2, "thirdPlace": 0, "lastPlace": 0, "playoffBerth": 0 },
+  "eliminator": [
+    {
+      "week": 2,
+      "label": "Week 2",
+      "teamA": { "team": "Andrew's Astounding Team", "jersey": "St Joes", "color": "#1f9d55" },
+      "teamB": { "team": "Blue Balls", "jersey": "St Eugenes", "color": "#2f6fed" },
+      "eliminated": "A"
+    }
+  ],
   "people": [
     { "id": "pashko",      "name": "Carl Pashko",        "mgr": "patriots122436",    "espn": "{ADD6A8E2-9261-4912-982A-D94F3D470047}" },
     { "id": "costantini",  "name": "Anthony Costantini",  "mgr": "acoznova",          "espn": "{BB8F1827-9475-4CD2-BDFA-4CBC00D32D9D}" },

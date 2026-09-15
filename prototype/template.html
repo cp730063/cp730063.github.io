@@ -382,6 +382,79 @@
   .live-badge.ok{background:var(--accent-soft);color:var(--accent)}
   .live-badge.fix{background:var(--gold-soft);color:var(--gold)}
   .live-note{font-size:11.5px;color:var(--ink-faint);padding:14px}
+  /* guillotine league: weekly elimination animation */
+  .elim-wrap{border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);
+    padding:14px 14px 6px;overflow:hidden}
+  .elim-scene{display:block;width:100%;height:auto;max-width:720px;margin:0 auto}
+  .elim-pit{fill:#14181c}
+  .elim-pit-rim{fill:none;stroke:#000;stroke-opacity:.35;stroke-width:4}
+  .elim-pit-glow{fill:none;stroke:#e2542b;stroke-opacity:.25;stroke-width:10;filter:blur(3px)}
+  .elim-track{fill:none;stroke:var(--border-strong);stroke-dasharray:6 11;opacity:.5}
+  .elim-pit-label{font-family:var(--disp);font-weight:700;font-size:32px;letter-spacing:.07em;
+    fill:#f2c94c;text-transform:uppercase;text-anchor:middle;paint-order:stroke;stroke:#0008;stroke-width:3}
+  .elim-tag-bg{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.2}
+  .elim-tag-jersey{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.02em;
+    text-transform:uppercase;text-anchor:middle}
+  .elim-tag-team{font-family:var(--body);font-size:10.5px;fill:var(--ink-faint);text-anchor:middle}
+  .elim-facemask{fill:none;stroke:#0004;stroke-width:2;stroke-linecap:round}
+  .elim-ball{fill:#7a4a26}
+  .elim-ball-lace{fill:none;stroke:#f0e4d0;stroke-width:1.2;stroke-linecap:round}
+  .elim-torso,.elim-arm{stroke:#0003;stroke-width:1}
+  .elim-leg{fill:#3a3f47}
+  .elim-runner{offset-rotate:0deg;animation-timing-function:linear;animation-fill-mode:forwards}
+  .elim-leg-back{animation:elim-run-leg-b .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-leg-front{animation:elim-run-leg-a .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-arm-back{animation:elim-run-arm-a .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-arm-front{animation:elim-run-arm-b .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
+  .elim-bob{animation:elim-run-bob .21s ease-in-out infinite}
+  .elim-wobble{transform-box:fill-box;transform-origin:50% 78%;animation-duration:20s;animation-iteration-count:1;
+    animation-fill-mode:forwards;animation-timing-function:ease-in-out}
+  .elim-wobble.role-safe{animation-name:elim-wobble-safe}
+  .elim-wobble.role-out-top{animation-name:elim-wobble-out-top}
+  .elim-wobble.role-out-bottom{animation-name:elim-wobble-out-bottom}
+  @keyframes elim-run-leg-a{ 0%,100%{transform:rotate(-24deg)} 50%{transform:rotate(24deg)} }
+  @keyframes elim-run-leg-b{ 0%,100%{transform:rotate(24deg)} 50%{transform:rotate(-24deg)} }
+  @keyframes elim-run-arm-a{ 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-20deg)} }
+  @keyframes elim-run-arm-b{ 0%,100%{transform:rotate(-20deg)} 50%{transform:rotate(20deg)} }
+  @keyframes elim-run-bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  @keyframes elim-orbit{ 0%{offset-distance:0%} 100%{offset-distance:100%} }
+  @keyframes elim-wobble-safe{
+    0%,38%{transform:translate(0,0) rotate(0deg)}
+    42%{transform:translate(5px,4px) rotate(-16deg)}
+    47%{transform:translate(-2px,-1px) rotate(5deg)}
+    51%,93%{transform:translate(0,0) rotate(0deg)}
+    96%{transform:translate(0,-9px) rotate(0deg)}
+    100%{transform:translate(0,0) rotate(0deg)}
+  }
+  @keyframes elim-wobble-out-top{
+    0%,18%{transform:translate(0,0) rotate(0deg);opacity:1}
+    22%{transform:translate(-5px,4px) rotate(15deg)}
+    27%{transform:translate(2px,-1px) rotate(-4deg)}
+    31%,79%{transform:translate(0,0) rotate(0deg);opacity:1}
+    86%{transform:translate(10px,22px) rotate(35deg);opacity:1}
+    93%{transform:translate(18px,72px) rotate(100deg) scale(.7);opacity:.7}
+    100%{transform:translate(22px,142px) rotate(210deg) scale(.2);opacity:0}
+  }
+  @keyframes elim-wobble-out-bottom{
+    0%,18%{transform:translate(0,0) rotate(0deg);opacity:1}
+    22%{transform:translate(5px,-4px) rotate(-15deg)}
+    27%{transform:translate(-2px,1px) rotate(4deg)}
+    31%,79%{transform:translate(0,0) rotate(0deg);opacity:1}
+    86%{transform:translate(-10px,-22px) rotate(-35deg);opacity:1}
+    93%{transform:translate(-18px,-72px) rotate(-100deg) scale(.7);opacity:.7}
+    100%{transform:translate(-22px,-142px) rotate(-210deg) scale(.2);opacity:0}
+  }
+  .elim-caption{text-align:center;font-size:12px;color:var(--ink-faint);padding:8px 4px 10px}
+  .elim-caption b{color:var(--ink)}
+  .elim-hist-card{border:1px solid var(--border);border-radius:10px;background:var(--surface);margin-bottom:14px;overflow:hidden}
+  .elim-hist-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;
+    cursor:pointer;background:none;border:0;width:100%;text-align:left;font:inherit;color:inherit}
+  .elim-hist-hd:hover{background:var(--surface-2)}
+  .elim-hist-wk{font-family:var(--disp);font-weight:600}
+  .elim-hist-sum{font-size:12.5px;color:var(--ink-faint);flex:1;margin-left:4px}
+  .elim-hist-sum b{color:var(--ink);font-weight:600}
+  .elim-hist-toggle{font-size:11px;color:var(--ink-faint);font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em}
+  .elim-hist-body{padding:4px 14px 14px}
   /* baseball category-grid box */
   .bxc{max-width:430px;margin:2px auto 0;border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--surface)}
   .bxc-r{display:grid;grid-template-columns:1fr 88px 88px;gap:8px;align-items:center;padding:5px 13px;font-size:12.5px;border-top:1px solid var(--border)}
@@ -750,6 +823,7 @@
         <button role="tab" aria-selected="false" data-p="drafts">Drafts</button>
         <button role="tab" aria-selected="false" data-p="trades">Trades</button>
         <button role="tab" aria-selected="false" data-p="playoffs">Playoffs</button>
+        <button role="tab" aria-selected="false" data-p="eliminator">Eliminator</button>
       </div>
     </div>
     <div class="nav-sec">
@@ -790,6 +864,11 @@
   </header>
   <main class="wrap">
   <div class="panel" id="p-overview">
+    <section id="elimFeatSec" hidden style="margin-bottom:32px">
+      <div class="h-kicker" id="elimFeatKicker">This week</div>
+      <h2 class="sec" style="font-size:20px" id="elimFeatHeading">On the Chopping Block</h2>
+      <div class="elim-wrap"><div id="elimFeatStage"></div><p class="elim-caption" id="elimFeatCaption"></p></div>
+    </section>
     <div class="ov-top">
       <div class="ov-champ" id="ovChamp"></div>
       <div class="ov-note" id="ovNote"></div>
@@ -1070,6 +1149,13 @@
     </section>
   </div>
 
+  <div class="panel" id="p-eliminator" hidden>
+    <div class="h-kicker">Guillotine</div>
+    <h2 class="sec">The Eliminator</h2>
+    <p class="sec-note">Every week's chopping block, replayed. Click a week to watch.</p>
+    <div id="elimHistList"></div>
+  </div>
+
   <div class="panel" id="p-tradecalc" hidden>
     <div class="h-kicker">What's it worth</div>
     <h2 class="sec">Trade Calculator</h2>
@@ -1319,6 +1405,78 @@
   var _dgBoardRefresh = null;  /* set by sec_drafts; sec_draftGrades calls it once surpluses exist */
   function pName(id){ return P[id] ? P[id].name : id; }
   function pMgr(id){ return P[id] ? P[id].mgr : ''; }
+
+  /* ---- guillotine leagues: weekly elimination-race animation ---- */
+  var ELIM_PATH_TOP = "M 400,110 A 310,150 0 0 1 710,260 A 310,150 0 0 1 400,410 A 310,150 0 0 1 90,260 A 310,150 0 0 1 400,110";
+  var ELIM_PATH_BOTTOM = "M 400,410 A 310,150 0 0 1 90,260 A 310,150 0 0 1 400,110 A 310,150 0 0 1 710,260 A 310,150 0 0 1 400,410";
+  var ELIM_TIMERS = [];
+  function elimClearTimers(){ ELIM_TIMERS.forEach(function(id){ clearInterval(id); }); ELIM_TIMERS = []; }
+  function elimFigureSvg(team, roleClass){
+    var c = esc(team.color || '#888');
+    return '' +
+      '<g class="elim-bob">' +
+        '<g class="elim-wobble ' + roleClass + '">' +
+          '<rect class="elim-leg elim-leg-back" x="-10" y="-46" width="12" height="46" rx="6"></rect>' +
+          '<rect class="elim-leg elim-leg-front" x="-2" y="-46" width="12" height="46" rx="6"></rect>' +
+          '<rect class="elim-arm elim-arm-back" x="-17" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
+          '<rect class="elim-torso" x="-16" y="-80" width="32" height="34" rx="7" style="fill:' + c + '"></rect>' +
+          '<circle class="elim-head" cx="0" cy="-96" r="17" style="fill:' + c + '"></circle>' +
+          '<path class="elim-facemask" d="M -9,-92 Q 0,-83 9,-92"></path>' +
+          '<rect class="elim-arm elim-arm-front" x="7" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
+          '<ellipse class="elim-ball" cx="23" cy="-60" rx="7.5" ry="10"></ellipse>' +
+          '<path class="elim-ball-lace" d="M 19,-60 L 27,-60 M 21,-63 L 21,-57 M 25,-63 L 25,-57"></path>' +
+        '</g>' +
+      '</g>';
+  }
+  function elimTagSvg(team, cx, cy){
+    var c = esc(team.color || '#888');
+    return '' +
+      '<g class="elim-tag" transform="translate(' + cx + ',' + cy + ')">' +
+        '<rect class="elim-tag-bg" x="-70" y="-21" width="140" height="43" rx="10"></rect>' +
+        '<text class="elim-tag-jersey" x="0" y="-1" style="fill:' + c + '">' + esc(team.jersey || '') + '</text>' +
+        '<text class="elim-tag-team" x="0" y="13">' + esc(team.team || '') + '</text>' +
+      '</g>';
+  }
+  function buildEliminatorSvg(entry){
+    var teamA = entry.teamA || {}, teamB = entry.teamB || {};
+    var roleA = entry.eliminated === 'A' ? 'role-out-top' : 'role-safe';
+    var roleB = entry.eliminated === 'B' ? 'role-out-bottom' : 'role-safe';
+    return '' +
+      '<svg class="elim-scene" viewBox="0 0 800 500" role="img" aria-label="' +
+        esc((teamA.jersey||'')+' vs '+(teamB.jersey||'')+', elimination race') + '">' +
+        elimTagSvg(teamA, 400, 45) +
+        '<ellipse class="elim-track" cx="400" cy="260" rx="310" ry="150"></ellipse>' +
+        '<ellipse class="elim-pit" cx="400" cy="260" rx="150" ry="88"></ellipse>' +
+        '<ellipse class="elim-pit-rim" cx="400" cy="260" rx="150" ry="88"></ellipse>' +
+        '<text class="elim-pit-label" x="400" y="270">Eliminator</text>' +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_PATH_TOP + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
+          elimFigureSvg(teamA, roleA) +
+        '</g>' +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_PATH_BOTTOM + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
+          elimFigureSvg(teamB, roleB) +
+        '</g>' +
+        elimTagSvg(teamB, 400, 460) +
+      '</svg>';
+  }
+  function elimCaptionHtml(entry){
+    var teamA = entry.teamA || {}, teamB = entry.teamB || {};
+    var loser = entry.eliminated === 'A' ? teamA : teamB;
+    var survivor = entry.eliminated === 'A' ? teamB : teamA;
+    return '<b>' + esc(loser.jersey||'') + '</b> (' + esc(loser.team||'') + ') takes the fall this week — <b>' +
+      esc(survivor.jersey||'') + '</b> (' + esc(survivor.team||'') + ') lives to run another week.';
+  }
+  /* mounts the animated scene into `stage` and restarts it every 20s (a fresh
+     subtree so every CSS animation replays from its own 0% keyframe — far
+     simpler and more reliable than trying to reset animation state in place). */
+  function mountEliminatorScene(stage, entry){
+    if (!stage) return;
+    stage.innerHTML = buildEliminatorSvg(entry);
+    var id = setInterval(function(){
+      if (!document.body.contains(stage)){ clearInterval(id); return; }
+      stage.innerHTML = buildEliminatorSvg(entry);
+    }, 20000);
+    ELIM_TIMERS.push(id);
+  }
   function deriveModel(){
     P = {};
     (DATA.people||[]).forEach(function(p){ P[p.id] = p; });
@@ -1414,7 +1572,7 @@
   }
 
   /* ---- init once (theme, tabs, league picker) ---- */
-  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs','tradecalc',
+  var TABS = ['overview','standings','records','legacy','h2h','names','players','drafts','trades','playoffs','eliminator','tradecalc',
               'research','rfmovers','rfreddit','rftools'];
   var root = document.documentElement, TKEY='dischnasty-theme';
   try { var sv = localStorage.getItem(TKEY); if (sv) root.setAttribute('data-theme', sv); } catch(e){}
@@ -1497,6 +1655,7 @@
     var football = (lg.sport || 'nfl') === 'nfl';
     var avail = { players: !!lg.hasPlayers, trades: !!lg.hasTrades,
                   drafts: !!(lg.hasDrafts || (DATA.drafts && DATA.drafts.length)),
+                  eliminator: lg.type === 'guillotine' && !!(lg.eliminator && lg.eliminator.length),
                   tradecalc: (lg.type === 'dynasty' || lg.type === 'redraft' || lg.type === 'keeper') &&
                              (football || (!!lg.hasPlayers && (DATA.playerSeasons || []).length)) };
     Object.keys(avail).forEach(function(p){
@@ -1507,7 +1666,7 @@
       else if (sec) sec.hidden = false;
       document.getElementById('p-'+p).hidden = document.getElementById('p-'+p).hidden || !avail[p];
     });
-    ['players','trades','drafts','tradecalc'].forEach(function(p){
+    ['players','trades','drafts','eliminator','tradecalc'].forEach(function(p){
       if (currentTab()===p && !avail[p]) selectTab('overview');
     });
   }
@@ -1546,7 +1705,7 @@
     deriveModel();
     renderHeader();
     sec_overview(); sec_standings(); sec_records(); sec_legacy(); sec_h2h();
-    sec_names(); sec_players(); sec_drafts(); sec_draftGrades(); sec_trades(); sec_playoffs(); sec_tradecalc();
+    sec_names(); sec_players(); sec_drafts(); sec_draftGrades(); sec_trades(); sec_playoffs(); sec_eliminator(); sec_tradecalc();
     sec_research();
     applyTabAvailability();
   }
@@ -1570,6 +1729,20 @@
   function sec_overview(){
     var manualYears = seasons.filter(function(s){return s.manual;}).map(function(s){return s.year;});
     var lg = DATA.league || {};
+
+    /* ---- guillotine: this week's elimination race, top of the homepage ---- */
+    elimClearTimers();
+    var elimList = lg.eliminator || [];
+    var featSec = document.getElementById('elimFeatSec');
+    if (lg.type === 'guillotine' && elimList.length){
+      featSec.hidden = false;
+      var latest = elimList[elimList.length - 1];
+      document.getElementById('elimFeatKicker').textContent = latest.label || ('Week ' + latest.week);
+      document.getElementById('elimFeatCaption').innerHTML = elimCaptionHtml(latest);
+      mountEliminatorScene(document.getElementById('elimFeatStage'), latest);
+    } else {
+      featSec.hidden = true;
+    }
 
     /* ---- reigning-champion callout ---- */
     var champSeason = played.slice().reverse().filter(function(s){ return s.champion; })[0];
@@ -3855,6 +4028,47 @@
       render(+b.dataset.y);
     });
     render(cur);
+  }
+
+  function sec_eliminator(){
+    var host = document.getElementById('elimHistList');
+    if (!host) return;
+    var lg = DATA.league || {};
+    var list = (lg.eliminator || []).slice().reverse();
+    if (!list.length){ host.innerHTML = '<div class="bx-note">No eliminations on record yet.</div>'; return; }
+    host.innerHTML = list.map(function(entry, i){
+      var teamA = entry.teamA||{}, teamB = entry.teamB||{};
+      var loser = entry.eliminated === 'A' ? teamA : teamB;
+      var survivor = entry.eliminated === 'A' ? teamB : teamA;
+      var open = i === 0;
+      return '<div class="elim-hist-card">' +
+        '<button type="button" class="elim-hist-hd" data-i="'+i+'" aria-expanded="'+(open?'true':'false')+'">' +
+          '<span class="elim-hist-wk">'+esc(entry.label || ('Week '+entry.week))+'</span>' +
+          '<span class="elim-hist-sum"><b>'+esc(loser.jersey||'')+'</b> eliminated &middot; <b>'+esc(survivor.jersey||'')+'</b> survives</span>' +
+          '<span class="elim-hist-toggle">'+(open?'▴ hide':'▾ watch')+'</span>' +
+        '</button>' +
+        '<div class="elim-hist-body"'+(open?'':' hidden')+'>' +
+          '<div class="elim-wrap"><div class="elim-hist-stage" data-i="'+i+'"'+(open?' data-mounted="1"':'')+'></div>' +
+          '<p class="elim-caption">'+elimCaptionHtml(entry)+'</p></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    var firstStage = host.querySelector('.elim-hist-stage[data-i="0"]');
+    if (firstStage) mountEliminatorScene(firstStage, list[0]);
+    host.querySelectorAll('.elim-hist-hd').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var i = +btn.dataset.i;
+        var body = btn.nextElementSibling;
+        var opening = body.hidden;
+        body.hidden = !opening;
+        btn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+        btn.querySelector('.elim-hist-toggle').textContent = opening ? '▴ hide' : '▾ watch';
+        if (opening){
+          var stage = body.querySelector('.elim-hist-stage');
+          if (!stage.dataset.mounted){ stage.dataset.mounted = '1'; mountEliminatorScene(stage, list[i]); }
+        }
+      });
+    });
   }
 
   function sec_players(){

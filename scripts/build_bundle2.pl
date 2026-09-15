@@ -1567,6 +1567,7 @@ my $out = {
     # directly for the currently-active NFL season without a build/deploy round-trip.
     sleeperLeagues => (%SLE_LEAGUES ? { %SLE_LEAGUES } : undef),
     liveLabel => $CFG->{liveLabel} || undef,   # optional per-league title for the Live scoring section
+    eliminator => ($CFG->{eliminator} || undef),   # guillotine leagues: weekly elimination-race animation data
   },
   generated_at => $generated,
   people => \@peopleOut,
