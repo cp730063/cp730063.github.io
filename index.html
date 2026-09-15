@@ -393,9 +393,9 @@
   .elim-pit-label{font-family:var(--disp);font-weight:700;font-size:32px;letter-spacing:.07em;
     fill:#f2c94c;text-transform:uppercase;text-anchor:middle;paint-order:stroke;stroke:#0008;stroke-width:3}
   .elim-tag-bg{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.2}
-  .elim-tag-jersey{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.02em;
-    text-transform:uppercase;text-anchor:middle}
-  .elim-tag-team{font-family:var(--body);font-size:10.5px;fill:var(--ink-faint);text-anchor:middle}
+  .elim-tag-team{font-family:var(--body);font-weight:600;font-size:8.7px;fill:var(--ink);text-anchor:middle}
+  .elim-jersey-text{font-family:var(--disp);font-weight:700;font-size:7.5px;letter-spacing:.02em;
+    text-transform:uppercase;text-anchor:middle;fill:#fff;paint-order:stroke;stroke:#0004;stroke-width:1.4}
   .elim-facemask{fill:none;stroke:#0004;stroke-width:2;stroke-linecap:round}
   .elim-ball{fill:#7a4a26}
   .elim-ball-lace{fill:none;stroke:#f0e4d0;stroke-width:1.2;stroke-linecap:round}
@@ -407,42 +407,49 @@
   .elim-arm-back{animation:elim-run-arm-a .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
   .elim-arm-front{animation:elim-run-arm-b .42s linear infinite;transform-box:fill-box;transform-origin:50% 0%}
   .elim-bob{animation:elim-run-bob .21s ease-in-out infinite}
+  .elim-nametag{animation-duration:20s;animation-iteration-count:1;animation-fill-mode:forwards;animation-timing-function:ease-in}
+  .elim-nametag.role-out{animation-name:elim-tag-fade}
   .elim-wobble{transform-box:fill-box;transform-origin:50% 78%;animation-duration:20s;animation-iteration-count:1;
     animation-fill-mode:forwards;animation-timing-function:ease-in-out}
   .elim-wobble.role-safe{animation-name:elim-wobble-safe}
-  .elim-wobble.role-out-top{animation-name:elim-wobble-out-top}
-  .elim-wobble.role-out-bottom{animation-name:elim-wobble-out-bottom}
+  .elim-wobble.role-out{animation-name:elim-wobble-out}
   @keyframes elim-run-leg-a{ 0%,100%{transform:rotate(-24deg)} 50%{transform:rotate(24deg)} }
   @keyframes elim-run-leg-b{ 0%,100%{transform:rotate(24deg)} 50%{transform:rotate(-24deg)} }
   @keyframes elim-run-arm-a{ 0%,100%{transform:rotate(20deg)} 50%{transform:rotate(-20deg)} }
   @keyframes elim-run-arm-b{ 0%,100%{transform:rotate(-20deg)} 50%{transform:rotate(20deg)} }
   @keyframes elim-run-bob{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
   @keyframes elim-orbit{ 0%{offset-distance:0%} 100%{offset-distance:100%} }
+  @keyframes elim-tag-fade{ 0%,80%{opacity:1} 92%{opacity:.35} 100%{opacity:0} }
+  /* "safe" gets two dips it recovers from — its turns fall between the
+     "out" runner's escalating ones, so they read as taking turns. */
   @keyframes elim-wobble-safe{
-    0%,38%{transform:translate(0,0) rotate(0deg)}
-    42%{transform:translate(5px,4px) rotate(-16deg)}
-    47%{transform:translate(-2px,-1px) rotate(5deg)}
-    51%,93%{transform:translate(0,0) rotate(0deg)}
-    96%{transform:translate(0,-9px) rotate(0deg)}
+    0%,26%{transform:translate(0,0) rotate(0deg)}
+    30%{transform:translate(-4px,10px) rotate(-13deg)}
+    34%{transform:translate(2px,-2px) rotate(4deg)}
+    38%,52%{transform:translate(0,0) rotate(0deg)}
+    56%{transform:translate(4px,12px) rotate(13deg)}
+    60%{transform:translate(-2px,-2px) rotate(-4deg)}
+    64%,88%{transform:translate(0,0) rotate(0deg)}
+    92%{transform:translate(0,-8px) rotate(0deg)}
     100%{transform:translate(0,0) rotate(0deg)}
   }
-  @keyframes elim-wobble-out-top{
-    0%,18%{transform:translate(0,0) rotate(0deg);opacity:1}
-    22%{transform:translate(-5px,4px) rotate(15deg)}
-    27%{transform:translate(2px,-1px) rotate(-4deg)}
-    31%,79%{transform:translate(0,0) rotate(0deg);opacity:1}
-    86%{transform:translate(10px,22px) rotate(35deg);opacity:1}
-    93%{transform:translate(18px,72px) rotate(100deg) scale(.7);opacity:.7}
-    100%{transform:translate(22px,142px) rotate(210deg) scale(.2);opacity:0}
-  }
-  @keyframes elim-wobble-out-bottom{
-    0%,18%{transform:translate(0,0) rotate(0deg);opacity:1}
-    22%{transform:translate(5px,-4px) rotate(-15deg)}
-    27%{transform:translate(-2px,1px) rotate(4deg)}
-    31%,79%{transform:translate(0,0) rotate(0deg);opacity:1}
-    86%{transform:translate(-10px,-22px) rotate(-35deg);opacity:1}
-    93%{transform:translate(-18px,-72px) rotate(-100deg) scale(.7);opacity:.7}
-    100%{transform:translate(-22px,-142px) rotate(-210deg) scale(.2);opacity:0}
+  /* three escalating near-falls, each closer to going in, before the third
+     one doesn't recover and becomes the real fall (78-100%). */
+  @keyframes elim-wobble-out{
+    0%,14%{transform:translate(0,0) rotate(0deg);opacity:1}
+    18%{transform:translate(4px,11px) rotate(-14deg);opacity:1}
+    22%{transform:translate(-2px,-2px) rotate(4deg);opacity:1}
+    26%,40%{transform:translate(0,0) rotate(0deg);opacity:1}
+    44%{transform:translate(-5px,15px) rotate(16deg);opacity:1}
+    48%{transform:translate(2px,-3px) rotate(-5deg);opacity:1}
+    52%,64%{transform:translate(0,0) rotate(0deg);opacity:1}
+    68%{transform:translate(6px,26px) rotate(-24deg);opacity:1}
+    73%{transform:translate(2px,10px) rotate(-6deg);opacity:1}
+    78%{transform:translate(0,3px) rotate(2deg);opacity:1}
+    84%{transform:translate(6px,26px) rotate(30deg);opacity:1}
+    90%{transform:translate(16px,76px) rotate(100deg) scale(.65);opacity:.75}
+    96%{transform:translate(24px,120px) rotate(175deg) scale(.35);opacity:.35}
+    100%{transform:translate(28px,150px) rotate(230deg) scale(.15);opacity:0}
   }
   .elim-caption{text-align:center;font-size:12px;color:var(--ink-faint);padding:8px 4px 10px}
   .elim-caption b{color:var(--ink)}
@@ -1314,7 +1321,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260915022107"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260915023602"}</script>
 <script>
 "use strict";
 (function(){
@@ -1406,56 +1413,58 @@
   function pName(id){ return P[id] ? P[id].name : id; }
   function pMgr(id){ return P[id] ? P[id].mgr : ''; }
 
-  /* ---- guillotine leagues: weekly elimination-race animation ---- */
-  var ELIM_PATH_TOP = "M 400,110 A 310,150 0 0 1 710,260 A 310,150 0 0 1 400,410 A 310,150 0 0 1 90,260 A 310,150 0 0 1 400,110";
-  var ELIM_PATH_BOTTOM = "M 400,410 A 310,150 0 0 1 90,260 A 310,150 0 0 1 400,110 A 310,150 0 0 1 710,260 A 310,150 0 0 1 400,410";
+  /* ---- guillotine leagues: weekly elimination-race animation ----
+     Both run the same clockwise loop, close together in adjacent "lanes"
+     (outer/inner ellipses) with a slight phase offset so they jockey for
+     position rather than sitting on opposite sides of the pit. Both lanes
+     start at the top, closest to the pit, and 2 exact laps (16s) brings
+     each back to that same spot for the near-fall / fall sequence — so
+     "toward the pit" is always just "down" in local coordinates, for
+     either lane, no per-side keyframe variants needed. */
+  var ELIM_LANE_A = "M 400,182 A 300,148 0 0 1 700,330 A 300,148 0 0 1 400,478 A 300,148 0 0 1 100,330 A 300,148 0 0 1 400,182";
+  var ELIM_LANE_B = "M 400,205 A 270,125 0 0 1 670,330 A 270,125 0 0 1 400,455 A 270,125 0 0 1 130,330 A 270,125 0 0 1 400,205";
   var ELIM_TIMERS = [];
   function elimClearTimers(){ ELIM_TIMERS.forEach(function(id){ clearInterval(id); }); ELIM_TIMERS = []; }
-  function elimFigureSvg(team, roleClass){
+  function elimFigureSvg(team, roleClass, tagSide){
     var c = esc(team.color || '#888');
+    var dx = (tagSide||0) * 82;   // keeps the two tags clear of each other when the runners are side by side
     return '' +
       '<g class="elim-bob">' +
+        '<g class="elim-nametag ' + roleClass + '" transform="translate(' + dx + ',0)">' +
+          '<rect class="elim-tag-bg" x="-78" y="-158" width="156" height="26" rx="8"></rect>' +
+          '<text class="elim-tag-team" x="0" y="-140">' + esc(team.team || '') + '</text>' +
+        '</g>' +
         '<g class="elim-wobble ' + roleClass + '">' +
           '<rect class="elim-leg elim-leg-back" x="-10" y="-46" width="12" height="46" rx="6"></rect>' +
           '<rect class="elim-leg elim-leg-front" x="-2" y="-46" width="12" height="46" rx="6"></rect>' +
-          '<rect class="elim-arm elim-arm-back" x="-17" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
-          '<rect class="elim-torso" x="-16" y="-80" width="32" height="34" rx="7" style="fill:' + c + '"></rect>' +
+          '<rect class="elim-arm elim-arm-back" x="-19" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
+          '<rect class="elim-torso" x="-18" y="-80" width="36" height="34" rx="7" style="fill:' + c + '"></rect>' +
+          '<text class="elim-jersey-text" x="0" y="-64">' + esc(team.jersey || '') + '</text>' +
           '<circle class="elim-head" cx="0" cy="-96" r="17" style="fill:' + c + '"></circle>' +
           '<path class="elim-facemask" d="M -9,-92 Q 0,-83 9,-92"></path>' +
-          '<rect class="elim-arm elim-arm-front" x="7" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
-          '<ellipse class="elim-ball" cx="23" cy="-60" rx="7.5" ry="10"></ellipse>' +
-          '<path class="elim-ball-lace" d="M 19,-60 L 27,-60 M 21,-63 L 21,-57 M 25,-63 L 25,-57"></path>' +
+          '<rect class="elim-arm elim-arm-front" x="9" y="-78" width="10" height="32" rx="5" style="fill:' + c + '"></rect>' +
+          '<ellipse class="elim-ball" cx="25" cy="-60" rx="7.5" ry="10"></ellipse>' +
+          '<path class="elim-ball-lace" d="M 21,-60 L 29,-60 M 23,-63 L 23,-57 M 27,-63 L 27,-57"></path>' +
         '</g>' +
-      '</g>';
-  }
-  function elimTagSvg(team, cx, cy){
-    var c = esc(team.color || '#888');
-    return '' +
-      '<g class="elim-tag" transform="translate(' + cx + ',' + cy + ')">' +
-        '<rect class="elim-tag-bg" x="-70" y="-21" width="140" height="43" rx="10"></rect>' +
-        '<text class="elim-tag-jersey" x="0" y="-1" style="fill:' + c + '">' + esc(team.jersey || '') + '</text>' +
-        '<text class="elim-tag-team" x="0" y="13">' + esc(team.team || '') + '</text>' +
       '</g>';
   }
   function buildEliminatorSvg(entry){
     var teamA = entry.teamA || {}, teamB = entry.teamB || {};
-    var roleA = entry.eliminated === 'A' ? 'role-out-top' : 'role-safe';
-    var roleB = entry.eliminated === 'B' ? 'role-out-bottom' : 'role-safe';
+    var roleA = entry.eliminated === 'A' ? 'role-out' : 'role-safe';
+    var roleB = entry.eliminated === 'B' ? 'role-out' : 'role-safe';
     return '' +
-      '<svg class="elim-scene" viewBox="0 0 800 500" role="img" aria-label="' +
+      '<svg class="elim-scene" viewBox="0 0 800 520" role="img" aria-label="' +
         esc((teamA.jersey||'')+' vs '+(teamB.jersey||'')+', elimination race') + '">' +
-        elimTagSvg(teamA, 400, 45) +
-        '<ellipse class="elim-track" cx="400" cy="260" rx="310" ry="150"></ellipse>' +
-        '<ellipse class="elim-pit" cx="400" cy="260" rx="150" ry="88"></ellipse>' +
-        '<ellipse class="elim-pit-rim" cx="400" cy="260" rx="150" ry="88"></ellipse>' +
-        '<text class="elim-pit-label" x="400" y="270">Eliminator</text>' +
-        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_PATH_TOP + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
-          elimFigureSvg(teamA, roleA) +
+        '<ellipse class="elim-track" cx="400" cy="330" rx="300" ry="148"></ellipse>' +
+        '<ellipse class="elim-pit" cx="400" cy="330" rx="150" ry="90"></ellipse>' +
+        '<ellipse class="elim-pit-rim" cx="400" cy="330" rx="150" ry="90"></ellipse>' +
+        '<text class="elim-pit-label" x="400" y="340">Eliminator</text>' +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_A + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
+          elimFigureSvg(teamA, roleA, -1) +
         '</g>' +
-        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_PATH_BOTTOM + '&quot;);animation:elim-orbit 8s linear 2 forwards">' +
-          elimFigureSvg(teamB, roleB) +
+        '<g class="elim-runner" style="offset-path:path(&quot;' + ELIM_LANE_B + '&quot;);animation:elim-orbit 8s linear 2 forwards;animation-delay:-0.6s">' +
+          elimFigureSvg(teamB, roleB, 1) +
         '</g>' +
-        elimTagSvg(teamB, 400, 460) +
       '</svg>';
   }
   function elimCaptionHtml(entry){

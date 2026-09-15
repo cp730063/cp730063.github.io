@@ -11,8 +11,8 @@
   "prestige": { "championship": 10, "regularSeasonTitle": 4, "runnerUp": 3, "divisionTitle": 2, "thirdPlace": 0, "lastPlace": 0, "playoffBerth": 0 },
   "eliminator": [
     {
-      "week": 2,
-      "label": "Week 2",
+      "week": 1,
+      "label": "Week 1",
       "teamA": { "team": "Andrew's Astounding Team", "jersey": "St Joes", "color": "#1f9d55" },
       "teamB": { "team": "Blue Balls", "jersey": "St Eugenes", "color": "#2f6fed" },
       "eliminated": "A"
