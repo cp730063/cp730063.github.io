@@ -365,16 +365,16 @@
     .live-chev{grid-column:2;grid-row:1}
     .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;font-size:11px;align-items:start}
     .live-cur,.live-max,.live-gap{text-align:left}
-    .live-season{flex-direction:row;align-items:baseline;gap:3px}
-    .live-season-sub{display:none}
+    .live-season{align-items:flex-start}
+    .live-season-sub{font-size:8px;white-space:normal}
     .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-season{font-size:8.5px}
     .live-row:not(.live-col-hd) .live-cur::before,.live-row:not(.live-col-hd) .live-max::before,
-    .live-row:not(.live-col-hd) .live-gap::before,.live-row:not(.live-col-hd) .live-season::before{
+    .live-row:not(.live-col-hd) .live-gap::before,.live-row:not(.live-col-hd) .live-season-val::before{
       color:var(--ink-faint);font-weight:400;font-family:var(--disp)}
     .live-row:not(.live-col-hd) .live-cur::before{content:'Cur ';}
     .live-row:not(.live-col-hd) .live-max::before{content:'Max ';}
     .live-row:not(.live-col-hd) .live-gap::before{content:'Bn ';}
-    .live-row:not(.live-col-hd) .live-season::before{content:'Szn ';}
+    .live-row:not(.live-col-hd) .live-season-val::before{content:'Szn ';}
   }
   .live-col-hd{cursor:default}
   .live-col-hd:hover{background:none}
