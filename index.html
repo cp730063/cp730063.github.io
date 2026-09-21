@@ -346,33 +346,36 @@
   .live-team{display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0}
   .live-tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
   .live-pick{font-size:11px;color:var(--ink-faint);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .live-nums{display:grid;grid-template-columns:74px 74px 96px;gap:10px}
-  .live-cur,.live-max{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+  .live-nums{display:grid;grid-template-columns:70px 70px 88px 78px;gap:8px}
+  .live-cur,.live-max,.live-season{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
   .live-max{color:var(--ink-muted)}
+  .live-season{font-weight:600}
   .live-gap{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
   .live-gap.zero{color:var(--ink-faint);font-weight:400}
   .live-gap.some{color:var(--loss)}
   .live-chev{color:var(--ink-faint);font-size:11px;text-align:center}
   @media (max-width:640px){
     /* header and data rows share this exact grid (team+chevron row, then a
-       full-width 3-col numbers row) so the header labels line up with the
+       full-width 4-col numbers row) so the header labels line up with the
        values below them — do NOT give .live-col-hd a different column set. */
     .live-row{grid-template-columns:1fr 20px;grid-template-rows:auto auto;row-gap:5px;padding:10px 14px}
     .live-team{grid-column:1;grid-row:1}
     .live-chev{grid-column:2;grid-row:1}
-    .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:12px}
-    .live-cur,.live-max,.live-gap{text-align:left}
-    .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap{font-size:9.5px}
+    .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;font-size:11px}
+    .live-cur,.live-max,.live-gap,.live-season{text-align:left}
+    .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-season{font-size:8.5px}
     .live-row:not(.live-col-hd) .live-cur::before,.live-row:not(.live-col-hd) .live-max::before,
-    .live-row:not(.live-col-hd) .live-gap::before{color:var(--ink-faint);font-weight:400;font-family:var(--disp)}
+    .live-row:not(.live-col-hd) .live-gap::before,.live-row:not(.live-col-hd) .live-season::before{
+      color:var(--ink-faint);font-weight:400;font-family:var(--disp)}
     .live-row:not(.live-col-hd) .live-cur::before{content:'Cur ';}
     .live-row:not(.live-col-hd) .live-max::before{content:'Max ';}
-    .live-row:not(.live-col-hd) .live-gap::before{content:'Bench ';}
+    .live-row:not(.live-col-hd) .live-gap::before{content:'Bn ';}
+    .live-row:not(.live-col-hd) .live-season::before{content:'Szn ';}
   }
   .live-col-hd{cursor:default}
   .live-col-hd:hover{background:none}
-  .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-team{font-family:var(--disp);
-    text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;color:var(--ink-faint);font-weight:600}
+  .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-season,.live-col-hd .live-team{
+    font-family:var(--disp);text-transform:uppercase;letter-spacing:.05em;font-size:10.5px;color:var(--ink-faint);font-weight:600}
   .live-hdbtn{display:block;width:100%;border:0;background:none;padding:0;margin:0;cursor:pointer;
     font:inherit;text-transform:inherit;letter-spacing:inherit;color:inherit;text-align:inherit}
   .live-hdbtn:hover{color:var(--accent)}
@@ -986,7 +989,7 @@
       </div>
       <p class="sec-note" id="liveNote"></p>
       <div id="liveWrap"></div>
-      <p class="foot" style="border:0;margin-top:10px;padding:0">Computed live from Sleeper’s in-progress scoring — each team’s optimal lineup given only players who have started their games so far. Refreshes automatically.</p>
+      <p class="foot" style="border:0;margin-top:10px;padding:0">Computed live from Sleeper’s in-progress scoring — each team’s optimal lineup given only players who have started their games so far. <b>Season</b> is the cumulative MaxPF balance carried into this week (Sleeper’s own finalized total for prior weeks) plus this week’s live number — that running total is what determines next year’s draft order. Refreshes automatically.</p>
     </section>
     <p class="sec-note" id="standNote"></p>
     <div class="rec-controls" id="seasonPick" role="group" aria-label="Season"></div>
@@ -1388,7 +1391,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260915032021"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260921024850"}</script>
 <script>
 "use strict";
 (function(){
@@ -2186,8 +2189,8 @@
       if (titleEl) titleEl.textContent = DATA.league.liveLabel || 'Live scoring';
       var expanded = {};   // rosterId -> open?
       var lastRows = null;
-      var sortKey = 'max', sortDir = 1;   // default: live max, lowest to highest
-      var SORT_KEYS = { team:1, cur:1, max:1, gap:1 };
+      var sortKey = 'season', sortDir = 1;   // default: cumulative season MaxPF, lowest to highest
+      var SORT_KEYS = { team:1, cur:1, max:1, gap:1, season:1 };
       var ownerToPid = {};   // Sleeper owner_id -> our canonical person id
       (DATA.people || []).forEach(function(p){ if (p.sleeperOwnerId) ownerToPid[p.sleeperOwnerId] = p.id; });
 
@@ -2263,7 +2266,8 @@
         var hd = '<div class="live-row live-col-hd"><span class="live-team">'+hdLabel('team','Team')+'</span>' +
           '<span class="live-nums"><span class="live-cur">'+hdLabel('cur','Current')+'</span>' +
           '<span class="live-max">'+hdLabel('max','Live max')+'</span>' +
-          '<span class="live-gap">'+hdLabel('gap','On bench')+'</span></span>' +
+          '<span class="live-gap">'+hdLabel('gap','On bench')+'</span>' +
+          '<span class="live-season">'+hdLabel('season','Season')+'</span></span>' +
           '<span class="live-chev"></span></div>';
         rows = sortRows(rows);
         return '<div class="live-list">' + hd + rows.map(function(r){
@@ -2276,6 +2280,7 @@
               '<span class="live-cur">'+f1(r.cur)+'</span>' +
               '<span class="live-max">'+f1(r.max)+'</span>' +
               '<span class="live-gap '+gapCls+'">'+(r.gap<0.05?'optimal':'+'+f1(r.gap))+'</span>' +
+              '<span class="live-season">'+f1(r.season)+'</span>' +
             '</span>' +
             '<span class="live-chev">'+(open?'▴':'▾')+'</span></button>' +
             '<div class="live-detail" data-rid="'+r.rid+'"'+(open?'':' hidden')+'>'+(open?detailHtml(r):'')+'</div>';
@@ -2349,12 +2354,17 @@
             (DATA.futurePicks || []).forEach(function(r){
               if (String(r.season) === nextSeason && +r.round === 1) pick1Holder[r.originalPersonId] = r.ownerPersonId;
             });
+            var seasonSoFarOf = {};
             rosters.forEach(function(ro){
               var u = uById[ro.owner_id] || {};
               teamOf[ro.roster_id] = (u.metadata && u.metadata.team_name) || u.display_name || ('Roster '+ro.roster_id);
               var pid = ownerToPid[ro.owner_id];
               var heldBy = pid && pick1Holder[pid];
               if (heldBy && heldBy !== pid) pickNoteOf[ro.roster_id] = nextSeason + ' 1st → ' + pName(heldBy);
+              // Sleeper's own "points possible", cumulative across every week it has
+              // already finalized — only this week's contribution is still live.
+              var st = ro.settings || {};
+              seasonSoFarOf[ro.roster_id] = (st.ppts || 0) + (st.ppts_decimal || 0) / 100;
             });
             var slots = (lg.roster_positions || []).filter(function(s){ return !SKIP_SLOTS[s]; });
             var allIds = [];
@@ -2373,6 +2383,7 @@
                 return { rid:m.roster_id, team: teamOf[m.roster_id] || ('Roster '+m.roster_id),
                   pickNote: pickNoteOf[m.roster_id] || null,
                   cur: m.points || 0, max: maxPts, gap: Math.max(0, maxPts - (m.points||0)),
+                  season: (seasonSoFarOf[m.roster_id] || 0) + maxPts,
                   slots: slots, optimal: optimal, starterSet: starterSet };
               });
               lastRows = rows;
