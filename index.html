@@ -346,10 +346,12 @@
   .live-team{display:flex;flex-direction:column;gap:1px;overflow:hidden;min-width:0}
   .live-tn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
   .live-pick{font-size:11px;color:var(--ink-faint);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .live-nums{display:grid;grid-template-columns:70px 70px 88px 78px;gap:8px}
-  .live-cur,.live-max,.live-season{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+  .live-nums{display:grid;grid-template-columns:70px 70px 88px 86px;gap:8px;align-items:center}
+  .live-cur,.live-max{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
   .live-max{color:var(--ink-muted)}
-  .live-season{font-weight:600}
+  .live-season{display:flex;flex-direction:column;align-items:flex-end;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .live-season-val{font-weight:600}
+  .live-season-sub{font-size:9.5px;color:var(--ink-faint);font-weight:400;white-space:nowrap}
   .live-gap{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
   .live-gap.zero{color:var(--ink-faint);font-weight:400}
   .live-gap.some{color:var(--loss)}
@@ -361,8 +363,10 @@
     .live-row{grid-template-columns:1fr 20px;grid-template-rows:auto auto;row-gap:5px;padding:10px 14px}
     .live-team{grid-column:1;grid-row:1}
     .live-chev{grid-column:2;grid-row:1}
-    .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;font-size:11px}
-    .live-cur,.live-max,.live-gap,.live-season{text-align:left}
+    .live-nums{grid-column:1/-1;grid-row:2;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;font-size:11px;align-items:start}
+    .live-cur,.live-max,.live-gap{text-align:left}
+    .live-season{flex-direction:row;align-items:baseline;gap:3px}
+    .live-season-sub{display:none}
     .live-col-hd .live-cur,.live-col-hd .live-max,.live-col-hd .live-gap,.live-col-hd .live-season{font-size:8.5px}
     .live-row:not(.live-col-hd) .live-cur::before,.live-row:not(.live-col-hd) .live-max::before,
     .live-row:not(.live-col-hd) .live-gap::before,.live-row:not(.live-col-hd) .live-season::before{
@@ -1391,7 +1395,7 @@
 </div>
 </div>
 
-<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260921024850"}</script>
+<script id="fmdata" type="application/json">{"manifest":{"leagues":[{"firstSeason":2015,"hasDrafts":true,"hasPlayers":true,"hasTrades":true,"label":"The Eternal Dischnasty","lastSeason":2025,"primary":1,"scoring":"points","seasons":11,"slug":"dischnasty","sport":"nfl","type":"dynasty"},{"firstSeason":2004,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"24th Annual FBL","lastSeason":2026,"primary":0,"scoring":"cats","seasons":22,"slug":"fbl","sport":"mlb","type":"redraft"},{"firstSeason":2003,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"C Diddy's Annual FFL","lastSeason":2025,"primary":0,"scoring":"points","seasons":22,"slug":"cdiddy","sport":"nfl","type":"redraft"},{"firstSeason":2018,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"A Football Guy League","lastSeason":2025,"primary":0,"scoring":"points","seasons":8,"slug":"afgl","sport":"nfl","type":"keeper"},{"firstSeason":null,"hasDrafts":true,"hasPlayers":true,"hasTrades":false,"label":"1st Annual Knockout League","lastSeason":null,"primary":0,"scoring":"points","seasons":0,"slug":"knockout","sport":"nfl","type":"guillotine"}]},"version":"20260921030229"}</script>
 <script>
 "use strict";
 (function(){
@@ -2280,7 +2284,8 @@
               '<span class="live-cur">'+f1(r.cur)+'</span>' +
               '<span class="live-max">'+f1(r.max)+'</span>' +
               '<span class="live-gap '+gapCls+'">'+(r.gap<0.05?'optimal':'+'+f1(r.gap))+'</span>' +
-              '<span class="live-season">'+f1(r.season)+'</span>' +
+              '<span class="live-season"><span class="live-season-val">'+f1(r.season)+'</span>' +
+                '<span class="live-season-sub">'+f1(r.entering)+' + '+f1(r.max)+'</span></span>' +
             '</span>' +
             '<span class="live-chev">'+(open?'▴':'▾')+'</span></button>' +
             '<div class="live-detail" data-rid="'+r.rid+'"'+(open?'':' hidden')+'>'+(open?detailHtml(r):'')+'</div>';
@@ -2380,10 +2385,11 @@
                 var optimal = optimalFor(slots, players);
                 var maxPts = optimal.reduce(function(s,p){ return s + (p?p.pts:0); }, 0);
                 var starterSet = {}; (m.starters||[]).forEach(function(id){ starterSet[id] = 1; });
+                var entering = seasonSoFarOf[m.roster_id] || 0;
                 return { rid:m.roster_id, team: teamOf[m.roster_id] || ('Roster '+m.roster_id),
                   pickNote: pickNoteOf[m.roster_id] || null,
                   cur: m.points || 0, max: maxPts, gap: Math.max(0, maxPts - (m.points||0)),
-                  season: (seasonSoFarOf[m.roster_id] || 0) + maxPts,
+                  entering: entering, season: entering + maxPts,
                   slots: slots, optimal: optimal, starterSet: starterSet };
               });
               lastRows = rows;
